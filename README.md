@@ -12,7 +12,7 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 
 ## 📑 Table of Contents
 
-- [✨ Features](#features)
+- [✨ Features](#-features)
 - [🚀 Installation](#-installation)
   - [Prerequisites](#prerequisites)
   - [Quick Setup](#quick-setup)
