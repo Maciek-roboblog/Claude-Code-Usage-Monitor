@@ -1,4 +1,4 @@
-# 🎯 Claude Token Monitor
+# 🎯 Claude Code Usage Monitor
 
 [![Python Version](https://img.shields.io/badge/python-3.6+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
