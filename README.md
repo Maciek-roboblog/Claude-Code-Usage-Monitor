@@ -1,6 +1,6 @@
 # 🎯 Claude Code Usage Monitor
 
-[![Python Version](https://img.shields.io/badge/python-3.6+-blue.svg)](https://python.org)
+[![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
@@ -103,7 +103,7 @@ python ccusage_monitor.py
 
 #### Prerequisites
 
-1. **Python 3.6+** installed on your system
+1. **Python 3.7+** installed on your system
 2. **Node.js** for ccusage CLI tool
 
 #### Virtual Environment Setup
@@ -384,7 +384,7 @@ Claude Code operates on a **5-hour rolling session window system**:
 10:30 AM - First message (Session A starts)
 03:30 PM - Session A expires (5 hours later)
 
-12:15 PM - First message (Session B starts) 
+12:15 PM - First message (Session B starts)
 05:15 PM - Session B expires (5 hours later)
 ```
 
@@ -393,7 +393,7 @@ Claude Code operates on a **5-hour rolling session window system**:
 The monitor calculates burn rate using sophisticated analysis:
 
 1. **Data Collection**: Gathers token usage from all sessions in the last hour
-2. **Pattern Analysis**: Identifies consumption trends across overlapping sessions  
+2. **Pattern Analysis**: Identifies consumption trends across overlapping sessions
 3. **Velocity Tracking**: Calculates tokens consumed per minute
 4. **Prediction Engine**: Estimates when current session tokens will deplete
 5. **Real-time Updates**: Adjusts predictions as usage patterns change
@@ -616,7 +616,7 @@ ccusage-monitor --plan custom_max
    
    # Or development mode
    tmux new-session -d -s claude-monitor './ccusage_monitor.py'
-   
+
    # Check status anytime
    tmux attach -t claude-monitor
    ```
