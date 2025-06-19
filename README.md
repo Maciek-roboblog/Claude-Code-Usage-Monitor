@@ -43,9 +43,9 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 
 - **🔄 Real-time monitoring** - Updates every 3 seconds with smooth refresh
 - **📊 Visual progress bars** - Beautiful color-coded token, time, sessions, and prediction progress bars
-- **📅 Monthly session tracking** - Monitor your usage against the 50 sessions/month Max plan limit
-- **🔮 Session predictions** - Estimates total tokens for current session based on burn rate
-- **📊 Historical analytics** - Tracks maximum burn rate from previous sessions
+- **📅 Monthly session tracking** - Monitor your usage against the 50 sessions/month Max plan limit *(requires `--session` flag)*
+- **🔮 Session predictions** - Estimates total tokens for current session based on burn rate *(requires `--session` flag)*
+- **📊 Historical analytics** - Tracks maximum burn rate from previous sessions *(requires `--session` flag)*
 - **🤖 Auto-detection** - Automatically switches to custom max when Pro limit is exceeded
 - **📋 Multiple plan support** - Works with Pro, Max5, Max20, and auto-detect plans
 - **⚠️ Warning system** - Alerts when tokens exceed limits or will deplete before session reset
@@ -111,6 +111,14 @@ Run with default settings (Pro plan - 7,000 tokens):
 
 # Auto-detect from highest previous session
 ./ccusage_monitor.py --plan custom_max
+```
+
+### Enable Session Tracking
+
+Show monthly session statistics and historical analytics:
+
+```bash
+./ccusage_monitor.py --session
 ```
 
 ### Custom Reset Times

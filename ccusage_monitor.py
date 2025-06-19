@@ -267,6 +267,8 @@ def parse_args():
                         help='Change the reset hour (0-23) for daily limits')
     parser.add_argument('--timezone', type=str, default='Europe/Warsaw',
                         help='Timezone for reset times (default: Europe/Warsaw). Examples: US/Eastern, Asia/Tokyo, UTC')
+    parser.add_argument('--session', action='store_true',
+                        help='Enable session monitoring features')
     return parser.parse_args()
 
 
@@ -439,14 +441,19 @@ def main():
             # Calculate burn rate from ALL sessions in the last hour
             burn_rate = calculate_hourly_burn_rate(data['blocks'], current_time)
             
-            # Calculate monthly session statistics
-            monthly_sessions, sessions_remaining = count_monthly_sessions(data['blocks'], current_time)
-            
-            # Calculate max burn rate from historical data
-            max_historical_burn = calculate_max_burn_from_history(data['blocks'])
-            
-            # Predict total burn for current session
-            predicted_total_burn = predict_session_burn(tokens_used, burn_rate)
+            if args.session:
+                # Calculate monthly session statistics
+                monthly_sessions, sessions_remaining = count_monthly_sessions(data['blocks'], current_time)
+
+                # Calculate max burn rate from historical data
+                max_historical_burn = calculate_max_burn_from_history(data['blocks'])
+
+                # Predict total burn for current session
+                predicted_total_burn = predict_session_burn(tokens_used, burn_rate)
+            else:
+                monthly_sessions = sessions_remaining = 0
+                max_historical_burn = 0
+                predicted_total_burn = tokens_used
             
             # Reset time calculation - use fixed schedule or custom hour with timezone
             reset_time = get_next_reset_time(current_time, args.reset_hour, args.timezone)
@@ -491,18 +498,19 @@ def main():
             print(f"🔥 {white}Burn Rate:{reset}      {yellow}{burn_rate:.1f}{reset} {gray}tokens/min{reset}")
             print()
             
-            # Session usage with progress bar
-            print(f"📊 {white}Sessions Used:{reset}   {create_session_progress_bar(monthly_sessions, 50)}")
-            print()
-            
-            # Predicted total burn with progress bar (compare against token limit)
-            print(f"🔮 {white}Session Predicted:{reset} {create_prediction_progress_bar(predicted_total_burn, token_limit)}")
-            print()
-            
-            # Additional stats without bars
-            print(f"📊 {white}Max Burn Rate:{reset} {yellow}{max_historical_burn:.1f}{reset} {gray}tokens/min{reset}")
-            print(f"🔥 {white}Current Burn:{reset}  {yellow}{burn_rate:.1f}{reset} {gray}tokens/min{reset}")
-            print()
+            if args.session:
+                # Session usage with progress bar
+                print(f"📊 {white}Sessions Used:{reset}   {create_session_progress_bar(monthly_sessions, 50)}")
+                print()
+
+                # Predicted total burn with progress bar (compare against token limit)
+                print(f"🔮 {white}Session Predicted:{reset} {create_prediction_progress_bar(predicted_total_burn, token_limit)}")
+                print()
+
+                # Additional stats without bars
+                print(f"📊 {white}Max Burn Rate:{reset} {yellow}{max_historical_burn:.1f}{reset} {gray}tokens/min{reset}")
+                print(f"🔥 {white}Current Burn:{reset}  {yellow}{burn_rate:.1f}{reset} {gray}tokens/min{reset}")
+                print()
             
             # Predictions - convert to configured timezone for display
             try:
