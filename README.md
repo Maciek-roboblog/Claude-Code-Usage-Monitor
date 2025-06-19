@@ -49,9 +49,44 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 
 ## 🚀 Installation
 
-### ⚡ Quick Start
+### ⚡ Modern Installation with uv (Recommended)
 
-For immediate testing (not recommended for regular use):
+The fastest and easiest way to install and use the monitor:
+
+#### First-time uv users
+If you don't have uv installed yet, get it with one command:
+
+```bash
+# Install uv (one-time setup)
+
+# On Linux/macOS:
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# On Windows:
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# After installation, restart your terminal
+```
+
+#### Install and run the monitor
+```bash
+# Install dependencies
+npm install -g ccusage
+
+# Install the tool directly with uv
+uv tool install claude-usage-monitor
+
+# Run from anywhere
+ccusage-monitor
+# or
+claude-monitor
+```
+
+### 🔧 Legacy Installation Methods
+
+#### Quick Start (Development/Testing)
+
+For immediate testing or development:
 
 ```bash
 # Install dependencies
@@ -64,14 +99,12 @@ cd Claude-Code-Usage-Monitor
 python ccusage_monitor.py
 ```
 
-### 🔒 Production Setup (Recommended)
-
 #### Prerequisites
 
 1. **Python 3.6+** installed on your system
 2. **Node.js** for ccusage CLI tool
 
-### Virtual Environment Setup
+#### Virtual Environment Setup
 
 #### Why Use Virtual Environment?
 
@@ -182,6 +215,18 @@ claude-monitor
 
 ### Basic Usage
 
+#### With uv tool installation (Recommended)
+```bash
+# Default (Pro plan - 7,000 tokens)
+ccusage-monitor
+# or
+claude-monitor
+
+# Exit the monitor
+# Press Ctrl+C to gracefully exit
+```
+
+#### Traditional/Development mode
 ```bash
 # Default (Pro plan - 7,000 tokens)
 ./ccusage_monitor.py
@@ -194,6 +239,22 @@ claude-monitor
 
 #### Specify Your Plan
 
+**With uv tool installation:**
+```bash
+# Pro plan (~7,000 tokens) - Default
+ccusage-monitor --plan pro
+
+# Max5 plan (~35,000 tokens)
+ccusage-monitor --plan max5
+
+# Max20 plan (~140,000 tokens)
+ccusage-monitor --plan max20
+
+# Auto-detect from highest previous session
+ccusage-monitor --plan custom_max
+```
+
+**Traditional/Development mode:**
 ```bash
 # Pro plan (~7,000 tokens) - Default
 ./ccusage_monitor.py --plan pro
@@ -210,6 +271,16 @@ claude-monitor
 
 #### Custom Reset Times
 
+**With uv tool installation:**
+```bash
+# Reset at 3 AM
+ccusage-monitor --reset-hour 3
+
+# Reset at 10 PM
+ccusage-monitor --reset-hour 22
+```
+
+**Traditional/Development mode:**
 ```bash
 # Reset at 3 AM
 ./ccusage_monitor.py --reset-hour 3
@@ -222,6 +293,22 @@ claude-monitor
 
 The default timezone is **Europe/Warsaw**. Change it to any valid timezone:
 
+**With uv tool installation:**
+```bash
+# Use US Eastern Time
+ccusage-monitor --timezone US/Eastern
+
+# Use Tokyo time
+ccusage-monitor --timezone Asia/Tokyo
+
+# Use UTC
+ccusage-monitor --timezone UTC
+
+# Use London time
+ccusage-monitor --timezone Europe/London
+```
+
+**Traditional/Development mode:**
 ```bash
 # Use US Eastern Time
 ./ccusage_monitor.py --timezone US/Eastern
@@ -390,10 +477,10 @@ The auto-detection system:
 
 ```bash
 # Auto-detect your highest previous usage
-./ccusage_monitor.py --plan custom_max
+ccusage-monitor --plan custom_max
 
 # Monitor with custom scheduling
-./ccusage_monitor.py --plan custom_max --reset-hour 6
+ccusage-monitor --plan custom_max --reset-hour 6
 ```
 
 **Approach**:
@@ -406,16 +493,16 @@ The auto-detection system:
 
 ```bash
 # US East Coast
-./ccusage_monitor.py --timezone America/New_York
+ccusage-monitor --timezone America/New_York
 
 # Europe
-./ccusage_monitor.py --timezone Europe/London
+ccusage-monitor --timezone Europe/London
 
 # Asia Pacific
-./ccusage_monitor.py --timezone Asia/Singapore
+ccusage-monitor --timezone Asia/Singapore
 
 # UTC for international team coordination
-./ccusage_monitor.py --timezone UTC --reset-hour 12
+ccusage-monitor --timezone UTC --reset-hour 12
 ```
 
 #### ⚡ Quick Check
@@ -423,7 +510,7 @@ The auto-detection system:
 
 ```bash
 # Just run it with defaults
-./ccusage_monitor.py
+ccusage-monitor
 
 # Press Ctrl+C after checking status
 ```
@@ -435,7 +522,7 @@ The auto-detection system:
 **Start with Default (Recommended for New Users)**
 ```bash
 # Pro plan detection with auto-switching
-./ccusage_monitor.py
+ccusage-monitor
 ```
 - Monitor will detect if you exceed Pro limits
 - Automatically switches to custom_max if needed
@@ -444,16 +531,16 @@ The auto-detection system:
 **Known Subscription Users**
 ```bash
 # If you know you have Max5
-./ccusage_monitor.py --plan max5
+ccusage-monitor --plan max5
 
 # If you know you have Max20
-./ccusage_monitor.py --plan max20
+ccusage-monitor --plan max20
 ```
 
 **Unknown Limits**
 ```bash
 # Auto-detect from previous usage
-./ccusage_monitor.py --plan custom_max
+ccusage-monitor --plan custom_max
 ```
 
 ### Best Practices
@@ -462,27 +549,29 @@ The auto-detection system:
 
 1. **Start Early in Sessions**
    ```bash
-   # Begin monitoring when starting Claude work
+   # Begin monitoring when starting Claude work (uv installation)
+   ccusage-monitor
+   
+   # Or development mode
    ./ccusage_monitor.py
    ```
    - Gives accurate session tracking from the start
    - Better burn rate calculations
    - Early warning for limit approaches
 
-2. **Use Virtual Environment**
+2. **Use Modern Installation (Recommended)**
    ```bash
-   # Production setup with isolation
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install pytz
+   # Easy installation and updates with uv
+   uv tool install claude-usage-monitor
+   ccusage-monitor --plan max5
    ```
-   - Prevents dependency conflicts
-   - Clean uninstallation
-   - Reproducible environments
+   - Clean system installation
+   - Easy updates and maintenance
+   - Available from anywhere
 
-3. **Custom Shell Alias**
+3. **Custom Shell Alias (Legacy Setup)**
    ```bash
-   # Add to ~/.bashrc or ~/.zshrc
+   # Add to ~/.bashrc or ~/.zshrc (only for development setup)
    alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./ccusage_monitor.py'
    ```
 
@@ -496,7 +585,7 @@ The auto-detection system:
 2. **Strategic Session Planning**
    ```bash
    # Plan heavy usage around reset times
-   ./ccusage_monitor.py --reset-hour 9
+   ccusage-monitor --reset-hour 9
    ```
    - Schedule large tasks after resets
    - Use lighter tasks when approaching limits
@@ -505,7 +594,7 @@ The auto-detection system:
 3. **Timezone Awareness**
    ```bash
    # Always use your actual timezone
-   ./ccusage_monitor.py --timezone Europe/Warsaw
+   ccusage-monitor --timezone Europe/Warsaw
    ```
    - Accurate reset time predictions
    - Better planning for work schedules
@@ -520,7 +609,10 @@ The auto-detection system:
 
 2. **Workflow Integration**
    ```bash
-   # Start monitoring with your development session
+   # Start monitoring with your development session (uv installation)
+   tmux new-session -d -s claude-monitor 'ccusage-monitor'
+   
+   # Or development mode
    tmux new-session -d -s claude-monitor './ccusage_monitor.py'
    
    # Check status anytime
@@ -537,7 +629,7 @@ The auto-detection system:
 **Large Project Development**
 ```bash
 # Setup for sustained development
-./ccusage_monitor.py --plan max20 --reset-hour 8 --timezone America/New_York
+ccusage-monitor --plan max20 --reset-hour 8 --timezone America/New_York
 ```
 
 **Daily Routine**:
@@ -550,13 +642,13 @@ The auto-detection system:
 **Learning & Experimentation**
 ```bash
 # Flexible setup for learning
-./ccusage_monitor.py --plan pro
+ccusage-monitor --plan pro
 ```
 
 **Sprint Development**
 ```bash
 # High-intensity development setup
-./ccusage_monitor.py --plan max20 --reset-hour 6
+ccusage-monitor --plan max20 --reset-hour 6
 ```
 
 ---
