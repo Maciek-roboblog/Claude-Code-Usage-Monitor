@@ -81,6 +81,41 @@ chmod +x ccusage_monitor.py
 ./ccusage_monitor.py
 ```
 
+#### Using a virtual environment
+A virtual environment approach is the cleanest solution as it keeps your system Python untouched while giving you a clean environment for the monitoring tool.
+
+*Initial setup:*
+```bash
+# 1. Install Node.js and ccusage first
+npm install -g ccusage
+
+# 2. Clone and set up the monitor
+git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
+cd Claude-Code-Usage-Monitor
+chmod +x ccusage_monitor.py
+
+# 3. Create and activate the virtual environment
+python3 -m venv claude-monitor-env
+source claude-monitor-env/bin/activate
+
+# 4. Install Python dependency
+pip install pytz
+
+# 5. Run the monitor
+python3 ccusage_monitor.py
+
+# When you're done, you can deactivate the virtual environment:
+deactivate
+
+```
+
+*Next time:*
+```bash
+cd Claude-Code-Usage-Monitor
+source claude-monitor-env/bin/activate  # Adjust path as needed, depending on where you ran the venv command
+./ccusage_monitor.py
+```
+
 ---
 
 ## 📖 Usage
