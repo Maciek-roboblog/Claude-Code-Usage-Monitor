@@ -282,9 +282,17 @@ def main():
                     break
             
             if not active_block:
-                print("No active session found")
+                print_header()
+                print("📊 \033[97mToken Usage:\033[0m    \033[92m🟢 [\033[92m░" + "░" * 49 + "\033[0m] 0.0%\033[0m")
+                print()
+                print("🎯 \033[97mTokens:\033[0m         \033[97m0\033[0m / \033[90m~{:,}\033[0m (\033[96m0 left\033[0m)".format(token_limit))
+                print("🔥 \033[97mBurn Rate:\033[0m      \033[93m0.0\033[0m \033[90mtokens/min\033[0m")
+                print()
+                print("⏰ \033[90m{}\033[0m 📝 \033[96mNo active session\033[0m | \033[90mCtrl+C to exit\033[0m 🟨".format(datetime.now().strftime("%H:%M:%S")))
+                print('\033[J', end='', flush=True)
+                time.sleep(3)
                 continue
-            
+
             # Extract data from active block
             tokens_used = active_block.get('totalTokens', 0)
             
