@@ -10,6 +10,41 @@ import argparse
 import pytz
 
 
+def check_ccusage_dependency():
+    """Check if ccusage is installed and prompt to install if not."""
+    try:
+        # Check if ccusage is available
+        subprocess.run(['ccusage', '--version'], capture_output=True, check=True)
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("📦 ccusage dependency not found.")
+        print("This tool requires the 'ccusage' npm package to function.")
+        print()
+        
+        # Check if npm is available
+        try:
+            subprocess.run(['npm', '--version'], capture_output=True, check=True)
+        except FileNotFoundError:
+            print("❌ npm not found. Please install Node.js and npm first.")
+            print("Then run: npm install -g ccusage")
+            return False
+        
+        response = input("Would you like to install it now? (y/N): ").strip().lower()
+        if response in ['y', 'yes']:
+            try:
+                print("Installing ccusage...")
+                subprocess.run(['npm', 'install', '-g', 'ccusage'], check=True)
+                print("✅ ccusage installed successfully!")
+                return True
+            except subprocess.CalledProcessError as e:
+                print(f"❌ Failed to install ccusage: {e}")
+                print("Please install manually: npm install -g ccusage")
+                return False
+        else:
+            print("Please install ccusage manually: npm install -g ccusage")
+            return False
+
+
 def run_ccusage():
     """Execute ccusage blocks --json command and return parsed JSON data."""
     try:
@@ -249,6 +284,10 @@ def get_token_limit(plan, blocks=None):
 def main():
     """Main monitoring loop."""
     args = parse_args()
+    
+    # Check ccusage dependency first
+    if not check_ccusage_dependency():
+        sys.exit(1)
     
     # For 'custom_max' plan, we need to get data first to determine the limit
     if args.plan == 'custom_max':

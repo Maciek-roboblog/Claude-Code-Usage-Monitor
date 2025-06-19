@@ -14,7 +14,8 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 
 - [✨ Key Features](#-key-features)
 - [🚀 Installation](#-installation)
-  - [⚡ Quick Start](#-quick-start)
+  - [⚡ Quick Start with uv (Recommended)](#-quick-start-with-uv-recommended)
+  - [⚡ Alternative Quick Start](#-alternative-quick-start)
   - [🔒 Production Setup (Recommended)](#-production-setup-recommended)
   - [Virtual Environment Setup](#virtual-environment-setup)
 - [📖 Usage](#-usage)
@@ -44,14 +45,34 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 - **⚠️ Warning system** - Alerts when tokens exceed limits or will deplete before session reset
 - **💼 Professional UI** - Clean, colorful terminal interface with emojis
 - **⏰ Customizable scheduling** - Set your own reset times and timezones
+- **📦 Zero-config setup** - One-command install with uv, automatic dependency management
 
 ---
 
 ## 🚀 Installation
 
-### ⚡ Quick Start
+### ⚡ Quick Start with uv (Recommended)
 
-For immediate testing (not recommended for regular use):
+The fastest and most reliable way to run the monitor:
+
+```bash
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Clone and run with automatic dependency management
+git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
+cd Claude-Code-Usage-Monitor
+uv run ccusage_monitor.py
+```
+
+The tool will automatically:
+- ✅ Create an isolated Python environment
+- ✅ Install Python dependencies (`pytz`)
+- ✅ Check for `ccusage` npm package and prompt to install if missing
+
+### ⚡ Alternative Quick Start
+
+For immediate testing without uv:
 
 ```bash
 # Install dependencies
@@ -169,7 +190,10 @@ deactivate
 
 Create an alias for quick access:
 ```bash
-# Add to ~/.bashrc or ~/.zshrc
+# For uv (recommended)
+alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && uv run ccusage_monitor.py'
+
+# For traditional setup
 alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./ccusage_monitor.py'
 
 # Then just run:
@@ -183,7 +207,10 @@ claude-monitor
 ### Basic Usage
 
 ```bash
-# Default (Pro plan - 7,000 tokens)
+# With uv (recommended)
+uv run ccusage_monitor.py
+
+# Traditional method
 ./ccusage_monitor.py
 
 # Exit the monitor
@@ -195,26 +222,28 @@ claude-monitor
 #### Specify Your Plan
 
 ```bash
-# Pro plan (~7,000 tokens) - Default
+# With uv (recommended)
+uv run ccusage_monitor.py --plan pro    # Pro plan (~7,000 tokens) - Default
+uv run ccusage_monitor.py --plan max5   # Max5 plan (~35,000 tokens)
+uv run ccusage_monitor.py --plan max20  # Max20 plan (~140,000 tokens)
+uv run ccusage_monitor.py --plan custom_max  # Auto-detect from highest previous session
+
+# Traditional method
 ./ccusage_monitor.py --plan pro
-
-# Max5 plan (~35,000 tokens)
 ./ccusage_monitor.py --plan max5
-
-# Max20 plan (~140,000 tokens)
 ./ccusage_monitor.py --plan max20
-
-# Auto-detect from highest previous session
 ./ccusage_monitor.py --plan custom_max
 ```
 
 #### Custom Reset Times
 
 ```bash
-# Reset at 3 AM
-./ccusage_monitor.py --reset-hour 3
+# With uv (recommended)
+uv run ccusage_monitor.py --reset-hour 3   # Reset at 3 AM
+uv run ccusage_monitor.py --reset-hour 22  # Reset at 10 PM
 
-# Reset at 10 PM
+# Traditional method
+./ccusage_monitor.py --reset-hour 3
 ./ccusage_monitor.py --reset-hour 22
 ```
 
@@ -223,16 +252,16 @@ claude-monitor
 The default timezone is **Europe/Warsaw**. Change it to any valid timezone:
 
 ```bash
-# Use US Eastern Time
+# With uv (recommended)
+uv run ccusage_monitor.py --timezone US/Eastern      # US Eastern Time
+uv run ccusage_monitor.py --timezone Asia/Tokyo      # Tokyo time
+uv run ccusage_monitor.py --timezone UTC             # UTC
+uv run ccusage_monitor.py --timezone Europe/London   # London time
+
+# Traditional method
 ./ccusage_monitor.py --timezone US/Eastern
-
-# Use Tokyo time
 ./ccusage_monitor.py --timezone Asia/Tokyo
-
-# Use UTC
 ./ccusage_monitor.py --timezone UTC
-
-# Use London time
 ./ccusage_monitor.py --timezone Europe/London
 ```
 

@@ -1,0 +1,12 @@
+[project]
+name = "claude-code-usage-monitor"
+version = "1.0.0"
+description = "Real-time terminal monitoring tool for Claude AI token usage"
+readme = "README.md"
+requires-python = ">=3.6"
+dependencies = [
+    "pytz",
+]
+
+[project.scripts]
+ccusage-monitor = "ccusage_monitor:main"
