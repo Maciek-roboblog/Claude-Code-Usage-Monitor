@@ -8,15 +8,23 @@ Claude Code Usage Monitor is a Python-based terminal application that provides r
 
 ## Core Architecture
 
-### Main Components
-- **ccusage_monitor.py**: Single-file Python application containing all monitoring logic
-- **ccusage CLI integration**: Uses the `ccusage` npm package to fetch token usage data via `ccusage blocks --json`
-- **Session management**: Tracks 5-hour rolling session windows with automatic detection
-- **Plan detection**: Supports Pro (~7K), Max5 (~35K), Max20 (~140K), and custom_max (auto-detected) plans
+### Project Structure
+This is a single-file Python application (418 lines) with modern packaging:
+- **ccusage_monitor.py**: Main application containing all monitoring logic
+- **pyproject.toml**: Modern Python packaging configuration with console script entry points
+- **ccusage CLI integration**: External dependency on `ccusage` npm package for data fetching
+
+### Key Components
+- **Data Collection**: Uses `ccusage blocks --json` to fetch Claude usage data
+- **Session Management**: Tracks 5-hour rolling session windows with automatic detection  
+- **Plan Detection**: Supports Pro (~7K), Max5 (~35K), Max20 (~140K), and custom_max (auto-detected) plans
+- **Real-time Display**: Terminal UI with progress bars and burn rate calculations
+- **Console Scripts**: Two entry points (`ccusage-monitor`, `claude-monitor`) both calling `main()`
 
 ### Key Functions
 - `run_ccusage()`: Executes ccusage CLI and parses JSON output at ccusage_monitor.py:13
 - `calculate_hourly_burn_rate()`: Analyzes token consumption patterns from the last hour at ccusage_monitor.py:101
+- `main()`: Entry point function at ccusage_monitor.py:249 for console script integration
 - Session tracking logic handles overlapping 5-hour windows and automatic plan switching
 
 ## Development Commands
@@ -28,8 +36,10 @@ Claude Code Usage Monitor is a Python-based terminal application that provides r
 # Install global dependency
 npm install -g ccusage
 
-# Install the tool directly with uv
-uv tool install claude-usage-monitor
+# Clone and install the tool with uv
+git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
+cd Claude-Code-Usage-Monitor
+uv tool install .
 
 # Run from anywhere
 ccusage-monitor
@@ -104,11 +114,36 @@ python ccusage_monitor.py
 uv run ccusage_monitor.py --plan max5
 ```
 
-### Testing
+### Building and Testing
+
+#### Package Building
+```bash
+# Build package with uv
+uv build
+
+# Verify build artifacts
+ls dist/  # Should show .whl and .tar.gz files
+```
+
+#### Testing Installation
+```bash
+# Test local installation
+uv tool install --editable .
+
+# Verify commands work
+ccusage-monitor --help
+claude-monitor --help
+
+# Test uninstall
+uv tool uninstall claude-usage-monitor
+```
+
+#### Manual Testing
 Currently no automated test suite. Manual testing involves:
 - Running on different platforms (Linux, macOS, Windows)
 - Testing with different Python versions (3.6+)
 - Verifying plan detection and session tracking
+- Testing console script entry points (`ccusage-monitor`, `claude-monitor`)
 
 ## Dependencies
 
@@ -136,6 +171,22 @@ The monitor operates on Claude's 5-hour rolling session system:
 - Automatically switches to custom_max when Pro limit exceeded
 - custom_max scans previous sessions to find actual token limits
 - Supports manual plan specification via command line
+
+## Package Structure
+
+### Console Script Entry Points
+The `pyproject.toml` defines two console commands:
+```toml
+[project.scripts]
+ccusage-monitor = "ccusage_monitor:main"
+claude-monitor = "ccusage_monitor:main"
+```
+Both commands call the same `main()` function for consistency.
+
+### Build Configuration
+- **Build backend**: hatchling (modern Python build system)
+- **Python requirement**: >=3.6 for broad compatibility
+- **Package includes**: Main script, documentation files, license
 
 ### Future Development
 See DEVELOPMENT.md for roadmap including:

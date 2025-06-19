@@ -73,8 +73,10 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 # Install dependencies
 npm install -g ccusage
 
-# Install the tool directly with uv
-uv tool install claude-usage-monitor
+# Clone and install the tool with uv
+git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
+cd Claude-Code-Usage-Monitor
+uv tool install .
 
 # Run from anywhere
 ccusage-monitor
