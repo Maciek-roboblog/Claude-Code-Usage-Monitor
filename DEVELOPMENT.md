@@ -134,8 +134,6 @@ claude-usage-monitor/
 
 ### 🐳 Docker Image
 **Status**: 🔶 In Planning Phase  
-**Target**: v1.8  
-**Timeline**: Q4 2025
 
 #### Overview
 Docker containerization for easy deployment, consistent environments, and optional web dashboard.
