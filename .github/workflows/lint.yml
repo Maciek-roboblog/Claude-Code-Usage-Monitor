@@ -47,7 +47,7 @@ jobs:
       - name: Install pre-commit
         run: uv tool install pre-commit --with pre-commit-uv
 
-      - name: Run pre-commit  
+      - name: Run pre-commit
         run: |
           # Run pre-commit and check if any files would be modified
           uv tool run pre-commit run --all-files --show-diff-on-failure || (

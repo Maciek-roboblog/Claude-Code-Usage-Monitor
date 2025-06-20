@@ -553,7 +553,7 @@ ccusage-monitor --plan custom_max
    ```bash
    # Begin monitoring when starting Claude work (uv installation)
    ccusage-monitor
-   
+
    # Or development mode
    ./ccusage_monitor.py
    ```
@@ -613,7 +613,7 @@ ccusage-monitor --plan custom_max
    ```bash
    # Start monitoring with your development session (uv installation)
    tmux new-session -d -s claude-monitor 'ccusage-monitor'
-   
+
    # Or development mode
    tmux new-session -d -s claude-monitor './ccusage_monitor.py'
 

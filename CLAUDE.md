@@ -16,7 +16,7 @@ This is a single-file Python application (418 lines) with modern packaging:
 
 ### Key Components
 - **Data Collection**: Uses `ccusage blocks --json` to fetch Claude usage data
-- **Session Management**: Tracks 5-hour rolling session windows with automatic detection  
+- **Session Management**: Tracks 5-hour rolling session windows with automatic detection
 - **Plan Detection**: Supports Pro (~7K), Max5 (~35K), Max20 (~140K), and custom_max (auto-detected) plans
 - **Real-time Display**: Terminal UI with progress bars and burn rate calculations
 - **Console Scripts**: Two entry points (`ccusage-monitor`, `claude-monitor`) both calling `main()`
