@@ -31,6 +31,9 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
   - [Best Practices](#best-practices)
 - [📞 Contact](#-contact)
 - [📚 Additional Documentation](#-additional-documentation)
+- [📝 License](#-license)
+- [🤝 Contributors](#-contributors)
+- [🙏 Acknowledgments](#-acknowledgments)
 
 ---
 
@@ -671,13 +674,18 @@ Whether you need help with setup, have feature requests, found a bug, or want to
 - **[Contributing Guide](CONTRIBUTING.md)** - How to contribute, development guidelines
 - **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
 
----
 
 ## 📝 License
 
 [MIT License](LICENSE) - feel free to use and modify as needed.
 
----
+## 🤝 Contributors
+
+- [@adawalli](https://github.com/adawalli)
+- [@taylorwilsdon](https://github.com/taylorwilsdon)
+
+Want to contribute? Check out our [Contributing Guide](CONTRIBUTING.md)!
+
 
 ## 🙏 Acknowledgments
 
