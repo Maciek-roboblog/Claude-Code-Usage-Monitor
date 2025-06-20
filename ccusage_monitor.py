@@ -7,14 +7,20 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timedelta
+
 import pytz
+
 from init_dependency import ensure_node_installed
+
 
 def run_ccusage():
     """Execute ccusage blocks --json command and return parsed JSON data."""
     try:
         result = subprocess.run(
-            ["npx", "ccusage", "blocks", "--json"], capture_output=True, text=True, check=True
+            ["npx", "ccusage", "blocks", "--json"],
+            capture_output=True,
+            text=True,
+            check=True,
         )
         return json.loads(result.stdout)
     except subprocess.CalledProcessError as e:

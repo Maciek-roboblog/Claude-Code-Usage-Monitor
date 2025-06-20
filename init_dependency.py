@@ -1,12 +1,11 @@
 import os
 import platform
+import shutil
 import subprocess
 import sys
-import shutil
 import tarfile
-import urllib.request
 import tempfile
-
+import urllib.request
 
 NODE_VERSION = "18.17.1"
 NODE_DIST_URL = "https://nodejs.org/dist"
@@ -90,7 +89,7 @@ def run_ccusage():
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            check=True
+            check=True,
         )
         print("✅ ccusage output:")
         print(result.stdout)
