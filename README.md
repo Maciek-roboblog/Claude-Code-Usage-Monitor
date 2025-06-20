@@ -192,6 +192,14 @@ claude-monitor
 
 ### Configuration Options
 
+#### Specify Claude Config Path
+
+If you are getting error `No active session found`, you may need to specify custom Claude Code config path. Now it is `~/.config/claude`:
+
+```bash
+CLAUDE_CONFIG_DIR=~/.config/claude ./ccusage_monitor.py
+```
+
 #### Specify Your Plan
 
 ```bash
