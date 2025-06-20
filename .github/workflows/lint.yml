@@ -47,5 +47,10 @@ jobs:
       - name: Install pre-commit
         run: uv tool install pre-commit --with pre-commit-uv
 
-      - name: Run pre-commit
-        run: uv tool run pre-commit run --all-files
+      - name: Run pre-commit  
+        run: |
+          # Run pre-commit and check if any files would be modified
+          uv tool run pre-commit run --all-files --show-diff-on-failure || (
+            echo "Pre-commit hooks would modify files. Please run 'pre-commit run --all-files' locally and commit the changes."
+            exit 1
+          )
