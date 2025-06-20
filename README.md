@@ -683,6 +683,7 @@ Whether you need help with setup, have feature requests, found a bug, or want to
 
 - [@adawalli](https://github.com/adawalli)
 - [@taylorwilsdon](https://github.com/taylorwilsdon)
+- [@moneroexamples](https://github.com/moneroexamples)
 
 Want to contribute? Check out our [Contributing Guide](CONTRIBUTING.md)!
 
