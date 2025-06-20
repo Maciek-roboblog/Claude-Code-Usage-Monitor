@@ -29,7 +29,7 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 - [🚀 Usage Examples](#-usage-examples)
   - [Common Scenarios](#common-scenarios)
   - [Best Practices](#best-practices)
-- [Troubleshooting](#-troubleshooting)
+- [Troubleshooting](#troubleshooting)
   - [No active session found](#no-active-session-found)
 - [📞 Contact](#-contact)
 - [📚 Additional Documentation](#-additional-documentation)
