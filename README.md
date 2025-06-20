@@ -29,6 +29,8 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 - [🚀 Usage Examples](#-usage-examples)
   - [Common Scenarios](#common-scenarios)
   - [Best Practices](#best-practices)
+- [Troubleshooting](#-troubleshooting)
+  - [No active session found](#no-active-session-found)
 - [📞 Contact](#-contact)
 - [📚 Additional Documentation](#-additional-documentation)
 
@@ -191,14 +193,6 @@ claude-monitor
 ```
 
 ### Configuration Options
-
-#### Specify Claude Config Path
-
-If you are getting error `No active session found`, you may need to specify custom Claude Code config path. Now it is `~/.config/claude`:
-
-```bash
-CLAUDE_CONFIG_DIR=~/.config/claude ./ccusage_monitor.py
-```
 
 #### Specify Your Plan
 
@@ -567,6 +561,20 @@ The auto-detection system:
 ./ccusage_monitor.py --plan max20 --reset-hour 6
 ```
 
+## Troubleshooting
+
+### No active session found
+If you encounter the error `No active session found`, please follow these steps:
+
+1. **Initial Test**:
+   Launch Claude Code and send at least two messages. In some cases, the session may not initialize correctly on the first attempt, but it resolves after a few interactions.
+
+2. **Configuration Path**:
+   If the issue persists, consider specifying a custom configuration path. By default, Claude Code uses `~/.config/claude`. You may need to adjust this path depending on your environment.
+
+```bash
+CLAUDE_CONFIG_DIR=~/.config/claude ./ccusage_monitor.py
+```
 ---
 
 ## 📞 Contact
