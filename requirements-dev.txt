@@ -1,0 +1,8 @@
+-r requirements.txt
+pytest>=6.0
+black>=21.0
+flake8>=3.8
+setuptools>=45.0
+wheel>=0.36
+twine>=3.0
+pytest-cov>=2.0

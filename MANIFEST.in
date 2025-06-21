@@ -1,0 +1,16 @@
+include README.md
+include LICENSE
+include CLAUDE.md
+include requirements.txt
+include requirements-dev.txt
+include CONTRIBUTING.md
+include DEVELOPMENT.md
+include TROUBLESHOOTING.md
+recursive-include doc *.png *.jpg *.jpeg
+exclude venv
+recursive-exclude venv *
+exclude .git
+recursive-exclude .git *
+exclude __pycache__
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]

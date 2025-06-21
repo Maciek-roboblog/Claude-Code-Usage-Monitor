@@ -1,0 +1,97 @@
+[build-system]
+requires = ["setuptools>=45.0", "wheel>=0.36"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "claude-usage-monitor"
+description = "Real-time terminal monitoring tool for Claude AI token usage"
+readme = "README.md"
+requires-python = ">=3.6"
+license = {text = "MIT"}
+authors = [
+    {name = "Maciek", email = "maciek@roboblog.eu"}
+]
+keywords = [
+    "claude", "ai", "token", "usage", "monitor", "terminal", "real-time",
+    "claude-code", "anthropic", "ml", "artificial-intelligence", "cli"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Monitoring",
+    "Topic :: Terminals",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "pytz>=2021.1"
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor"
+Repository = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor"
+"Bug Reports" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues"
+Documentation = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/blob/main/README.md"
+Changelog = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases"
+
+[project.scripts]
+claude-monitor = "ccusage_monitor:main"
+cmonitor = "ccusage_monitor:main"
+ccm = "ccusage_monitor:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "black>=21.0",
+    "flake8>=3.8",
+    "setuptools>=45.0",
+    "wheel>=0.36",
+    "twine>=3.0",
+]
+test = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+]
+
+[tool.setuptools]
+py-modules = ["ccusage_monitor"]
+
+[tool.setuptools.dynamic]
+version = {attr = "ccusage_monitor.__version__"}
+
+[tool.black]
+line-length = 88
+target-version = ['py36']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers"
+testpaths = [
+    "tests",
+]

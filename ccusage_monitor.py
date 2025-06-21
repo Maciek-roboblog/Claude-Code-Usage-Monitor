@@ -9,6 +9,8 @@ import os
 import argparse
 import pytz
 
+__version__ = "1.0.0"
+
 
 def run_ccusage():
     """Execute ccusage blocks --json command and return parsed JSON data."""
