@@ -175,7 +175,6 @@ If running from source, use `./claude_monitor.py` instead of `claude-monitor`.
 
 #### Specify Your Plan
 
-**With uv tool installation:**
 ```bash
 # Pro plan (~7,000 tokens) - Default
 claude-monitor --plan pro
@@ -190,11 +189,8 @@ claude-monitor --plan max20
 claude-monitor --plan custom_max
 ```
 
-**Development mode:** Use `./claude_monitor.py` with the same options.
-
 #### Custom Reset Times
 
-**With uv tool installation:**
 ```bash
 # Reset at 3 AM
 claude-monitor --reset-hour 3
@@ -203,13 +199,10 @@ claude-monitor --reset-hour 3
 claude-monitor --reset-hour 22
 ```
 
-**Development mode:** Use `./claude_monitor.py` with the same options.
-
 #### Timezone Configuration
 
 The default timezone is **Europe/Warsaw**. Change it to any valid timezone:
 
-**With uv tool installation:**
 ```bash
 # Use US Eastern Time
 claude-monitor --timezone US/Eastern
@@ -223,8 +216,6 @@ claude-monitor --timezone UTC
 # Use London time
 claude-monitor --timezone Europe/London
 ```
-
-**Development mode:** Use `./claude_monitor.py` with the same options.
 
 ### Available Plans
 
