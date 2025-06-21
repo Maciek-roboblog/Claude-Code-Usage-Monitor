@@ -66,6 +66,15 @@ cd Claude-Code-Usage-Monitor
 python ccusage_monitor.py
 ```
 
+Alternatively, use [`uv`](https://docs.astral.sh/uv/) to avoid managing virtual environments and dependencies:
+
+```bash
+npm install -g ccusage
+git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
+cd Claude-Code-Usage-Monitor
+uv run ccusage_monitor.py
+```
+
 ### 🔒 Production Setup (Recommended)
 
 #### Prerequisites
