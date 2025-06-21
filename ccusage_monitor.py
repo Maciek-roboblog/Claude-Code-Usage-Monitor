@@ -9,6 +9,7 @@ import os
 import argparse
 import pytz
 
+BASE_TZ = pytz.timezone('Europe/Warsaw')
 
 def run_ccusage():
     """Execute ccusage blocks --json command and return parsed JSON data."""
@@ -155,24 +156,11 @@ def calculate_hourly_burn_rate(blocks, current_time):
     return total_tokens / 60 if total_tokens > 0 else 0
 
 
-def get_next_reset_time(current_time, custom_reset_hour=None, timezone_str='Europe/Warsaw'):
+def get_next_reset_time(current_time, custom_reset_hour=None):
     """Calculate next token reset time based on fixed 5-hour intervals.
     Default reset times in specified timezone: 04:00, 09:00, 14:00, 18:00, 23:00
     Or use custom reset hour if provided.
     """
-    # Convert to specified timezone
-    try:
-        target_tz = pytz.timezone(timezone_str)
-    except pytz.exceptions.UnknownTimeZoneError:
-        print(f"Warning: Unknown timezone '{timezone_str}', using Europe/Warsaw")
-        target_tz = pytz.timezone('Europe/Warsaw')
-    
-    # If current_time is timezone-aware, convert to target timezone
-    if current_time.tzinfo is not None:
-        target_time = current_time.astimezone(target_tz)
-    else:
-        # Assume current_time is in target timezone if not specified
-        target_time = target_tz.localize(current_time)
     
     if custom_reset_hour is not None:
         # Use single daily reset at custom hour
@@ -181,6 +169,8 @@ def get_next_reset_time(current_time, custom_reset_hour=None, timezone_str='Euro
         # Default 5-hour intervals
         reset_hours = [4, 9, 14, 18, 23]
     
+    target_time = current_time.astimezone(BASE_TZ)
+
     # Get current hour and minute
     current_hour = target_time.hour
     current_minute = target_time.minute
@@ -200,14 +190,10 @@ def get_next_reset_time(current_time, custom_reset_hour=None, timezone_str='Euro
         next_reset_date = target_time.date()
     
     # Create next reset datetime in target timezone
-    next_reset = target_tz.localize(
+    next_reset = BASE_TZ.localize(
         datetime.combine(next_reset_date, datetime.min.time().replace(hour=next_reset_hour)),
         is_dst=None
     )
-    
-    # Convert back to the original timezone if needed
-    if current_time.tzinfo is not None and current_time.tzinfo != target_tz:
-        next_reset = next_reset.astimezone(current_time.tzinfo)
     
     return next_reset
 
@@ -315,7 +301,7 @@ def main():
             burn_rate = calculate_hourly_burn_rate(data['blocks'], current_time)
             
             # Reset time calculation - use fixed schedule or custom hour with timezone
-            reset_time = get_next_reset_time(current_time, args.reset_hour, args.timezone)
+            reset_time = get_next_reset_time(current_time, args.reset_hour)
             
             # Calculate time to reset
             time_to_reset = reset_time - current_time
