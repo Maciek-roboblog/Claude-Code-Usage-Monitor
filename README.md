@@ -29,13 +29,15 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 - [🚀 Usage Examples](#-usage-examples)
   - [Common Scenarios](#common-scenarios)
   - [Best Practices](#best-practices)
+- [Troubleshooting](#troubleshooting)
+  - [No active session found](#no-active-session-found)
 - [📞 Contact](#-contact)
 - [📚 Additional Documentation](#-additional-documentation)
 - [📝 License](#-license)
 - [🤝 Contributors](#-contributors)
 - [🙏 Acknowledgments](#-acknowledgments)
 
----
+
 
 ## ✨ Key Features
 
@@ -48,7 +50,6 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 - **💼 Professional UI** - Clean, colorful terminal interface with emojis
 - **⏰ Customizable scheduling** - Set your own reset times and timezones
 
----
 
 ## 🚀 Installation
 
@@ -214,7 +215,6 @@ alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate
 claude-monitor
 ```
 
----
 
 ## 📖 Usage
 
@@ -337,7 +337,6 @@ ccusage-monitor --timezone Europe/London
 | **max20** | ~140,000 | Heavy usage, large projects |
 | **custom_max** | Auto-detect | Uses highest from previous sessions |
 
----
 
 ## ✨ Features & How It Works
 
@@ -439,7 +438,6 @@ The auto-detection system:
 4. **Sets Limits**: Uses discovered maximum as new limit
 5. **Learns Patterns**: Adapts to your actual usage capabilities
 
----
 
 ## 🚀 Usage Examples
 
@@ -656,7 +654,20 @@ ccusage-monitor --plan pro
 ccusage-monitor --plan max20 --reset-hour 6
 ```
 
----
+## Troubleshooting
+
+### No active session found
+If you encounter the error `No active session found`, please follow these steps:
+
+1. **Initial Test**:
+   Launch Claude Code and send at least two messages. In some cases, the session may not initialize correctly on the first attempt, but it resolves after a few interactions.
+
+2. **Configuration Path**:
+   If the issue persists, consider specifying a custom configuration path. By default, Claude Code uses `~/.config/claude`. You may need to adjust this path depending on your environment.
+
+```bash
+CLAUDE_CONFIG_DIR=~/.config/claude ./ccusage_monitor.py
+```
 
 ## 📞 Contact
 
@@ -666,7 +677,6 @@ Have questions, suggestions, or want to collaborate? Feel free to reach out!
 
 Whether you need help with setup, have feature requests, found a bug, or want to discuss potential improvements, don't hesitate to get in touch. I'm always happy to help and hear from users of the Claude Code Usage Monitor!
 
----
 
 ## 📚 Additional Documentation
 
@@ -691,6 +701,11 @@ Want to contribute? Check out our [Contributing Guide](CONTRIBUTING.md)!
 ## 🙏 Acknowledgments
 
 This tool builds upon the excellent [ccusage](https://github.com/ryoppippi/ccusage) by [@ryoppippi](https://github.com/ryoppippi), adding a real-time monitoring interface with visual progress bars, burn rate calculations, and predictive analytics.
+
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Maciek-roboblog/Claude-Code-Usage-Monitor&type=Date)](https://www.star-history.com/#Maciek-roboblog/Claude-Code-Usage-Monitor&Date)
 
 ---
 
