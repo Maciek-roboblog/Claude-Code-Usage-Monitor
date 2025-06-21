@@ -98,8 +98,41 @@ def install_node_windows():
     os.execv(sys.executable, [sys.executable] + sys.argv)
 
 
+def ensure_ccusage_available():
+    """Ensure ccusage is available via npx."""
+    try:
+        # Check if ccusage is available
+        result = subprocess.run(
+            ["npx", "--no-install", "ccusage", "--version"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            print("✓ ccusage is available")
+            return  # ccusage is available
+
+        print("Installing ccusage...")
+        # Try global installation first
+        try:
+            subprocess.run(
+                ["npm", "install", "-g", "ccusage"], check=True, capture_output=True
+            )
+            print("✓ ccusage installed globally")
+        except subprocess.CalledProcessError:
+            # If global fails, install locally
+            print("Global installation failed, trying local installation...")
+            subprocess.run(["npm", "install", "ccusage"], check=True)
+            print("✓ ccusage installed locally")
+    except Exception as e:
+        print(f"Failed to install ccusage: {e}")
+        print("You may need to install ccusage manually: npm install -g ccusage")
+        sys.exit(1)
+
+
 def ensure_node_installed():
-    """Ensure Node.js, npm, and npx are all available."""
+    """Ensure Node.js, npm, npx, and ccusage are all available."""
+    print("Checking dependencies...")
+
     if not is_node_available():
         # Install Node.js if not present
         system = platform.system()
@@ -111,27 +144,10 @@ def ensure_node_installed():
             print(f"Unsupported OS: {system}")
             sys.exit(1)
     else:
+        print("✓ Node.js and npm are available")
         # Node.js and npm are present, but check npx
         ensure_npx()
 
-
-def run_ccusage():
-    """Run ccusage tool via npx with JSON output."""
-    try:
-        print("Running ccusage via npx...")
-        result = subprocess.run(
-            ["npx", "ccusage", "--json"],  # Customize flags as needed
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            check=True,
-        )
-        print("ccusage output:")
-        print(result.stdout)
-    except subprocess.CalledProcessError as e:
-        print("ccusage failed:")
-        print(e.stderr)
-        sys.exit(1)
-    except FileNotFoundError:
-        print("npx not found. Ensure Node.js is installed.")
-        sys.exit(1)
+    # Ensure ccusage is available
+    ensure_ccusage_available()
+    print("✓ All dependencies are ready")

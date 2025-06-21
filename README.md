@@ -49,9 +49,34 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 - **⚠️ Warning system** - Alerts when tokens exceed limits or will deplete before session reset
 - **💼 Professional UI** - Clean, colorful terminal interface with emojis
 - **⏰ Customizable scheduling** - Set your own reset times and timezones
+- **🚀 Auto-install dependencies** - Automatically installs Node.js and ccusage if needed
 
 
 ## 🚀 Installation
+
+### 🎯 Automatic Dependencies
+
+The Claude Code Usage Monitor **automatically installs all required dependencies** on first run:
+
+- **Node.js** - If not present, downloads and installs Node.js
+- **npm & npx** - Ensures npm package manager and npx are available
+- **ccusage** - Automatically installs the ccusage CLI tool
+
+No manual dependency installation required! Just install the monitor and run.
+
+### 📦 Installation with pip
+
+Install directly from PyPI: [https://pypi.org/project/claude-usage-monitor/](https://pypi.org/project/claude-usage-monitor/)
+
+```bash
+# Install from PyPI
+pip install claude-usage-monitor
+
+# Run from anywhere (dependencies auto-install on first run)
+claude-monitor
+```
+
+> **Note**: Node.js and ccusage will be automatically installed on first run if not present.
 
 ### ⚡ Modern Installation with uv (Recommended)
 
@@ -74,32 +99,14 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 #### Install and run the monitor
 ```bash
-# Install dependencies
-npm install -g ccusage
-
 # Clone and install the tool with uv
 git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
 cd Claude-Code-Usage-Monitor
 uv tool install .
 
-# Run from anywhere
+# Run from anywhere (dependencies auto-install on first run)
 ccusage-monitor
 # or
-claude-monitor
-```
-
-### 📦 Installation with pip
-
-Install directly from PyPI: [https://pypi.org/project/claude-usage-monitor/](https://pypi.org/project/claude-usage-monitor/)
-
-```bash
-# Install dependencies
-npm install -g ccusage
-
-# Install from PyPI
-pip install claude-usage-monitor
-
-# Run from anywhere
 claude-monitor
 ```
 
@@ -107,25 +114,19 @@ claude-monitor
 
 #### pipx (Isolated Environments)
 ```bash
-# Install dependencies
-npm install -g ccusage
-
 # Install with pipx
 pipx install claude-usage-monitor
 
-# Run from anywhere
+# Run from anywhere (dependencies auto-install on first run)
 claude-monitor
 ```
 
 #### conda/mamba
 ```bash
-# Install dependencies
-npm install -g ccusage
-
 # Install with pip in conda environment
 pip install claude-usage-monitor
 
-# Run from anywhere
+# Run from anywhere (dependencies auto-install on first run)
 claude-monitor
 ```
 
@@ -138,11 +139,10 @@ For contributors and developers who want to work with the source code:
 For immediate testing or development:
 
 ```bash
-# Install dependencies
-npm install -g ccusage
+# Install Python dependency
 pip install pytz
 
-# Clone and run
+# Clone and run (Node.js and ccusage auto-install on first run)
 git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
 cd Claude-Code-Usage-Monitor
 python claude_monitor.py
@@ -151,7 +151,8 @@ python claude_monitor.py
 #### Prerequisites
 
 1. **Python 3.7+** installed on your system
-2. **Node.js** for ccusage CLI tool
+
+> **Note**: Node.js and ccusage are automatically installed on first run if not present.
 
 #### Virtual Environment Setup
 
@@ -199,31 +200,28 @@ virtualenv venv
 #### Step-by-Step Setup
 
 ```bash
-# 1. Install ccusage globally
-npm install -g ccusage
-
-# 2. Clone the repository
+# 1. Clone the repository
 git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
 cd Claude-Code-Usage-Monitor
 
-# 3. Create virtual environment
+# 2. Create virtual environment
 python3 -m venv venv
 # Or if using virtualenv package:
 # virtualenv venv
 
-# 4. Activate virtual environment
+# 3. Activate virtual environment
 # On Linux/Mac:
 source venv/bin/activate
 # On Windows:
 # venv\Scripts\activate
 
-# 5. Install Python dependencies
+# 4. Install Python dependencies
 pip install pytz
 
-# 6. Make script executable (Linux/Mac only)
+# 5. Make script executable (Linux/Mac only)
 chmod +x claude_monitor.py
 
-# 7. Run the monitor
+# 6. Run the monitor (Node.js and ccusage auto-install on first run)
 python claude_monitor.py
 ```
 

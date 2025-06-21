@@ -315,8 +315,8 @@ def flush_input():
 
 
 def main():
-    ensure_node_installed()
     """Main monitoring loop."""
+    ensure_node_installed()
     args = parse_args()
 
     # Create event for clean refresh timing
