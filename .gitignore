@@ -199,3 +199,4 @@ logs/
 # Editor backups
 *.bak
 *.orig
+/.claude/

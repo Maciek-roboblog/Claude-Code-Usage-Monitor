@@ -5,12 +5,20 @@ import json
 import os
 import subprocess
 import sys
-import time
+import threading
 from datetime import datetime, timedelta
 
 import pytz
 
 from init_dependency import ensure_node_installed
+
+# Terminal handling for Unix-like systems
+try:
+    import termios
+
+    HAS_TERMIOS = True
+except ImportError:
+    HAS_TERMIOS = False
 
 
 def run_ccusage():
@@ -271,10 +279,51 @@ def get_token_limit(plan, blocks=None):
     return limits.get(plan, 7000)
 
 
+def setup_terminal():
+    """Setup terminal for raw mode to prevent input interference."""
+    if not HAS_TERMIOS or not sys.stdin.isatty():
+        return None
+
+    try:
+        # Save current terminal settings
+        old_settings = termios.tcgetattr(sys.stdin)
+        # Set terminal to non-canonical mode (disable echo and line buffering)
+        new_settings = termios.tcgetattr(sys.stdin)
+        new_settings[3] = new_settings[3] & ~(termios.ECHO | termios.ICANON)
+        termios.tcsetattr(sys.stdin, termios.TCSANOW, new_settings)
+        return old_settings
+    except Exception:
+        return None
+
+
+def restore_terminal(old_settings):
+    """Restore terminal to original settings."""
+    if old_settings and HAS_TERMIOS and sys.stdin.isatty():
+        try:
+            termios.tcsetattr(sys.stdin, termios.TCSANOW, old_settings)
+        except Exception:
+            pass
+
+
+def flush_input():
+    """Flush any pending input to prevent display corruption."""
+    if HAS_TERMIOS and sys.stdin.isatty():
+        try:
+            termios.tcflush(sys.stdin, termios.TCIFLUSH)
+        except Exception:
+            pass
+
+
 def main():
     ensure_node_installed()
     """Main monitoring loop."""
     args = parse_args()
+
+    # Create event for clean refresh timing
+    stop_event = threading.Event()
+
+    # Setup terminal to prevent input interference
+    old_terminal_settings = setup_terminal()
 
     # For 'custom_max' plan, we need to get data first to determine the limit
     if args.plan == "custom_max":
@@ -292,6 +341,9 @@ def main():
         print("\033[?25l", end="", flush=True)  # Hide cursor
 
         while True:
+            # Flush any pending input to prevent display corruption
+            flush_input()
+
             # Move cursor to top without clearing
             print("\033[H", end="", flush=True)
 
@@ -330,7 +382,7 @@ def main():
                     )
                 )
                 print("\033[J", end="", flush=True)
-                time.sleep(3)
+                stop_event.wait(timeout=3.0)
                 continue
 
             # Extract data from active block
@@ -468,11 +520,15 @@ def main():
             # Clear any remaining lines below to prevent artifacts
             print("\033[J", end="", flush=True)
 
-            time.sleep(3)
+            stop_event.wait(timeout=3.0)
 
     except KeyboardInterrupt:
+        # Set the stop event for immediate response
+        stop_event.set()
         # Show cursor before exiting
         print("\033[?25h", end="", flush=True)
+        # Restore terminal settings
+        restore_terminal(old_terminal_settings)
         print(f"\n\n{cyan}Monitoring stopped.{reset}")
         # Clear the terminal
         os.system("clear" if os.name == "posix" else "cls")
@@ -480,6 +536,8 @@ def main():
     except Exception:
         # Show cursor on any error
         print("\033[?25h", end="", flush=True)
+        # Restore terminal settings
+        restore_terminal(old_terminal_settings)
         raise
 
 
