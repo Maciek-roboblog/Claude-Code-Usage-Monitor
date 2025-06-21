@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.7] - 2025-06-21
+
+### Changed
+- Enhanced `init_dependency.py` module with improved documentation and error handling
+- Added automatic `npx` installation if not available
+- Improved cross-platform Node.js installation logic
+- Better error messages throughout the dependency initialization process
+
 ## [1.0.6] - 2025-06-21
 
 ### Added
@@ -27,4 +35,5 @@
 - Proper Ctrl+C handling with cursor restoration
 - Terminal settings restoration on exit
 
+[1.0.7]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.7
 [1.0.6]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.6
