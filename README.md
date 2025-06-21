@@ -1,12 +1,13 @@
 # 🎯 Claude Code Usage Monitor
 
-[![Python Version](https://img.shields.io/badge/python-3.6+-blue.svg)](https://python.org)
+[![PyPI Version](https://img.shields.io/pypi/v/claude-monitor.svg)](https://pypi.org/project/claude-monitor/)
+[![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
 A beautiful real-time terminal monitoring tool for Claude AI token usage. Track your token consumption, burn rate, and get predictions about when you'll run out of tokens.
 
-![Claude Token Monitor Screenshot](doc/sc.png)
+![Claude Token Monitor Screenshot](https://raw.githubusercontent.com/Maciek-roboblog/Claude-Code-Usage-Monitor/main/doc/sc.png)
 
 ---
 
@@ -14,13 +15,14 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 
 - [✨ Key Features](#-key-features)
 - [🚀 Installation](#-installation)
-  - [⚡ Quick Start](#-quick-start)
-  - [🔒 Production Setup (Recommended)](#-production-setup-recommended)
-  - [Virtual Environment Setup](#virtual-environment-setup)
+  - [⚡ Modern Installation with uv (Recommended)](#-modern-installation-with-uv-recommended)
+  - [📦 Installation with pip](#-installation-with-pip)
+  - [🛠️ Other Package Managers](#️-other-package-managers)
 - [📖 Usage](#-usage)
   - [Basic Usage](#basic-usage)
   - [Configuration Options](#configuration-options)
   - [Available Plans](#available-plans)
+- [🙏 Please Help Test This Release!](#-please-help-test-this-release)
 - [✨ Features & How It Works](#-features--how-it-works)
   - [Current Features](#current-features)
   - [Understanding Claude Sessions](#understanding-claude-sessions)
@@ -29,12 +31,17 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 - [🚀 Usage Examples](#-usage-examples)
   - [Common Scenarios](#common-scenarios)
   - [Best Practices](#best-practices)
+- [🔧 Development Installation](#-development-installation)
 - [Troubleshooting](#troubleshooting)
-  - [No active session found](#no-active-session-found)
+  - [Installation Issues](#installation-issues)
+  - [Runtime Issues](#runtime-issues)
 - [📞 Contact](#-contact)
 - [📚 Additional Documentation](#-additional-documentation)
+- [📝 License](#-license)
+- [🤝 Contributors](#-contributors)
+- [🙏 Acknowledgments](#-acknowledgments)
 
----
+
 
 ## ✨ Key Features
 
@@ -46,151 +53,123 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 - **⚠️ Warning system** - Alerts when tokens exceed limits or will deplete before session reset
 - **💼 Professional UI** - Clean, colorful terminal interface with emojis
 - **⏰ Customizable scheduling** - Set your own reset times and timezones
+- **🚀 Auto-install dependencies** - Automatically installs Node.js and ccusage if needed
 
----
 
 ## 🚀 Installation
 
-### ⚡ Quick Start
+### 🎯 Automatic Dependencies
 
-For immediate testing (not recommended for regular use):
+The Claude Code Usage Monitor **automatically installs all required dependencies** on first run:
 
-```bash
-# Install dependencies
-npm install -g ccusage
-pip install pytz
+- **Node.js** - If not present, downloads and installs Node.js
+- **npm & npx** - Ensures npm package manager and npx are available
+- **ccusage** - Automatically installs the ccusage CLI tool
 
-# Clone and run
-git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
-cd Claude-Code-Usage-Monitor
-python ccusage_monitor.py
-```
+No manual dependency installation required! Just install the monitor and run.
 
-### 🔒 Production Setup (Recommended)
+### ⚡ Modern Installation with uv (Recommended)
 
-#### Prerequisites
+**Why uv is the best choice:**
+- ✅ Creates isolated environments automatically (no system conflicts)
+- ✅ No Python version issues
+- ✅ No "externally-managed-environment" errors
+- ✅ Easy updates and uninstallation
+- ✅ Works on all platforms
 
-1. **Python 3.6+** installed on your system
-2. **Node.js** for ccusage CLI tool
+The fastest and easiest way to install and use the monitor:
 
-### Virtual Environment Setup
+[![PyPI](https://img.shields.io/pypi/v/claude-monitor.svg)](https://pypi.org/project/claude-monitor/)
 
-#### Why Use Virtual Environment?
-
-Using a virtual environment is **strongly recommended** because:
-
-- **🛡️ Isolation**: Keeps your system Python clean and prevents dependency conflicts
-- **📦 Portability**: Easy to replicate the exact environment on different machines
-- **🔄 Version Control**: Lock specific versions of dependencies for stability
-- **🧹 Clean Uninstall**: Simply delete the virtual environment folder to remove everything
-- **👥 Team Collaboration**: Everyone uses the same Python and package versions
-
-#### Installing virtualenv (if needed)
-
-If you don't have `venv` module available:
+#### Install from PyPI
 
 ```bash
-# Ubuntu/Debian
-sudo apt-get update
-sudo apt-get install python3-venv
+# Install directly from PyPI with uv (easiest)
+uv tool install claude-monitor
 
-# Fedora/RHEL/CentOS
-sudo dnf install python3-venv
-
-# macOS (usually comes with Python)
-# If not available, install Python via Homebrew:
-brew install python3
-
-# Windows (usually comes with Python)
-# If not available, reinstall Python from python.org
-# Make sure to check "Add Python to PATH" during installation
-```
-
-Alternatively, use the `virtualenv` package:
-```bash
-# Install virtualenv via pip
-pip install virtualenv
-
-# Then create virtual environment with:
-virtualenv venv
-# instead of: python3 -m venv venv
-```
-
-#### Step-by-Step Setup
-
-```bash
-# 1. Install ccusage globally
-npm install -g ccusage
-
-# 2. Clone the repository
-git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
-cd Claude-Code-Usage-Monitor
-
-# 3. Create virtual environment
-python3 -m venv venv
-# Or if using virtualenv package:
-# virtualenv venv
-
-# 4. Activate virtual environment
-# On Linux/Mac:
-source venv/bin/activate
-# On Windows:
-# venv\Scripts\activate
-
-# 5. Install Python dependencies
-pip install pytz
-
-# 6. Make script executable (Linux/Mac only)
-chmod +x ccusage_monitor.py
-
-# 7. Run the monitor
-python ccusage_monitor.py
-```
-
-#### Daily Usage
-
-After initial setup, you only need:
-
-```bash
-# Navigate to project directory
-cd Claude-Code-Usage-Monitor
-
-# Activate virtual environment
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate   # Windows
-
-# Run monitor
-./ccusage_monitor.py  # Linux/Mac
-# python ccusage_monitor.py  # Windows
-
-# When done, deactivate
-deactivate
-```
-
-#### Pro Tip: Shell Alias
-
-Create an alias for quick access:
-```bash
-# Add to ~/.bashrc or ~/.zshrc
-alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./ccusage_monitor.py'
-
-# Then just run:
+# Run from anywhere
 claude-monitor
 ```
 
----
+#### Install from Source
+
+```bash
+# Clone and install from source
+git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
+cd Claude-Code-Usage-Monitor
+uv tool install .
+
+# Run from anywhere
+claude-monitor
+```
+
+#### First-time uv users
+If you don't have uv installed yet, get it with one command:
+
+```bash
+# On Linux/macOS:
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# On Windows:
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# After installation, restart your terminal
+```
+
+### 📦 Installation with pip
+
+```bash
+# Install from PyPI
+pip install claude-usage-monitor
+
+# Run from anywhere (dependencies auto-install on first run)
+claude-monitor
+```
+
+> **Note**: Node.js and ccusage will be automatically installed on first run if not present.
+>
+> **⚠️ Important**: On modern Linux distributions (Ubuntu 23.04+, Debian 12+, Fedora 38+), you may encounter an "externally-managed-environment" error. Instead of using `--break-system-packages`, we strongly recommend:
+> 1. **Use uv instead** (see above) - it's safer and easier
+> 2. **Use a virtual environment** - `python3 -m venv myenv && source myenv/bin/activate`
+> 3. **Use pipx** - `pipx install claude-monitor`
+>
+> See the Troubleshooting section for detailed solutions.
+
+### 🛠️ Other Package Managers
+
+#### pipx (Isolated Environments)
+```bash
+# Install with pipx
+pipx install claude-monitor
+
+# Run from anywhere (dependencies auto-install on first run)
+claude-monitor
+```
+
+#### conda/mamba
+```bash
+# Install with pip in conda environment
+pip install claude-monitor
+
+# Run from anywhere (dependencies auto-install on first run)
+claude-monitor
+```
 
 ## 📖 Usage
 
 ### Basic Usage
 
+#### With uv tool installation (Recommended)
 ```bash
 # Default (Pro plan - 7,000 tokens)
-./ccusage_monitor.py
+claude-monitor
 
 # Exit the monitor
 # Press Ctrl+C to gracefully exit
 ```
+
+#### Development mode
+If running from source, use `./claude_monitor.py` instead of `claude-monitor`.
 
 ### Configuration Options
 
@@ -198,26 +177,26 @@ claude-monitor
 
 ```bash
 # Pro plan (~7,000 tokens) - Default
-./ccusage_monitor.py --plan pro
+claude-monitor --plan pro
 
 # Max5 plan (~35,000 tokens)
-./ccusage_monitor.py --plan max5
+claude-monitor --plan max5
 
 # Max20 plan (~140,000 tokens)
-./ccusage_monitor.py --plan max20
+claude-monitor --plan max20
 
 # Auto-detect from highest previous session
-./ccusage_monitor.py --plan custom_max
+claude-monitor --plan custom_max
 ```
 
 #### Custom Reset Times
 
 ```bash
 # Reset at 3 AM
-./ccusage_monitor.py --reset-hour 3
+claude-monitor --reset-hour 3
 
 # Reset at 10 PM
-./ccusage_monitor.py --reset-hour 22
+claude-monitor --reset-hour 22
 ```
 
 #### Timezone Configuration
@@ -226,16 +205,16 @@ The default timezone is **Europe/Warsaw**. Change it to any valid timezone:
 
 ```bash
 # Use US Eastern Time
-./ccusage_monitor.py --timezone US/Eastern
+claude-monitor --timezone US/Eastern
 
 # Use Tokyo time
-./ccusage_monitor.py --timezone Asia/Tokyo
+claude-monitor --timezone Asia/Tokyo
 
 # Use UTC
-./ccusage_monitor.py --timezone UTC
+claude-monitor --timezone UTC
 
 # Use London time
-./ccusage_monitor.py --timezone Europe/London
+claude-monitor --timezone Europe/London
 ```
 
 ### Available Plans
@@ -247,7 +226,28 @@ The default timezone is **Europe/Warsaw**. Change it to any valid timezone:
 | **max20** | ~140,000 | Heavy usage, large projects |
 | **custom_max** | Auto-detect | Uses highest from previous sessions |
 
----
+
+## 🙏 Please Help Test This Release!
+
+> **We need your help!** This is a new release and we want to ensure it works perfectly on all systems.
+>
+> **If something doesn't work:**
+> 1. Switch to the [develop branch](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/tree/develop) for the latest fixes:
+>    ```bash
+>    git clone -b develop https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
+>    cd Claude-Code-Usage-Monitor
+>    python3 -m venv venv
+>    source venv/bin/activate  # On Windows: venv\Scripts\activate
+>    pip install -e .
+>    claude-monitor
+>    ```
+> 2. Create an issue with title format: **[MAIN-PROBLEM]: Your specific problem**
+>    - Example: `[MAIN-PROBLEM]: Command not found after pip install on Ubuntu 24.04`
+>    - Include your OS, Python version, and installation method
+>    - [Create Issue Here](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues/new)
+>
+> **Thank you for helping make this tool better! 🚀**
+
 
 ## ✨ Features & How It Works
 
@@ -297,7 +297,7 @@ Claude Code operates on a **5-hour rolling session window system**:
 10:30 AM - First message (Session A starts)
 03:30 PM - Session A expires (5 hours later)
 
-12:15 PM - First message (Session B starts) 
+12:15 PM - First message (Session B starts)
 05:15 PM - Session B expires (5 hours later)
 ```
 
@@ -306,7 +306,7 @@ Claude Code operates on a **5-hour rolling session window system**:
 The monitor calculates burn rate using sophisticated analysis:
 
 1. **Data Collection**: Gathers token usage from all sessions in the last hour
-2. **Pattern Analysis**: Identifies consumption trends across overlapping sessions  
+2. **Pattern Analysis**: Identifies consumption trends across overlapping sessions
 3. **Velocity Tracking**: Calculates tokens consumed per minute
 4. **Prediction Engine**: Estimates when current session tokens will deplete
 5. **Real-time Updates**: Adjusts predictions as usage patterns change
@@ -349,7 +349,6 @@ The auto-detection system:
 4. **Sets Limits**: Uses discovered maximum as new limit
 5. **Learns Patterns**: Adapts to your actual usage capabilities
 
----
 
 ## 🚀 Usage Examples
 
@@ -360,10 +359,10 @@ The auto-detection system:
 
 ```bash
 # Set custom reset time to 9 AM
-./ccusage_monitor.py --reset-hour 9
+./claude_monitor.py --reset-hour 9
 
 # With your timezone
-./ccusage_monitor.py --reset-hour 9 --timezone US/Eastern
+./claude_monitor.py --reset-hour 9 --timezone US/Eastern
 ```
 
 **Benefits**:
@@ -376,10 +375,10 @@ The auto-detection system:
 
 ```bash
 # Reset at midnight for clean daily boundaries
-./ccusage_monitor.py --reset-hour 0
+./claude_monitor.py --reset-hour 0
 
 # Late evening reset (11 PM)
-./ccusage_monitor.py --reset-hour 23
+./claude_monitor.py --reset-hour 23
 ```
 
 **Strategy**:
@@ -392,10 +391,10 @@ The auto-detection system:
 
 ```bash
 # Auto-detect your highest previous usage
-./ccusage_monitor.py --plan custom_max
+claude-monitor --plan custom_max
 
 # Monitor with custom scheduling
-./ccusage_monitor.py --plan custom_max --reset-hour 6
+claude-monitor --plan custom_max --reset-hour 6
 ```
 
 **Approach**:
@@ -408,16 +407,16 @@ The auto-detection system:
 
 ```bash
 # US East Coast
-./ccusage_monitor.py --timezone America/New_York
+claude-monitor --timezone America/New_York
 
 # Europe
-./ccusage_monitor.py --timezone Europe/London
+claude-monitor --timezone Europe/London
 
 # Asia Pacific
-./ccusage_monitor.py --timezone Asia/Singapore
+claude-monitor --timezone Asia/Singapore
 
 # UTC for international team coordination
-./ccusage_monitor.py --timezone UTC --reset-hour 12
+claude-monitor --timezone UTC --reset-hour 12
 ```
 
 #### ⚡ Quick Check
@@ -425,7 +424,7 @@ The auto-detection system:
 
 ```bash
 # Just run it with defaults
-./ccusage_monitor.py
+ccusage-monitor
 
 # Press Ctrl+C after checking status
 ```
@@ -437,7 +436,7 @@ The auto-detection system:
 **Start with Default (Recommended for New Users)**
 ```bash
 # Pro plan detection with auto-switching
-./ccusage_monitor.py
+ccusage-monitor
 ```
 - Monitor will detect if you exceed Pro limits
 - Automatically switches to custom_max if needed
@@ -446,16 +445,16 @@ The auto-detection system:
 **Known Subscription Users**
 ```bash
 # If you know you have Max5
-./ccusage_monitor.py --plan max5
+claude-monitor --plan max5
 
 # If you know you have Max20
-./ccusage_monitor.py --plan max20
+claude-monitor --plan max20
 ```
 
 **Unknown Limits**
 ```bash
 # Auto-detect from previous usage
-./ccusage_monitor.py --plan custom_max
+claude-monitor --plan custom_max
 ```
 
 ### Best Practices
@@ -464,28 +463,30 @@ The auto-detection system:
 
 1. **Start Early in Sessions**
    ```bash
-   # Begin monitoring when starting Claude work
-   ./ccusage_monitor.py
+   # Begin monitoring when starting Claude work (uv installation)
+   ccusage-monitor
+
+   # Or development mode
+   ./claude_monitor.py
    ```
    - Gives accurate session tracking from the start
    - Better burn rate calculations
    - Early warning for limit approaches
 
-2. **Use Virtual Environment**
+2. **Use Modern Installation (Recommended)**
    ```bash
-   # Production setup with isolation
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install pytz
+   # Easy installation and updates with uv
+   uv tool install claude-usage-monitor
+   claude-monitor --plan max5
    ```
-   - Prevents dependency conflicts
-   - Clean uninstallation
-   - Reproducible environments
+   - Clean system installation
+   - Easy updates and maintenance
+   - Available from anywhere
 
-3. **Custom Shell Alias**
+3. **Custom Shell Alias (Legacy Setup)**
    ```bash
-   # Add to ~/.bashrc or ~/.zshrc
-   alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./ccusage_monitor.py'
+   # Add to ~/.bashrc or ~/.zshrc (only for development setup)
+   alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./claude_monitor.py'
    ```
 
 #### Usage Best Practices
@@ -498,7 +499,7 @@ The auto-detection system:
 2. **Strategic Session Planning**
    ```bash
    # Plan heavy usage around reset times
-   ./ccusage_monitor.py --reset-hour 9
+   claude-monitor --reset-hour 9
    ```
    - Schedule large tasks after resets
    - Use lighter tasks when approaching limits
@@ -507,7 +508,7 @@ The auto-detection system:
 3. **Timezone Awareness**
    ```bash
    # Always use your actual timezone
-   ./ccusage_monitor.py --timezone Europe/Warsaw
+   claude-monitor --timezone Europe/Warsaw
    ```
    - Accurate reset time predictions
    - Better planning for work schedules
@@ -522,9 +523,12 @@ The auto-detection system:
 
 2. **Workflow Integration**
    ```bash
-   # Start monitoring with your development session
-   tmux new-session -d -s claude-monitor './ccusage_monitor.py'
-   
+   # Start monitoring with your development session (uv installation)
+   tmux new-session -d -s claude-monitor 'ccusage-monitor'
+
+   # Or development mode
+   tmux new-session -d -s claude-monitor './claude_monitor.py'
+
    # Check status anytime
    tmux attach -t claude-monitor
    ```
@@ -539,7 +543,7 @@ The auto-detection system:
 **Large Project Development**
 ```bash
 # Setup for sustained development
-./ccusage_monitor.py --plan max20 --reset-hour 8 --timezone America/New_York
+claude-monitor --plan max20 --reset-hour 8 --timezone America/New_York
 ```
 
 **Daily Routine**:
@@ -552,18 +556,236 @@ The auto-detection system:
 **Learning & Experimentation**
 ```bash
 # Flexible setup for learning
-./ccusage_monitor.py --plan pro
+claude-monitor --plan pro
 ```
 
 **Sprint Development**
 ```bash
 # High-intensity development setup
-./ccusage_monitor.py --plan max20 --reset-hour 6
+claude-monitor --plan max20 --reset-hour 6
+```
+
+## 🔧 Development Installation
+
+For contributors and developers who want to work with the source code:
+
+### Quick Start (Development/Testing)
+
+For immediate testing or development:
+
+```bash
+# Install Python dependency
+pip install pytz
+
+# Clone and run (Node.js and ccusage auto-install on first run)
+git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
+cd Claude-Code-Usage-Monitor
+python claude_monitor.py
+```
+
+### Prerequisites
+
+1. **Python 3.7+** installed on your system
+
+> **Note**: Node.js and ccusage are automatically installed on first run if not present.
+
+### Virtual Environment Setup
+
+#### Why Use Virtual Environment?
+
+Using a virtual environment is **strongly recommended** because:
+
+- **🛡️ Isolation**: Keeps your system Python clean and prevents dependency conflicts
+- **📦 Portability**: Easy to replicate the exact environment on different machines
+- **🔄 Version Control**: Lock specific versions of dependencies for stability
+- **🧹 Clean Uninstall**: Simply delete the virtual environment folder to remove everything
+- **👥 Team Collaboration**: Everyone uses the same Python and package versions
+
+#### Installing virtualenv (if needed)
+
+If you don't have `venv` module available:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install python3-venv
+
+# Fedora/RHEL/CentOS
+sudo dnf install python3-venv
+
+# macOS (usually comes with Python)
+# If not available, install Python via Homebrew:
+brew install python3
+
+# Windows (usually comes with Python)
+# If not available, reinstall Python from python.org
+# Make sure to check "Add Python to PATH" during installation
+```
+
+Alternatively, use the `virtualenv` package:
+```bash
+# Install virtualenv via pip
+pip install virtualenv
+
+# Then create virtual environment with:
+virtualenv venv
+# instead of: python3 -m venv venv
+```
+
+#### Step-by-Step Setup
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
+cd Claude-Code-Usage-Monitor
+
+# 2. Create virtual environment
+python3 -m venv venv
+# Or if using virtualenv package:
+# virtualenv venv
+
+# 3. Activate virtual environment
+# On Linux/Mac:
+source venv/bin/activate
+# On Windows:
+# venv\Scripts\activate
+
+# 4. Install Python dependencies
+pip install pytz
+
+# 5. Make script executable (Linux/Mac only)
+chmod +x claude_monitor.py
+
+# 6. Run the monitor (Node.js and ccusage auto-install on first run)
+python claude_monitor.py
+```
+
+#### Daily Usage
+
+After initial setup, you only need:
+
+```bash
+# Navigate to project directory
+cd Claude-Code-Usage-Monitor
+
+# Activate virtual environment
+source venv/bin/activate  # Linux/Mac
+# venv\Scripts\activate   # Windows
+
+# Run monitor
+./claude_monitor.py  # Linux/Mac
+# python claude_monitor.py  # Windows
+
+# When done, deactivate
+deactivate
+```
+
+#### Pro Tip: Shell Alias
+
+Create an alias for quick access:
+```bash
+# Add to ~/.bashrc or ~/.zshrc
+alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./claude_monitor.py'
+
+# Then just run:
+claude-monitor
 ```
 
 ## Troubleshooting
 
-### No active session found
+### Installation Issues
+
+#### "externally-managed-environment" Error
+
+On modern Linux distributions (Ubuntu 23.04+, Debian 12+, Fedora 38+), you may encounter:
+```
+error: externally-managed-environment
+× This environment is externally managed
+```
+
+**Solutions (in order of preference):**
+
+1. **Use uv (Recommended)**
+   ```bash
+   # Install uv first
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+
+   # Then install with uv
+   uv tool install claude-monitor
+   ```
+
+2. **Use pipx (Isolated Environment)**
+   ```bash
+   # Install pipx
+   sudo apt install pipx  # Ubuntu/Debian
+   # or
+   python3 -m pip install --user pipx
+
+   # Install claude-monitor
+   pipx install claude-monitor
+   ```
+
+3. **Use virtual environment**
+   ```bash
+   python3 -m venv myenv
+   source myenv/bin/activate
+   pip install claude-monitor
+   ```
+
+4. **Force installation (Not Recommended)**
+   ```bash
+   pip install --user claude-monitor --break-system-packages
+   ```
+   ⚠️ **Warning**: This bypasses system protection and may cause conflicts. We strongly recommend using a virtual environment instead.
+
+#### Command Not Found After pip Install
+
+If `claude-monitor` command is not found after pip installation:
+
+1. **Check installation location**
+   ```bash
+   # Find where pip installed the script
+   pip show -f claude-monitor | grep claude-monitor
+   ```
+
+2. **Add to PATH**
+   ```bash
+   # Add this to ~/.bashrc or ~/.zshrc
+   export PATH="$HOME/.local/bin:$PATH"
+
+   # Reload shell
+   source ~/.bashrc  # or source ~/.zshrc
+   ```
+
+3. **Run directly with Python**
+   ```bash
+   python3 -m claude_monitor
+   ```
+
+#### Python Version Conflicts
+
+If you have multiple Python versions:
+
+1. **Check Python version**
+   ```bash
+   python3 --version
+   pip3 --version
+   ```
+
+2. **Use specific Python version**
+   ```bash
+   python3.11 -m pip install claude-monitor
+   python3.11 -m claude_monitor
+   ```
+
+3. **Use uv (handles Python versions automatically)**
+   ```bash
+   uv tool install claude-monitor
+   ```
+
+### Runtime Issues
+
+#### No active session found
 If you encounter the error `No active session found`, please follow these steps:
 
 1. **Initial Test**:
@@ -573,9 +795,47 @@ If you encounter the error `No active session found`, please follow these steps:
    If the issue persists, consider specifying a custom configuration path. By default, Claude Code uses `~/.config/claude`. You may need to adjust this path depending on your environment.
 
 ```bash
-CLAUDE_CONFIG_DIR=~/.config/claude ./ccusage_monitor.py
+CLAUDE_CONFIG_DIR=~/.config/claude ./claude_monitor.py
 ```
----
+
+#### ccusage Not Found
+
+If you see "ccusage not found" error:
+
+1. **Check npm installation**
+   ```bash
+   npm --version
+   npx --version
+   ```
+
+2. **Install manually if needed**
+   ```bash
+   npm install -g ccusage
+   ```
+
+3. **Check PATH**
+   ```bash
+   echo $PATH
+   # Should include npm global bin directory
+   ```
+
+#### Permission Errors
+
+For permission-related issues:
+
+1. **npm global permissions**
+   ```bash
+   # Configure npm to use a different directory
+   mkdir ~/.npm-global
+   npm config set prefix '~/.npm-global'
+   echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
+   source ~/.bashrc
+   ```
+
+2. **Use sudo (not recommended)**
+   ```bash
+   sudo npm install -g ccusage
+   ```
 
 ## 📞 Contact
 
@@ -585,7 +845,6 @@ Have questions, suggestions, or want to collaborate? Feel free to reach out!
 
 Whether you need help with setup, have feature requests, found a bug, or want to discuss potential improvements, don't hesitate to get in touch. I'm always happy to help and hear from users of the Claude Code Usage Monitor!
 
----
 
 ## 📚 Additional Documentation
 
@@ -593,17 +852,28 @@ Whether you need help with setup, have feature requests, found a bug, or want to
 - **[Contributing Guide](CONTRIBUTING.md)** - How to contribute, development guidelines
 - **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
 
----
 
 ## 📝 License
 
 [MIT License](LICENSE) - feel free to use and modify as needed.
 
----
+## 🤝 Contributors
+
+- [@adawalli](https://github.com/adawalli)
+- [@taylorwilsdon](https://github.com/taylorwilsdon)
+- [@moneroexamples](https://github.com/moneroexamples)
+
+Want to contribute? Check out our [Contributing Guide](CONTRIBUTING.md)!
+
 
 ## 🙏 Acknowledgments
 
 This tool builds upon the excellent [ccusage](https://github.com/ryoppippi/ccusage) by [@ryoppippi](https://github.com/ryoppippi), adding a real-time monitoring interface with visual progress bars, burn rate calculations, and predictive analytics.
+
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Maciek-roboblog/Claude-Code-Usage-Monitor&type=Date)](https://www.star-history.com/#Maciek-roboblog/Claude-Code-Usage-Monitor&Date)
 
 ---
 
@@ -614,9 +884,3 @@ This tool builds upon the excellent [ccusage](https://github.com/ryoppippi/ccusa
 [Report Bug](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues) • [Request Feature](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues) • [Contribute](CONTRIBUTING.md)
 
 </div>
-
----
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Maciek-roboblog/Claude-Code-Usage-Monitor&type=Date)](https://www.star-history.com/#Maciek-roboblog/Claude-Code-Usage-Monitor&Date)

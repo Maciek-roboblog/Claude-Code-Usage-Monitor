@@ -6,7 +6,7 @@ Features currently in development and planned for future releases of Claude Code
 ## 🎯 Current Development Status
 
 ### 🧠 ML-Powered Auto Mode
-**Status**: 🔶 In Active Development  
+**Status**: 🔶 In Active Development
 
 #### Overview
 Intelligent Auto Mode with machine learning will actively learn your actual token limits and usage patterns.
@@ -133,7 +133,7 @@ claude-usage-monitor/
 ---
 
 ### 🐳 Docker Image
-**Status**: 🔶 In Planning Phase  
+**Status**: 🔶 In Planning Phase
 
 #### Overview
 Docker containerization for easy deployment, consistent environments, and optional web dashboard.
@@ -314,6 +314,35 @@ FROM python:alpine AS app
 
 ## 📋 Development Guidelines
 
+### 🛠️ Code Quality Tools
+
+**Ruff Integration**: This project uses [Ruff](https://docs.astral.sh/ruff/) for fast Python linting and formatting.
+
+```bash
+# Install pre-commit for automatic code quality checks
+uv tool install pre-commit --with pre-commit-uv
+
+# Install pre-commit hooks
+pre-commit install
+
+# Run ruff manually
+ruff check .          # Lint code
+ruff format .         # Format code
+ruff check --fix .    # Auto-fix issues
+```
+
+**Pre-commit Hooks**: Automatic code quality checks run before each commit:
+- Ruff linting and formatting
+- Import sorting
+- Trailing whitespace removal
+- YAML and TOML validation
+
+**VS Code Integration**: The project includes VS Code settings for:
+- Auto-format on save with Ruff
+- Real-time linting feedback
+- Import organization
+- Consistent code style
+
 ### 🔄 Development Workflow
 
 1. **Feature Planning**
@@ -323,7 +352,7 @@ FROM python:alpine AS app
 
 2. **Development Process**
    - Fork repository and create feature branch
-   - Follow code style guidelines (PEP 8 for Python)
+   - Code is automatically formatted and linted via pre-commit hooks
    - Write tests for new functionality
    - Update documentation
 
@@ -365,9 +394,9 @@ FROM python:alpine AS app
 
 For technical discussions about development:
 
-**📧 Email**: [maciek@roboblog.eu](mailto:maciek@roboblog.eu)  
-**💬 GitHub**: Open issues for feature discussions  
-**🔧 Technical Questions**: Include code examples and specific requirements  
+**📧 Email**: [maciek@roboblog.eu](mailto:maciek@roboblog.eu)
+**💬 GitHub**: Open issues for feature discussions
+**🔧 Technical Questions**: Include code examples and specific requirements
 
 ---
 
