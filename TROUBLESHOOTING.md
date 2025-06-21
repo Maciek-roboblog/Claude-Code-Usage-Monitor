@@ -10,7 +10,7 @@ Common issues and solutions for Claude Code Usage Monitor.
 |---------|-----------|
 | `ccusage` not found | `npm install -g ccusage` |
 | No active session | Start a Claude Code session first |
-| Permission denied | `chmod +x ccusage_monitor.py` (Linux/Mac) |
+| Permission denied | `chmod +x claude_monitor.py` (Linux/Mac) |
 | Display issues | Resize terminal to 80+ characters width |
 | Hidden cursor after exit | `printf '\033[?25h'` |
 
@@ -71,17 +71,17 @@ pip install pytz
 
 **Error Message**:
 ```
-Permission denied: ./ccusage_monitor.py
+Permission denied: ./claude_monitor.py
 ```
 
 **Solution**:
 ```bash
 # Make script executable
-chmod +x ccusage_monitor.py
+chmod +x claude_monitor.py
 
 # Or run with python directly
-python ccusage_monitor.py
-python3 ccusage_monitor.py
+python claude_monitor.py
+python3 claude_monitor.py
 ```
 
 
@@ -159,8 +159,8 @@ Failed to get usage data: <various error messages>
 3. **Plan Detection Issues**:
    ```bash
    # Try different plan settings
-   ./ccusage_monitor.py --plan custom_max
-   ./ccusage_monitor.py --plan max5
+   ./claude_monitor.py --plan custom_max
+   ./claude_monitor.py --plan max5
    ```
 
 
@@ -177,7 +177,7 @@ tput cols
 
 # Should be 80 or more characters
 # Resize terminal window or use:
-./ccusage_monitor.py | less -S  # Scroll horizontally
+./claude_monitor.py | less -S  # Scroll horizontally
 ```
 
 ### Missing Colors
@@ -191,7 +191,7 @@ echo $TERM
 
 # Force color output (if supported)
 export FORCE_COLOR=1
-./ccusage_monitor.py
+./claude_monitor.py
 
 # Alternative terminals with better color support:
 # - Use modern terminal (iTerm2, Windows Terminal, etc.)
@@ -234,12 +234,12 @@ reset
 **Solution**:
 ```bash
 # Set your timezone explicitly
-./ccusage_monitor.py --timezone America/New_York
-./ccusage_monitor.py --timezone Europe/London
-./ccusage_monitor.py --timezone Asia/Tokyo
+./claude_monitor.py --timezone America/New_York
+./claude_monitor.py --timezone Europe/London
+./claude_monitor.py --timezone Asia/Tokyo
 
 # Set custom reset hour
-./ccusage_monitor.py --reset-hour 9  # 9 AM resets
+./claude_monitor.py --reset-hour 9  # 9 AM resets
 ```
 
 **Find Your Timezone**:
@@ -277,7 +277,7 @@ timedatectl list-timezones | grep -i europe
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 # Run with Python directly
-python ccusage_monitor.py
+python claude_monitor.py
 ```
 
 **Path Issues**:
@@ -359,11 +359,11 @@ source ~/.profile
 **Debugging**:
 ```bash
 # Monitor memory usage
-top -p $(pgrep -f ccusage_monitor)
-htop  # Look for ccusage_monitor process
+top -p $(pgrep -f claude_monitor)
+htop  # Look for claude_monitor process
 
 # Check for memory leaks
-python -m tracemalloc ccusage_monitor.py
+python -m tracemalloc claude_monitor.py
 ```
 
 **Solutions**:
@@ -409,7 +409,7 @@ python -m tracemalloc ccusage_monitor.py
 ccusage blocks --json | jq .
 
 # Compare with monitor output
-./ccusage_monitor.py --plan custom_max
+./claude_monitor.py --plan custom_max
 ```
 
 ### Burn Rate Calculations Seem Wrong
@@ -471,7 +471,7 @@ ccusage blocks --json
 Clear description of the issue.
 
 **Steps to Reproduce**
-1. Command run: `./ccusage_monitor.py --plan pro`
+1. Command run: `./claude_monitor.py --plan pro`
 2. Expected result: ...
 3. Actual result: ...
 
@@ -497,13 +497,13 @@ Any other relevant information.
 
 ```bash
 # Run with Python verbose output
-python -v ccusage_monitor.py
+python -v claude_monitor.py
 
 # Check ccusage debug output
 ccusage blocks --debug
 
 # Monitor system calls (Linux/Mac)
-strace -e trace=execve python ccusage_monitor.py
+strace -e trace=execve python claude_monitor.py
 ```
 
 ### Network Debugging
@@ -521,8 +521,8 @@ tcpdump -i any host claude.ai  # Requires sudo
 
 ```bash
 # Check if ccusage accesses browser data
-strace -e trace=file python ccusage_monitor.py  # Linux
-dtruss python ccusage_monitor.py               # Mac
+strace -e trace=file python claude_monitor.py  # Linux
+dtruss python claude_monitor.py               # Mac
 
 # Look for browser profile directories
 ls ~/.config/google-chrome/Default/  # Linux Chrome
@@ -556,7 +556,7 @@ pip install pytz
 
 # 5. Test basic functionality
 ccusage --version
-python ccusage_monitor.py
+python claude_monitor.py
 ```
 
 ### Browser Reset for Claude

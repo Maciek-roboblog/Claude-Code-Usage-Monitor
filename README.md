@@ -102,7 +102,7 @@ pip install pytz
 # Clone and run
 git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
 cd Claude-Code-Usage-Monitor
-python ccusage_monitor.py
+python claude_monitor.py
 ```
 
 #### Prerequisites
@@ -178,10 +178,10 @@ source venv/bin/activate
 pip install pytz
 
 # 6. Make script executable (Linux/Mac only)
-chmod +x ccusage_monitor.py
+chmod +x claude_monitor.py
 
 # 7. Run the monitor
-python ccusage_monitor.py
+python claude_monitor.py
 ```
 
 #### Daily Usage
@@ -197,8 +197,8 @@ source venv/bin/activate  # Linux/Mac
 # venv\Scripts\activate   # Windows
 
 # Run monitor
-./ccusage_monitor.py  # Linux/Mac
-# python ccusage_monitor.py  # Windows
+./claude_monitor.py  # Linux/Mac
+# python claude_monitor.py  # Windows
 
 # When done, deactivate
 deactivate
@@ -209,7 +209,7 @@ deactivate
 Create an alias for quick access:
 ```bash
 # Add to ~/.bashrc or ~/.zshrc
-alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./ccusage_monitor.py'
+alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./claude_monitor.py'
 
 # Then just run:
 claude-monitor
@@ -223,8 +223,6 @@ claude-monitor
 #### With uv tool installation (Recommended)
 ```bash
 # Default (Pro plan - 7,000 tokens)
-ccusage-monitor
-# or
 claude-monitor
 
 # Exit the monitor
@@ -234,7 +232,7 @@ claude-monitor
 #### Traditional/Development mode
 ```bash
 # Default (Pro plan - 7,000 tokens)
-./ccusage_monitor.py
+./claude_monitor.py
 
 # Exit the monitor
 # Press Ctrl+C to gracefully exit
@@ -247,31 +245,31 @@ claude-monitor
 **With uv tool installation:**
 ```bash
 # Pro plan (~7,000 tokens) - Default
-ccusage-monitor --plan pro
+claude-monitor --plan pro
 
 # Max5 plan (~35,000 tokens)
-ccusage-monitor --plan max5
+claude-monitor --plan max5
 
 # Max20 plan (~140,000 tokens)
-ccusage-monitor --plan max20
+claude-monitor --plan max20
 
 # Auto-detect from highest previous session
-ccusage-monitor --plan custom_max
+claude-monitor --plan custom_max
 ```
 
 **Traditional/Development mode:**
 ```bash
 # Pro plan (~7,000 tokens) - Default
-./ccusage_monitor.py --plan pro
+./claude_monitor.py --plan pro
 
 # Max5 plan (~35,000 tokens)
-./ccusage_monitor.py --plan max5
+./claude_monitor.py --plan max5
 
 # Max20 plan (~140,000 tokens)
-./ccusage_monitor.py --plan max20
+./claude_monitor.py --plan max20
 
 # Auto-detect from highest previous session
-./ccusage_monitor.py --plan custom_max
+./claude_monitor.py --plan custom_max
 ```
 
 #### Custom Reset Times
@@ -279,19 +277,19 @@ ccusage-monitor --plan custom_max
 **With uv tool installation:**
 ```bash
 # Reset at 3 AM
-ccusage-monitor --reset-hour 3
+claude-monitor --reset-hour 3
 
 # Reset at 10 PM
-ccusage-monitor --reset-hour 22
+claude-monitor --reset-hour 22
 ```
 
 **Traditional/Development mode:**
 ```bash
 # Reset at 3 AM
-./ccusage_monitor.py --reset-hour 3
+./claude_monitor.py --reset-hour 3
 
 # Reset at 10 PM
-./ccusage_monitor.py --reset-hour 22
+./claude_monitor.py --reset-hour 22
 ```
 
 #### Timezone Configuration
@@ -301,31 +299,31 @@ The default timezone is **Europe/Warsaw**. Change it to any valid timezone:
 **With uv tool installation:**
 ```bash
 # Use US Eastern Time
-ccusage-monitor --timezone US/Eastern
+claude-monitor --timezone US/Eastern
 
 # Use Tokyo time
-ccusage-monitor --timezone Asia/Tokyo
+claude-monitor --timezone Asia/Tokyo
 
 # Use UTC
-ccusage-monitor --timezone UTC
+claude-monitor --timezone UTC
 
 # Use London time
-ccusage-monitor --timezone Europe/London
+claude-monitor --timezone Europe/London
 ```
 
 **Traditional/Development mode:**
 ```bash
 # Use US Eastern Time
-./ccusage_monitor.py --timezone US/Eastern
+./claude_monitor.py --timezone US/Eastern
 
 # Use Tokyo time
-./ccusage_monitor.py --timezone Asia/Tokyo
+./claude_monitor.py --timezone Asia/Tokyo
 
 # Use UTC
-./ccusage_monitor.py --timezone UTC
+./claude_monitor.py --timezone UTC
 
 # Use London time
-./ccusage_monitor.py --timezone Europe/London
+./claude_monitor.py --timezone Europe/London
 ```
 
 ### Available Plans
@@ -448,10 +446,10 @@ The auto-detection system:
 
 ```bash
 # Set custom reset time to 9 AM
-./ccusage_monitor.py --reset-hour 9
+./claude_monitor.py --reset-hour 9
 
 # With your timezone
-./ccusage_monitor.py --reset-hour 9 --timezone US/Eastern
+./claude_monitor.py --reset-hour 9 --timezone US/Eastern
 ```
 
 **Benefits**:
@@ -464,10 +462,10 @@ The auto-detection system:
 
 ```bash
 # Reset at midnight for clean daily boundaries
-./ccusage_monitor.py --reset-hour 0
+./claude_monitor.py --reset-hour 0
 
 # Late evening reset (11 PM)
-./ccusage_monitor.py --reset-hour 23
+./claude_monitor.py --reset-hour 23
 ```
 
 **Strategy**:
@@ -480,10 +478,10 @@ The auto-detection system:
 
 ```bash
 # Auto-detect your highest previous usage
-ccusage-monitor --plan custom_max
+claude-monitor --plan custom_max
 
 # Monitor with custom scheduling
-ccusage-monitor --plan custom_max --reset-hour 6
+claude-monitor --plan custom_max --reset-hour 6
 ```
 
 **Approach**:
@@ -496,16 +494,16 @@ ccusage-monitor --plan custom_max --reset-hour 6
 
 ```bash
 # US East Coast
-ccusage-monitor --timezone America/New_York
+claude-monitor --timezone America/New_York
 
 # Europe
-ccusage-monitor --timezone Europe/London
+claude-monitor --timezone Europe/London
 
 # Asia Pacific
-ccusage-monitor --timezone Asia/Singapore
+claude-monitor --timezone Asia/Singapore
 
 # UTC for international team coordination
-ccusage-monitor --timezone UTC --reset-hour 12
+claude-monitor --timezone UTC --reset-hour 12
 ```
 
 #### ⚡ Quick Check
@@ -534,16 +532,16 @@ ccusage-monitor
 **Known Subscription Users**
 ```bash
 # If you know you have Max5
-ccusage-monitor --plan max5
+claude-monitor --plan max5
 
 # If you know you have Max20
-ccusage-monitor --plan max20
+claude-monitor --plan max20
 ```
 
 **Unknown Limits**
 ```bash
 # Auto-detect from previous usage
-ccusage-monitor --plan custom_max
+claude-monitor --plan custom_max
 ```
 
 ### Best Practices
@@ -556,7 +554,7 @@ ccusage-monitor --plan custom_max
    ccusage-monitor
 
    # Or development mode
-   ./ccusage_monitor.py
+   ./claude_monitor.py
    ```
    - Gives accurate session tracking from the start
    - Better burn rate calculations
@@ -566,7 +564,7 @@ ccusage-monitor --plan custom_max
    ```bash
    # Easy installation and updates with uv
    uv tool install claude-usage-monitor
-   ccusage-monitor --plan max5
+   claude-monitor --plan max5
    ```
    - Clean system installation
    - Easy updates and maintenance
@@ -575,7 +573,7 @@ ccusage-monitor --plan custom_max
 3. **Custom Shell Alias (Legacy Setup)**
    ```bash
    # Add to ~/.bashrc or ~/.zshrc (only for development setup)
-   alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./ccusage_monitor.py'
+   alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./claude_monitor.py'
    ```
 
 #### Usage Best Practices
@@ -588,7 +586,7 @@ ccusage-monitor --plan custom_max
 2. **Strategic Session Planning**
    ```bash
    # Plan heavy usage around reset times
-   ccusage-monitor --reset-hour 9
+   claude-monitor --reset-hour 9
    ```
    - Schedule large tasks after resets
    - Use lighter tasks when approaching limits
@@ -597,7 +595,7 @@ ccusage-monitor --plan custom_max
 3. **Timezone Awareness**
    ```bash
    # Always use your actual timezone
-   ccusage-monitor --timezone Europe/Warsaw
+   claude-monitor --timezone Europe/Warsaw
    ```
    - Accurate reset time predictions
    - Better planning for work schedules
@@ -616,7 +614,7 @@ ccusage-monitor --plan custom_max
    tmux new-session -d -s claude-monitor 'ccusage-monitor'
 
    # Or development mode
-   tmux new-session -d -s claude-monitor './ccusage_monitor.py'
+   tmux new-session -d -s claude-monitor './claude_monitor.py'
 
    # Check status anytime
    tmux attach -t claude-monitor
@@ -632,7 +630,7 @@ ccusage-monitor --plan custom_max
 **Large Project Development**
 ```bash
 # Setup for sustained development
-ccusage-monitor --plan max20 --reset-hour 8 --timezone America/New_York
+claude-monitor --plan max20 --reset-hour 8 --timezone America/New_York
 ```
 
 **Daily Routine**:
@@ -645,13 +643,13 @@ ccusage-monitor --plan max20 --reset-hour 8 --timezone America/New_York
 **Learning & Experimentation**
 ```bash
 # Flexible setup for learning
-ccusage-monitor --plan pro
+claude-monitor --plan pro
 ```
 
 **Sprint Development**
 ```bash
 # High-intensity development setup
-ccusage-monitor --plan max20 --reset-hour 6
+claude-monitor --plan max20 --reset-hour 6
 ```
 
 ## Troubleshooting
@@ -666,7 +664,7 @@ If you encounter the error `No active session found`, please follow these steps:
    If the issue persists, consider specifying a custom configuration path. By default, Claude Code uses `~/.config/claude`. You may need to adjust this path depending on your environment.
 
 ```bash
-CLAUDE_CONFIG_DIR=~/.config/claude ./ccusage_monitor.py
+CLAUDE_CONFIG_DIR=~/.config/claude ./claude_monitor.py
 ```
 
 ## 📞 Contact

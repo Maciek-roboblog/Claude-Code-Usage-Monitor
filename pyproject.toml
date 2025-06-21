@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "claude-usage-monitor"
-version = "1.0.3"
+version = "1.0.4"
 description = "A real-time terminal monitoring tool for Claude AI token usage"
 readme = "README.md"
 license = "MIT"
@@ -46,16 +46,16 @@ Repository = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git"
 Issues = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues"
 
 [project.scripts]
-ccusage-monitor = "ccusage_monitor:main"
-claude-monitor = "ccusage_monitor:main"
+claude-monitor = "claude_monitor:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["."]
-include = ["ccusage_monitor.py"]
+include = ["claude_monitor.py"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "ccusage_monitor.py",
+    "claude_monitor.py",
+    "init_dependency.py",
     "README.md",
     "LICENSE",
     "CLAUDE.md",

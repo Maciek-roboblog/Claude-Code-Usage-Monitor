@@ -47,7 +47,7 @@ pip install pytz
 pip install pytest ruff
 
 # Make script executable (Linux/Mac)
-chmod +x ccusage_monitor.py
+chmod +x claude_monitor.py
 ```
 
 ### 3. Create a Feature Branch
@@ -114,23 +114,6 @@ def predict_token_depletion(current_usage, burn_rate):
         datetime: Estimated depletion time
     """
     pass
-```
-
-### 📁 File Organization
-
-```
-Claude-Code-Usage-Monitor/
-├── ccusage_monitor.py     # Main script (current)
-├── claude_monitor/        # Future package structure
-│   ├── __init__.py
-│   ├── core/             # Core monitoring logic
-│   ├── ml/               # Machine learning components
-│   ├── ui/               # User interface components
-│   └── utils/            # Utility functions
-├── tests/                # Test files
-├── docs/                 # Documentation
-├── examples/             # Usage examples
-└── scripts/              # Build and deployment scripts
 ```
 
 ### 🧪 Testing Guidelines

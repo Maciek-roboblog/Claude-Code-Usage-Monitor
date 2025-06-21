@@ -10,7 +10,7 @@ Claude Code Usage Monitor is a Python-based terminal application that provides r
 
 ### Project Structure
 This is a single-file Python application (418 lines) with modern packaging:
-- **ccusage_monitor.py**: Main application containing all monitoring logic
+- **claude_monitor.py**: Main application containing all monitoring logic
 - **pyproject.toml**: Modern Python packaging configuration with console script entry points
 - **ccusage CLI integration**: External dependency on `ccusage` npm package for data fetching
 
@@ -19,12 +19,12 @@ This is a single-file Python application (418 lines) with modern packaging:
 - **Session Management**: Tracks 5-hour rolling session windows with automatic detection
 - **Plan Detection**: Supports Pro (~7K), Max5 (~35K), Max20 (~140K), and custom_max (auto-detected) plans
 - **Real-time Display**: Terminal UI with progress bars and burn rate calculations
-- **Console Scripts**: Two entry points (`ccusage-monitor`, `claude-monitor`) both calling `main()`
+- **Console Scripts**: Two entry points (`claude-monitor`) both calling `main()`
 
 ### Key Functions
-- `run_ccusage()`: Executes ccusage CLI and parses JSON output at ccusage_monitor.py:13
-- `calculate_hourly_burn_rate()`: Analyzes token consumption patterns from the last hour at ccusage_monitor.py:101
-- `main()`: Entry point function at ccusage_monitor.py:249 for console script integration
+- `run_ccusage()`: Executes ccusage CLI and parses JSON output at claude_monitor.py:13
+- `calculate_hourly_burn_rate()`: Analyzes token consumption patterns from the last hour at claude_monitor.py:101
+- `main()`: Entry point function at claude_monitor.py:249 for console script integration
 - Session tracking logic handles overlapping 5-hour windows and automatic plan switching
 
 ## Development Commands
@@ -42,8 +42,6 @@ cd Claude-Code-Usage-Monitor
 uv tool install .
 
 # Run from anywhere
-ccusage-monitor
-# or
 claude-monitor
 ```
 
@@ -61,7 +59,7 @@ source venv/bin/activate  # Linux/Mac
 pip install pytz
 
 # Make executable (Linux/Mac)
-chmod +x ccusage_monitor.py
+chmod +x claude_monitor.py
 ```
 
 #### Development Setup with uv
@@ -75,7 +73,7 @@ cd Claude-Code-Usage-Monitor
 
 # Install in development mode with uv
 uv sync
-uv run ccusage_monitor.py
+uv run claude_monitor.py
 ```
 
 ### Running the Monitor
@@ -83,35 +81,33 @@ uv run ccusage_monitor.py
 #### With uv tool installation
 ```bash
 # Default mode (Pro plan)
-ccusage-monitor
-# or
 claude-monitor
 
 # Different plans
-ccusage-monitor --plan max5
-ccusage-monitor --plan max20
-ccusage-monitor --plan custom_max
+claude-monitor --plan max5
+claude-monitor --plan max20
+claude-monitor --plan custom_max
 
 # Custom configuration
-ccusage-monitor --reset-hour 9 --timezone US/Eastern
+claude-monitor --reset-hour 9 --timezone US/Eastern
 ```
 
 #### Traditional/Development mode
 ```bash
 # Default mode (Pro plan)
-python ccusage_monitor.py
-./ccusage_monitor.py  # If made executable
+python claude_monitor.py
+./claude_monitor.py  # If made executable
 
 # Different plans
-./ccusage_monitor.py --plan max5
-./ccusage_monitor.py --plan max20
-./ccusage_monitor.py --plan custom_max
+./claude_monitor.py --plan max5
+./claude_monitor.py --plan max20
+./claude_monitor.py --plan custom_max
 
 # Custom configuration
-./ccusage_monitor.py --reset-hour 9 --timezone US/Eastern
+./claude_monitor.py --reset-hour 9 --timezone US/Eastern
 
 # With uv in development
-uv run ccusage_monitor.py --plan max5
+uv run claude_monitor.py --plan max5
 ```
 
 ### Building and Testing
@@ -131,7 +127,6 @@ ls dist/  # Should show .whl and .tar.gz files
 uv tool install --editable .
 
 # Verify commands work
-ccusage-monitor --help
 claude-monitor --help
 
 # Test uninstall
@@ -178,8 +173,7 @@ The monitor operates on Claude's 5-hour rolling session system:
 The `pyproject.toml` defines two console commands:
 ```toml
 [project.scripts]
-ccusage-monitor = "ccusage_monitor:main"
-claude-monitor = "ccusage_monitor:main"
+claude-monitor = "claude_monitor:main"
 ```
 Both commands call the same `main()` function for consistency.
 
