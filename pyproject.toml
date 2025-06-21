@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "claude-usage-monitor"
-version = "1.0.4"
+name = "claude-monitor"
+version = "1.0.6"
 description = "A real-time terminal monitoring tool for Claude AI token usage"
 readme = "README.md"
 license = "MIT"
@@ -58,6 +58,7 @@ include = [
     "init_dependency.py",
     "README.md",
     "LICENSE",
+    "CHANGELOG.md",
     "CLAUDE.md",
     "DEVELOPMENT.md",
     "CONTRIBUTING.md",

@@ -88,7 +88,50 @@ ccusage-monitor
 claude-monitor
 ```
 
-### 🔧 Legacy Installation Methods
+### 📦 Installation with pip
+
+Install directly from PyPI: [https://pypi.org/project/claude-usage-monitor/](https://pypi.org/project/claude-usage-monitor/)
+
+```bash
+# Install dependencies
+npm install -g ccusage
+
+# Install from PyPI
+pip install claude-usage-monitor
+
+# Run from anywhere
+claude-monitor
+```
+
+### 🛠️ Other Package Managers
+
+#### pipx (Isolated Environments)
+```bash
+# Install dependencies
+npm install -g ccusage
+
+# Install with pipx
+pipx install claude-usage-monitor
+
+# Run from anywhere
+claude-monitor
+```
+
+#### conda/mamba
+```bash
+# Install dependencies
+npm install -g ccusage
+
+# Install with pip in conda environment
+pip install claude-usage-monitor
+
+# Run from anywhere
+claude-monitor
+```
+
+### 🔧 Development Installation Methods
+
+For contributors and developers who want to work with the source code:
 
 #### Quick Start (Development/Testing)
 
