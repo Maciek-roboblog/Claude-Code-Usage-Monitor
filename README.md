@@ -1,5 +1,6 @@
 # 🎯 Claude Code Usage Monitor
 
+[![PyPI Version](https://img.shields.io/pypi/v/claude-monitor.svg)](https://pypi.org/project/claude-monitor/)
 [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
@@ -14,13 +15,15 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 
 - [✨ Key Features](#-key-features)
 - [🚀 Installation](#-installation)
-  - [⚡ Quick Start](#-quick-start)
-  - [🔒 Production Setup (Recommended)](#-production-setup-recommended)
-  - [Virtual Environment Setup](#virtual-environment-setup)
+  - [⚡ Modern Installation with uv (Recommended)](#-modern-installation-with-uv-recommended)
+  - [📦 Installation with pip](#-installation-with-pip)
+  - [🛠️ Other Package Managers](#️-other-package-managers)
+  - [🔧 Development Installation Methods](#-development-installation-methods)
 - [📖 Usage](#-usage)
   - [Basic Usage](#basic-usage)
   - [Configuration Options](#configuration-options)
   - [Available Plans](#available-plans)
+- [🙏 Please Help Test This Release!](#-please-help-test-this-release)
 - [✨ Features & How It Works](#-features--how-it-works)
   - [Current Features](#current-features)
   - [Understanding Claude Sessions](#understanding-claude-sessions)
@@ -30,7 +33,8 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
   - [Common Scenarios](#common-scenarios)
   - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
-  - [No active session found](#no-active-session-found)
+  - [Installation Issues](#installation-issues)
+  - [Runtime Issues](#runtime-issues)
 - [📞 Contact](#-contact)
 - [📚 Additional Documentation](#-additional-documentation)
 - [📝 License](#-license)
@@ -64,21 +68,14 @@ The Claude Code Usage Monitor **automatically installs all required dependencies
 
 No manual dependency installation required! Just install the monitor and run.
 
-### 📦 Installation with pip
-
-Install directly from PyPI: [https://pypi.org/project/claude-usage-monitor/](https://pypi.org/project/claude-usage-monitor/)
-
-```bash
-# Install from PyPI
-pip install claude-usage-monitor
-
-# Run from anywhere (dependencies auto-install on first run)
-claude-monitor
-```
-
-> **Note**: Node.js and ccusage will be automatically installed on first run if not present.
-
 ### ⚡ Modern Installation with uv (Recommended)
+
+**Why uv is the best choice:**
+- ✅ Creates isolated environments automatically (no system conflicts)
+- ✅ No Python version issues
+- ✅ No "externally-managed-environment" errors
+- ✅ Easy updates and uninstallation
+- ✅ Works on all platforms
 
 The fastest and easiest way to install and use the monitor:
 
@@ -99,16 +96,40 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 #### Install and run the monitor
 ```bash
-# Clone and install the tool with uv
+# Install directly from PyPI with uv (easiest)
+uv tool install claude-monitor
+
+# Or install from source
 git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
 cd Claude-Code-Usage-Monitor
 uv tool install .
 
 # Run from anywhere (dependencies auto-install on first run)
-ccusage-monitor
-# or
 claude-monitor
 ```
+
+### 📦 Installation with pip
+
+[![PyPI](https://img.shields.io/pypi/v/claude-monitor.svg)](https://pypi.org/project/claude-monitor/)
+
+Install directly from PyPI:
+
+```bash
+# Install from PyPI
+pip install claude-usage-monitor
+
+# Run from anywhere (dependencies auto-install on first run)
+claude-monitor
+```
+
+> **Note**: Node.js and ccusage will be automatically installed on first run if not present.
+>
+> **⚠️ Important**: On modern Linux distributions (Ubuntu 23.04+, Debian 12+, Fedora 38+), you may encounter an "externally-managed-environment" error. Instead of using `--break-system-packages`, we strongly recommend:
+> 1. **Use uv instead** (see above) - it's safer and easier
+> 2. **Use a virtual environment** - `python3 -m venv myenv && source myenv/bin/activate`
+> 3. **Use pipx** - `pipx install claude-monitor`
+>
+> See the Troubleshooting section for detailed solutions.
 
 ### 🛠️ Other Package Managers
 
@@ -375,6 +396,25 @@ claude-monitor --timezone Europe/London
 | **max5** | ~35,000 | Regular development |
 | **max20** | ~140,000 | Heavy usage, large projects |
 | **custom_max** | Auto-detect | Uses highest from previous sessions |
+
+
+## 🙏 Please Help Test This Release!
+
+> **We need your help!** This is a new release and we want to ensure it works perfectly on all systems.
+>
+> **If something doesn't work:**
+> 1. Switch to the [develop branch](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/tree/develop) for the latest fixes:
+>    ```bash
+>    git clone -b develop https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
+>    cd Claude-Code-Usage-Monitor
+>    uv tool install .
+>    ```
+> 2. Create an issue with title format: **[MAIN-PROBLEM]: Your specific problem**
+>    - Example: `[MAIN-PROBLEM]: Command not found after pip install on Ubuntu 24.04`
+>    - Include your OS, Python version, and installation method
+>    - [Create Issue Here](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues/new)
+>
+> **Thank you for helping make this tool better! 🚀**
 
 
 ## ✨ Features & How It Works
@@ -695,7 +735,99 @@ claude-monitor --plan max20 --reset-hour 6
 
 ## Troubleshooting
 
-### No active session found
+### Installation Issues
+
+#### "externally-managed-environment" Error
+
+On modern Linux distributions (Ubuntu 23.04+, Debian 12+, Fedora 38+), you may encounter:
+```
+error: externally-managed-environment
+× This environment is externally managed
+```
+
+**Solutions (in order of preference):**
+
+1. **Use uv (Recommended)**
+   ```bash
+   # Install uv first
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+
+   # Then install with uv
+   uv tool install claude-monitor
+   ```
+
+2. **Use pipx (Isolated Environment)**
+   ```bash
+   # Install pipx
+   sudo apt install pipx  # Ubuntu/Debian
+   # or
+   python3 -m pip install --user pipx
+
+   # Install claude-monitor
+   pipx install claude-monitor
+   ```
+
+3. **Use virtual environment**
+   ```bash
+   python3 -m venv myenv
+   source myenv/bin/activate
+   pip install claude-monitor
+   ```
+
+4. **Force installation (Not Recommended)**
+   ```bash
+   pip install --user claude-monitor --break-system-packages
+   ```
+   ⚠️ **Warning**: This bypasses system protection and may cause conflicts. We strongly recommend using a virtual environment instead.
+
+#### Command Not Found After pip Install
+
+If `claude-monitor` command is not found after pip installation:
+
+1. **Check installation location**
+   ```bash
+   # Find where pip installed the script
+   pip show -f claude-monitor | grep claude-monitor
+   ```
+
+2. **Add to PATH**
+   ```bash
+   # Add this to ~/.bashrc or ~/.zshrc
+   export PATH="$HOME/.local/bin:$PATH"
+
+   # Reload shell
+   source ~/.bashrc  # or source ~/.zshrc
+   ```
+
+3. **Run directly with Python**
+   ```bash
+   python3 -m claude_monitor
+   ```
+
+#### Python Version Conflicts
+
+If you have multiple Python versions:
+
+1. **Check Python version**
+   ```bash
+   python3 --version
+   pip3 --version
+   ```
+
+2. **Use specific Python version**
+   ```bash
+   python3.11 -m pip install claude-monitor
+   python3.11 -m claude_monitor
+   ```
+
+3. **Use uv (handles Python versions automatically)**
+   ```bash
+   uv tool install claude-monitor
+   ```
+
+### Runtime Issues
+
+#### No active session found
 If you encounter the error `No active session found`, please follow these steps:
 
 1. **Initial Test**:
@@ -707,6 +839,45 @@ If you encounter the error `No active session found`, please follow these steps:
 ```bash
 CLAUDE_CONFIG_DIR=~/.config/claude ./claude_monitor.py
 ```
+
+#### ccusage Not Found
+
+If you see "ccusage not found" error:
+
+1. **Check npm installation**
+   ```bash
+   npm --version
+   npx --version
+   ```
+
+2. **Install manually if needed**
+   ```bash
+   npm install -g ccusage
+   ```
+
+3. **Check PATH**
+   ```bash
+   echo $PATH
+   # Should include npm global bin directory
+   ```
+
+#### Permission Errors
+
+For permission-related issues:
+
+1. **npm global permissions**
+   ```bash
+   # Configure npm to use a different directory
+   mkdir ~/.npm-global
+   npm config set prefix '~/.npm-global'
+   echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
+   source ~/.bashrc
+   ```
+
+2. **Use sudo (not recommended)**
+   ```bash
+   sudo npm install -g ccusage
+   ```
 
 ## 📞 Contact
 
