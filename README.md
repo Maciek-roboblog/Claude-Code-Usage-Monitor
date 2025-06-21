@@ -140,7 +140,7 @@ claude-monitor
 #### pipx (Isolated Environments)
 ```bash
 # Install with pipx
-pipx install claude-usage-monitor
+pipx install claude-monitor
 
 # Run from anywhere (dependencies auto-install on first run)
 claude-monitor
@@ -149,7 +149,7 @@ claude-monitor
 #### conda/mamba
 ```bash
 # Install with pip in conda environment
-pip install claude-usage-monitor
+pip install claude-monitor
 
 # Run from anywhere (dependencies auto-install on first run)
 claude-monitor
@@ -236,7 +236,10 @@ claude-monitor --timezone Europe/London
 >    ```bash
 >    git clone -b develop https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
 >    cd Claude-Code-Usage-Monitor
->    uv tool install .
+>    python3 -m venv venv
+>    source venv/bin/activate  # On Windows: venv\Scripts\activate
+>    pip install -e .
+>    claude-monitor
 >    ```
 > 2. Create an issue with title format: **[MAIN-PROBLEM]: Your specific problem**
 >    - Example: `[MAIN-PROBLEM]: Command not found after pip install on Ubuntu 24.04`
