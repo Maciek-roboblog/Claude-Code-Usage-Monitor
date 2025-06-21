@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# /// script
+# dependencies = [
+#     "pytz",
+# ]
+# ///
 
 import subprocess
 import json
