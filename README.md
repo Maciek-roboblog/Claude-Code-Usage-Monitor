@@ -18,7 +18,6 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
   - [⚡ Modern Installation with uv (Recommended)](#-modern-installation-with-uv-recommended)
   - [📦 Installation with pip](#-installation-with-pip)
   - [🛠️ Other Package Managers](#️-other-package-managers)
-  - [🔧 Development Installation Methods](#-development-installation-methods)
 - [📖 Usage](#-usage)
   - [Basic Usage](#basic-usage)
   - [Configuration Options](#configuration-options)
@@ -32,6 +31,7 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 - [🚀 Usage Examples](#-usage-examples)
   - [Common Scenarios](#common-scenarios)
   - [Best Practices](#best-practices)
+- [🔧 Development Installation](#-development-installation)
 - [Troubleshooting](#troubleshooting)
   - [Installation Issues](#installation-issues)
   - [Runtime Issues](#runtime-issues)
@@ -79,12 +79,34 @@ No manual dependency installation required! Just install the monitor and run.
 
 The fastest and easiest way to install and use the monitor:
 
+[![PyPI](https://img.shields.io/pypi/v/claude-monitor.svg)](https://pypi.org/project/claude-monitor/)
+
+#### Install from PyPI
+
+```bash
+# Install directly from PyPI with uv (easiest)
+uv tool install claude-monitor
+
+# Run from anywhere
+claude-monitor
+```
+
+#### Install from Source
+
+```bash
+# Clone and install from source
+git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
+cd Claude-Code-Usage-Monitor
+uv tool install .
+
+# Run from anywhere
+claude-monitor
+```
+
 #### First-time uv users
 If you don't have uv installed yet, get it with one command:
 
 ```bash
-# Install uv (one-time setup)
-
 # On Linux/macOS:
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
@@ -94,25 +116,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 # After installation, restart your terminal
 ```
 
-#### Install and run the monitor
-```bash
-# Install directly from PyPI with uv (easiest)
-uv tool install claude-monitor
-
-# Or install from source
-git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
-cd Claude-Code-Usage-Monitor
-uv tool install .
-
-# Run from anywhere (dependencies auto-install on first run)
-claude-monitor
-```
-
 ### 📦 Installation with pip
-
-[![PyPI](https://img.shields.io/pypi/v/claude-monitor.svg)](https://pypi.org/project/claude-monitor/)
-
-Install directly from PyPI:
 
 ```bash
 # Install from PyPI
@@ -151,133 +155,6 @@ pip install claude-usage-monitor
 claude-monitor
 ```
 
-### 🔧 Development Installation Methods
-
-For contributors and developers who want to work with the source code:
-
-#### Quick Start (Development/Testing)
-
-For immediate testing or development:
-
-```bash
-# Install Python dependency
-pip install pytz
-
-# Clone and run (Node.js and ccusage auto-install on first run)
-git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
-cd Claude-Code-Usage-Monitor
-python claude_monitor.py
-```
-
-#### Prerequisites
-
-1. **Python 3.7+** installed on your system
-
-> **Note**: Node.js and ccusage are automatically installed on first run if not present.
-
-#### Virtual Environment Setup
-
-#### Why Use Virtual Environment?
-
-Using a virtual environment is **strongly recommended** because:
-
-- **🛡️ Isolation**: Keeps your system Python clean and prevents dependency conflicts
-- **📦 Portability**: Easy to replicate the exact environment on different machines
-- **🔄 Version Control**: Lock specific versions of dependencies for stability
-- **🧹 Clean Uninstall**: Simply delete the virtual environment folder to remove everything
-- **👥 Team Collaboration**: Everyone uses the same Python and package versions
-
-#### Installing virtualenv (if needed)
-
-If you don't have `venv` module available:
-
-```bash
-# Ubuntu/Debian
-sudo apt-get update
-sudo apt-get install python3-venv
-
-# Fedora/RHEL/CentOS
-sudo dnf install python3-venv
-
-# macOS (usually comes with Python)
-# If not available, install Python via Homebrew:
-brew install python3
-
-# Windows (usually comes with Python)
-# If not available, reinstall Python from python.org
-# Make sure to check "Add Python to PATH" during installation
-```
-
-Alternatively, use the `virtualenv` package:
-```bash
-# Install virtualenv via pip
-pip install virtualenv
-
-# Then create virtual environment with:
-virtualenv venv
-# instead of: python3 -m venv venv
-```
-
-#### Step-by-Step Setup
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
-cd Claude-Code-Usage-Monitor
-
-# 2. Create virtual environment
-python3 -m venv venv
-# Or if using virtualenv package:
-# virtualenv venv
-
-# 3. Activate virtual environment
-# On Linux/Mac:
-source venv/bin/activate
-# On Windows:
-# venv\Scripts\activate
-
-# 4. Install Python dependencies
-pip install pytz
-
-# 5. Make script executable (Linux/Mac only)
-chmod +x claude_monitor.py
-
-# 6. Run the monitor (Node.js and ccusage auto-install on first run)
-python claude_monitor.py
-```
-
-#### Daily Usage
-
-After initial setup, you only need:
-
-```bash
-# Navigate to project directory
-cd Claude-Code-Usage-Monitor
-
-# Activate virtual environment
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate   # Windows
-
-# Run monitor
-./claude_monitor.py  # Linux/Mac
-# python claude_monitor.py  # Windows
-
-# When done, deactivate
-deactivate
-```
-
-#### Pro Tip: Shell Alias
-
-Create an alias for quick access:
-```bash
-# Add to ~/.bashrc or ~/.zshrc
-alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./claude_monitor.py'
-
-# Then just run:
-claude-monitor
-```
-
-
 ## 📖 Usage
 
 ### Basic Usage
@@ -291,14 +168,8 @@ claude-monitor
 # Press Ctrl+C to gracefully exit
 ```
 
-#### Traditional/Development mode
-```bash
-# Default (Pro plan - 7,000 tokens)
-./claude_monitor.py
-
-# Exit the monitor
-# Press Ctrl+C to gracefully exit
-```
+#### Development mode
+If running from source, use `./claude_monitor.py` instead of `claude-monitor`.
 
 ### Configuration Options
 
@@ -319,20 +190,7 @@ claude-monitor --plan max20
 claude-monitor --plan custom_max
 ```
 
-**Traditional/Development mode:**
-```bash
-# Pro plan (~7,000 tokens) - Default
-./claude_monitor.py --plan pro
-
-# Max5 plan (~35,000 tokens)
-./claude_monitor.py --plan max5
-
-# Max20 plan (~140,000 tokens)
-./claude_monitor.py --plan max20
-
-# Auto-detect from highest previous session
-./claude_monitor.py --plan custom_max
-```
+**Development mode:** Use `./claude_monitor.py` with the same options.
 
 #### Custom Reset Times
 
@@ -345,14 +203,7 @@ claude-monitor --reset-hour 3
 claude-monitor --reset-hour 22
 ```
 
-**Traditional/Development mode:**
-```bash
-# Reset at 3 AM
-./claude_monitor.py --reset-hour 3
-
-# Reset at 10 PM
-./claude_monitor.py --reset-hour 22
-```
+**Development mode:** Use `./claude_monitor.py` with the same options.
 
 #### Timezone Configuration
 
@@ -373,20 +224,7 @@ claude-monitor --timezone UTC
 claude-monitor --timezone Europe/London
 ```
 
-**Traditional/Development mode:**
-```bash
-# Use US Eastern Time
-./claude_monitor.py --timezone US/Eastern
-
-# Use Tokyo time
-./claude_monitor.py --timezone Asia/Tokyo
-
-# Use UTC
-./claude_monitor.py --timezone UTC
-
-# Use London time
-./claude_monitor.py --timezone Europe/London
-```
+**Development mode:** Use `./claude_monitor.py` with the same options.
 
 ### Available Plans
 
@@ -731,6 +569,132 @@ claude-monitor --plan pro
 ```bash
 # High-intensity development setup
 claude-monitor --plan max20 --reset-hour 6
+```
+
+## 🔧 Development Installation
+
+For contributors and developers who want to work with the source code:
+
+### Quick Start (Development/Testing)
+
+For immediate testing or development:
+
+```bash
+# Install Python dependency
+pip install pytz
+
+# Clone and run (Node.js and ccusage auto-install on first run)
+git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
+cd Claude-Code-Usage-Monitor
+python claude_monitor.py
+```
+
+### Prerequisites
+
+1. **Python 3.7+** installed on your system
+
+> **Note**: Node.js and ccusage are automatically installed on first run if not present.
+
+### Virtual Environment Setup
+
+#### Why Use Virtual Environment?
+
+Using a virtual environment is **strongly recommended** because:
+
+- **🛡️ Isolation**: Keeps your system Python clean and prevents dependency conflicts
+- **📦 Portability**: Easy to replicate the exact environment on different machines
+- **🔄 Version Control**: Lock specific versions of dependencies for stability
+- **🧹 Clean Uninstall**: Simply delete the virtual environment folder to remove everything
+- **👥 Team Collaboration**: Everyone uses the same Python and package versions
+
+#### Installing virtualenv (if needed)
+
+If you don't have `venv` module available:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install python3-venv
+
+# Fedora/RHEL/CentOS
+sudo dnf install python3-venv
+
+# macOS (usually comes with Python)
+# If not available, install Python via Homebrew:
+brew install python3
+
+# Windows (usually comes with Python)
+# If not available, reinstall Python from python.org
+# Make sure to check "Add Python to PATH" during installation
+```
+
+Alternatively, use the `virtualenv` package:
+```bash
+# Install virtualenv via pip
+pip install virtualenv
+
+# Then create virtual environment with:
+virtualenv venv
+# instead of: python3 -m venv venv
+```
+
+#### Step-by-Step Setup
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
+cd Claude-Code-Usage-Monitor
+
+# 2. Create virtual environment
+python3 -m venv venv
+# Or if using virtualenv package:
+# virtualenv venv
+
+# 3. Activate virtual environment
+# On Linux/Mac:
+source venv/bin/activate
+# On Windows:
+# venv\Scripts\activate
+
+# 4. Install Python dependencies
+pip install pytz
+
+# 5. Make script executable (Linux/Mac only)
+chmod +x claude_monitor.py
+
+# 6. Run the monitor (Node.js and ccusage auto-install on first run)
+python claude_monitor.py
+```
+
+#### Daily Usage
+
+After initial setup, you only need:
+
+```bash
+# Navigate to project directory
+cd Claude-Code-Usage-Monitor
+
+# Activate virtual environment
+source venv/bin/activate  # Linux/Mac
+# venv\Scripts\activate   # Windows
+
+# Run monitor
+./claude_monitor.py  # Linux/Mac
+# python claude_monitor.py  # Windows
+
+# When done, deactivate
+deactivate
+```
+
+#### Pro Tip: Shell Alias
+
+Create an alias for quick access:
+```bash
+# Add to ~/.bashrc or ~/.zshrc
+alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./claude_monitor.py'
+
+# Then just run:
+claude-monitor
 ```
 
 ## Troubleshooting
