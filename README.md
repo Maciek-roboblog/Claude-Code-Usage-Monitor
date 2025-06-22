@@ -174,6 +174,9 @@ Create an alias for quick access:
 # Add to ~/.bashrc or ~/.zshrc
 alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./ccusage_monitor.py'
 
+# Source the file to force the changes to be persistent
+source ~/.bashrc
+
 # Then just run:
 claude-monitor
 ```
