@@ -476,7 +476,7 @@ claude-monitor --plan custom_max
 2. **Use Modern Installation (Recommended)**
    ```bash
    # Easy installation and updates with uv
-   uv tool install claude-usage-monitor
+   uv tool install claude-monitor
    claude-monitor --plan max5
    ```
    - Clean system installation

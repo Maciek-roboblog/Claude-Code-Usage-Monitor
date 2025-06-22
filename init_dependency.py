@@ -1,3 +1,4 @@
+import hashlib
 import os
 import platform
 import shutil
@@ -9,6 +10,41 @@ import urllib.request
 
 NODE_VERSION = "18.17.1"
 NODE_DIST_URL = "https://nodejs.org/dist"
+
+# Expected SHA256 checksums for Node.js v18.17.1
+NODE_CHECKSUMS = {
+    "node-v18.17.1-linux-x64.tar.xz": "07e76408ddb0300a6f46fcc9abc61f841acde49b45020ec4e86bb9b25df4dced",
+    "node-v18.17.1-linux-arm64.tar.xz": "3f933716a468524acb68c2514d819b532131eb50399ee946954d4a511303e1bb",
+}
+
+
+def verify_checksum(filename, expected_checksum):
+    """Verify the SHA256 checksum of a downloaded file."""
+    print(f"Verifying checksum for {filename}...")
+    sha256_hash = hashlib.sha256()
+
+    try:
+        with open(filename, "rb") as f:
+            # Read file in chunks to handle large files efficiently
+            for chunk in iter(lambda: f.read(4096), b""):
+                sha256_hash.update(chunk)
+
+        computed_checksum = sha256_hash.hexdigest()
+
+        if computed_checksum == expected_checksum:
+            print("✓ Checksum verification passed")
+            return True
+        else:
+            print("✗ Checksum verification failed!")
+            print(f"Expected: {expected_checksum}")
+            print(f"Computed: {computed_checksum}")
+            return False
+    except FileNotFoundError:
+        print(f"✗ File not found: {filename}")
+        return False
+    except Exception as e:
+        print(f"✗ Error verifying checksum: {e}")
+        return False
 
 
 def is_node_available():
@@ -58,8 +94,22 @@ def install_node_linux_mac():
     filename = f"node-v{NODE_VERSION}-{system}-{arch}.tar.xz"
     url = f"{NODE_DIST_URL}/v{NODE_VERSION}/{filename}"
 
+    # Check if we have a known checksum for this file
+    expected_checksum = NODE_CHECKSUMS.get(filename)
+    if not expected_checksum:
+        print(f"✗ No known checksum for {filename}")
+        print("This may indicate an unsupported platform or version.")
+        sys.exit(1)
+
     print(f"Downloading Node.js from {url}")
     urllib.request.urlretrieve(url, filename)
+
+    # Verify checksum before extraction
+    if not verify_checksum(filename, expected_checksum):
+        print("✗ Checksum verification failed. Aborting installation for security.")
+        print("The downloaded file may be corrupted or tampered with.")
+        os.remove(filename)
+        sys.exit(1)
 
     print("Extracting Node.js...")
     with tarfile.open(filename) as tar:
