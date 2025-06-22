@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "claude-monitor"
-version = "1.0.9"
+version = "1.0.11"
 description = "A real-time terminal monitoring tool for Claude AI token usage"
 readme = "README.md"
 license = {text = "MIT"}
@@ -58,12 +58,12 @@ claude-monitor = "claude_monitor:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["."]
-include = ["claude_monitor.py", "init_dependency.py"]
+include = ["claude_monitor.py", "check_dependency.py"]
 
 [tool.hatch.build.targets.sdist]
 include = [
     "claude_monitor.py",
-    "init_dependency.py",
+    "check_dependency.py",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",

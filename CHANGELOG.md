@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.0.11] - 2025-06-22
+
+### Changed
+- Replaced `init_dependency.py` with simpler `check_dependency.py` module
+- Refactored dependency checking to use separate `test_node()` and `test_npx()` functions
+- Removed automatic Node.js installation functionality in favor of explicit dependency checking
+- Updated package includes in `pyproject.toml` to reference new dependency module
+
+### Fixed
+- Simplified dependency handling by removing complex installation logic
+- Improved error messages for missing Node.js or npx dependencies
+
 ## [1.0.8] - 2025-06-21
 
 ### Added
@@ -40,6 +52,7 @@
 - Proper Ctrl+C handling with cursor restoration
 - Terminal settings restoration on exit
 
+[1.0.11]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.11
 [1.0.8]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.8
 [1.0.7]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.7
 [1.0.6]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.6

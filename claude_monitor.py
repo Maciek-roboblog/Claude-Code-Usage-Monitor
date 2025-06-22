@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 import pytz
 
-from init_dependency import ensure_node_installed
+from check_dependency import test_node, test_npx
 
 # Terminal handling for Unix-like systems
 try:
@@ -316,7 +316,8 @@ def flush_input():
 
 def main():
     """Main monitoring loop."""
-    ensure_node_installed()
+    test_node()
+    test_npx()
     args = parse_args()
 
     # Create event for clean refresh timing
