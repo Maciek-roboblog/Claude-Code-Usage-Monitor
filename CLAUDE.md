@@ -9,7 +9,7 @@ Claude Code Usage Monitor is a Python-based terminal application that provides r
 ## Core Architecture
 
 ### Project Structure
-This is a single-file Python application (418 lines) with modern packaging:
+This is a single-file Python application (545 lines) with modern packaging:
 - **claude_monitor.py**: Main application containing all monitoring logic
 - **pyproject.toml**: Modern Python packaging configuration with console script entry points
 - **ccusage CLI integration**: External dependency on `ccusage` npm package for data fetching
@@ -19,7 +19,7 @@ This is a single-file Python application (418 lines) with modern packaging:
 - **Session Management**: Tracks 5-hour rolling session windows with automatic detection
 - **Plan Detection**: Supports Pro (~7K), Max5 (~35K), Max20 (~140K), and custom_max (auto-detected) plans
 - **Real-time Display**: Terminal UI with progress bars and burn rate calculations
-- **Console Scripts**: Two entry points (`claude-monitor`) both calling `main()`
+- **Console Scripts**: Single entry point (`claude-monitor`) calling `main()`
 
 ### Key Functions
 - `run_ccusage()`: Executes ccusage CLI and parses JSON output at claude_monitor.py:13
@@ -138,7 +138,7 @@ Currently no automated test suite. Manual testing involves:
 - Running on different platforms (Linux, macOS, Windows)
 - Testing with different Python versions (3.6+)
 - Verifying plan detection and session tracking
-- Testing console script entry points (`ccusage-monitor`, `claude-monitor`)
+- Testing console script entry points (`claude-monitor`)
 
 ## Dependencies
 
@@ -170,12 +170,12 @@ The monitor operates on Claude's 5-hour rolling session system:
 ## Package Structure
 
 ### Console Script Entry Points
-The `pyproject.toml` defines two console commands:
+The `pyproject.toml` defines one console command:
 ```toml
 [project.scripts]
 claude-monitor = "claude_monitor:main"
 ```
-Both commands call the same `main()` function for consistency.
+This command calls the `main()` function in claude_monitor.py.
 
 ### Build Configuration
 - **Build backend**: hatchling (modern Python build system)

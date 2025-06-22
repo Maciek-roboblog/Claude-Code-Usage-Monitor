@@ -159,7 +159,7 @@ cython_debug/
 .idea/
 
 # VS Code
-.vscode/
+# .vscode/ - allowing settings.json for team consistency
 
 # macOS
 .DS_Store

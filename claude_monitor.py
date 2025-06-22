@@ -407,13 +407,8 @@ def main():
                     start_time_str.replace("Z", "+00:00")
                 )
                 current_time = datetime.now(start_time.tzinfo)
-                elapsed = current_time - start_time
-                elapsed_minutes = elapsed.total_seconds() / 60
             else:
-                elapsed_minutes = 0
-
-            session_duration = 300  # 5 hours in minutes
-            max(0, session_duration - elapsed_minutes)
+                current_time = datetime.now()
 
             # Calculate burn rate from ALL sessions in the last hour
             burn_rate = calculate_hourly_burn_rate(data["blocks"], current_time)

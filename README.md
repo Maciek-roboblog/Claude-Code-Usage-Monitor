@@ -424,7 +424,7 @@ claude-monitor --timezone UTC --reset-hour 12
 
 ```bash
 # Just run it with defaults
-ccusage-monitor
+claude-monitor
 
 # Press Ctrl+C after checking status
 ```
@@ -436,7 +436,7 @@ ccusage-monitor
 **Start with Default (Recommended for New Users)**
 ```bash
 # Pro plan detection with auto-switching
-ccusage-monitor
+claude-monitor
 ```
 - Monitor will detect if you exceed Pro limits
 - Automatically switches to custom_max if needed
@@ -464,7 +464,7 @@ claude-monitor --plan custom_max
 1. **Start Early in Sessions**
    ```bash
    # Begin monitoring when starting Claude work (uv installation)
-   ccusage-monitor
+   claude-monitor
 
    # Or development mode
    ./claude_monitor.py
@@ -524,7 +524,7 @@ claude-monitor --plan custom_max
 2. **Workflow Integration**
    ```bash
    # Start monitoring with your development session (uv installation)
-   tmux new-session -d -s claude-monitor 'ccusage-monitor'
+   tmux new-session -d -s claude-monitor 'claude-monitor'
 
    # Or development mode
    tmux new-session -d -s claude-monitor './claude_monitor.py'

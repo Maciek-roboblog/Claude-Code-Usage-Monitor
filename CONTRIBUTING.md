@@ -40,11 +40,8 @@ python3 -m venv venv
 source venv/bin/activate  # Linux/Mac
 # venv\Scripts\activate   # Windows
 
-# Install dependencies
-pip install pytz
-
-# Install development dependencies (when available)
-pip install pytest ruff
+# Install project and development dependencies
+pip install -e .[dev]
 
 # Make script executable (Linux/Mac)
 chmod +x claude_monitor.py

@@ -10,6 +10,9 @@ jobs:
   ruff:
     runs-on: ubuntu-latest
     name: Lint with Ruff
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
 
@@ -18,8 +21,8 @@ jobs:
         with:
           version: "latest"
 
-      - name: Set up Python
-        run: uv python install
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: uv sync --extra dev
@@ -33,6 +36,9 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     name: Pre-commit hooks
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
 
@@ -41,8 +47,8 @@ jobs:
         with:
           version: "latest"
 
-      - name: Set up Python
-        run: uv python install
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
 
       - name: Install pre-commit
         run: uv tool install pre-commit --with pre-commit-uv

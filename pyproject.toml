@@ -4,12 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "claude-monitor"
-version = "1.0.8"
+version = "1.0.9"
 description = "A real-time terminal monitoring tool for Claude AI token usage"
 readme = "README.md"
-license = "MIT"
+license = {text = "MIT"}
 requires-python = ">=3.7"
 authors = [
+    { name = "Maciek", email = "maciek@roboblog.eu" },
+]
+maintainers = [
     { name = "Maciek", email = "maciek@roboblog.eu" },
 ]
 keywords = ["claude", "ai", "token", "monitoring", "usage", "terminal"]
@@ -44,13 +47,18 @@ dev = [
 Homepage = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor"
 Repository = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git"
 Issues = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues"
+Documentation = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor#readme"
+Changelog = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/blob/main/CHANGELOG.md"
+"Source Code" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor"
+"Bug Tracker" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues"
+"Release Notes" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases"
 
 [project.scripts]
 claude-monitor = "claude_monitor:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["."]
-include = ["claude_monitor.py"]
+include = ["claude_monitor.py", "init_dependency.py"]
 
 [tool.hatch.build.targets.sdist]
 include = [
