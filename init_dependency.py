@@ -15,6 +15,8 @@ NODE_DIST_URL = "https://nodejs.org/dist"
 NODE_CHECKSUMS = {
     "node-v18.17.1-linux-x64.tar.xz": "07e76408ddb0300a6f46fcc9abc61f841acde49b45020ec4e86bb9b25df4dced",
     "node-v18.17.1-linux-arm64.tar.xz": "3f933716a468524acb68c2514d819b532131eb50399ee946954d4a511303e1bb",
+    "node-v18.17.1-darwin-x64.tar.xz": "bb15810944a6f77dcc79c8f8da01a605473e806c4ab6289d0a497f45a200543b",
+    "node-v18.17.1-darwin-arm64.tar.xz": "e33c6391a33187c4eccf62661c9da3a67aa50752abae8fe75214e7e57b9292cc",
 }
 
 

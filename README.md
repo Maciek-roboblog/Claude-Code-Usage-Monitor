@@ -120,7 +120,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 ```bash
 # Install from PyPI
-pip install claude-usage-monitor
+pip install claude-monitor
 
 # Run from anywhere (dependencies auto-install on first run)
 claude-monitor
