@@ -8,14 +8,109 @@ Common issues and solutions for Claude Code Usage Monitor.
 
 | Problem | Quick Fix |
 |---------|-----------|
-| `ccusage` not found | `npm install -g ccusage` |
+| `command not found: claude-monitor` | Add `~/.local/bin` to PATH or use `python3 -m claude_monitor` |
+| `externally-managed-environment` | Use `uv tool install` or `pipx install` instead of pip |
+| `ccusage` not found | Should auto-install, or run `npm install -g ccusage` |
 | No active session | Start a Claude Code session first |
-| Permission denied | `chmod +x ccusage_monitor.py` (Linux/Mac) |
+| Permission denied | Only for source: `chmod +x claude_monitor.py` |
 | Display issues | Resize terminal to 80+ characters width |
 | Hidden cursor after exit | `printf '\033[?25h'` |
 
 
 ## 🔧 Installation Issues
+
+### "externally-managed-environment" Error (Modern Linux)
+
+**Error Message**:
+```
+error: externally-managed-environment
+× This environment is externally managed
+```
+
+**This is common on Ubuntu 23.04+, Debian 12+, Fedora 38+**
+
+**Solutions (in order of preference)**:
+
+1. **Use uv (Recommended)**:
+   ```bash
+   # Install uv
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+
+   # Install claude-monitor
+   uv tool install claude-monitor
+   ```
+
+2. **Use pipx**:
+   ```bash
+   # Install pipx
+   sudo apt install pipx  # Ubuntu/Debian
+   # or
+   python3 -m pip install --user pipx
+
+   # Install claude-monitor
+   pipx install claude-monitor
+   ```
+
+3. **Use virtual environment**:
+   ```bash
+   python3 -m venv myenv
+   source myenv/bin/activate
+   pip install claude-monitor
+   ```
+
+4. **Force installation (NOT recommended)**:
+   ```bash
+   pip install --user claude-monitor --break-system-packages
+   ```
+   ⚠️ **Warning**: This bypasses system protection. Use virtual environment instead!
+
+### Command Not Found After pip Install
+
+**Issue**: `claude-monitor` command not found after pip installation
+
+**Solutions**:
+
+1. **Check installation location**:
+   ```bash
+   pip show -f claude-monitor | grep claude-monitor
+   ```
+
+2. **Add to PATH**:
+   ```bash
+   # Add this to ~/.bashrc or ~/.zshrc
+   export PATH="$HOME/.local/bin:$PATH"
+
+   # Reload shell
+   source ~/.bashrc
+   ```
+
+3. **Run with Python module**:
+   ```bash
+   python3 -m claude_monitor
+   ```
+
+### Python Version Conflicts
+
+**Issue**: Multiple Python versions causing installation issues
+
+**Solutions**:
+
+1. **Check Python version**:
+   ```bash
+   python3 --version
+   pip3 --version
+   ```
+
+2. **Use specific Python version**:
+   ```bash
+   python3.11 -m pip install claude-monitor
+   python3.11 -m claude_monitor
+   ```
+
+3. **Use uv (handles Python versions automatically)**:
+   ```bash
+   uv tool install claude-monitor
+   ```
 
 ### ccusage Not Found
 
@@ -24,7 +119,9 @@ Common issues and solutions for Claude Code Usage Monitor.
 Failed to get usage data: [Errno 2] No such file or directory: 'ccusage'
 ```
 
-**Solution**:
+**Note**: The monitor should automatically install Node.js and ccusage on first run. If this fails:
+
+**Manual Solution**:
 ```bash
 # Install ccusage globally
 npm install -g ccusage
@@ -59,7 +156,8 @@ ModuleNotFoundError: No module named 'pytz'
 
 **Solution**:
 ```bash
-# Install required dependencies
+# If installed via pip/pipx/uv, this should be automatic
+# If running from source:
 pip install pytz
 
 # For virtual environment users:
@@ -67,22 +165,28 @@ source venv/bin/activate  # Linux/Mac
 pip install pytz
 ```
 
+**Note**: When installing via `pip install claude-monitor`, `uv tool install claude-monitor`, or `pipx install claude-monitor`, pytz is installed automatically.
+
 ### Permission Denied (Linux/Mac)
 
 **Error Message**:
 ```
-Permission denied: ./ccusage_monitor.py
+Permission denied: ./claude_monitor.py
 ```
+
+**This only applies when running from source**
 
 **Solution**:
 ```bash
 # Make script executable
-chmod +x ccusage_monitor.py
+chmod +x claude_monitor.py
 
 # Or run with python directly
-python ccusage_monitor.py
-python3 ccusage_monitor.py
+python claude_monitor.py
+python3 claude_monitor.py
 ```
+
+**Note**: If installed via pip/pipx/uv, use `claude-monitor` command instead.
 
 
 ## 📊 Usage Data Issues
@@ -159,8 +263,8 @@ Failed to get usage data: <various error messages>
 3. **Plan Detection Issues**:
    ```bash
    # Try different plan settings
-   ./ccusage_monitor.py --plan custom_max
-   ./ccusage_monitor.py --plan max5
+   ./claude_monitor.py --plan custom_max
+   ./claude_monitor.py --plan max5
    ```
 
 
@@ -177,7 +281,7 @@ tput cols
 
 # Should be 80 or more characters
 # Resize terminal window or use:
-./ccusage_monitor.py | less -S  # Scroll horizontally
+./claude_monitor.py | less -S  # Scroll horizontally
 ```
 
 ### Missing Colors
@@ -191,7 +295,7 @@ echo $TERM
 
 # Force color output (if supported)
 export FORCE_COLOR=1
-./ccusage_monitor.py
+./claude_monitor.py
 
 # Alternative terminals with better color support:
 # - Use modern terminal (iTerm2, Windows Terminal, etc.)
@@ -234,12 +338,12 @@ reset
 **Solution**:
 ```bash
 # Set your timezone explicitly
-./ccusage_monitor.py --timezone America/New_York
-./ccusage_monitor.py --timezone Europe/London
-./ccusage_monitor.py --timezone Asia/Tokyo
+./claude_monitor.py --timezone America/New_York
+./claude_monitor.py --timezone Europe/London
+./claude_monitor.py --timezone Asia/Tokyo
 
 # Set custom reset hour
-./ccusage_monitor.py --reset-hour 9  # 9 AM resets
+./claude_monitor.py --reset-hour 9  # 9 AM resets
 ```
 
 **Find Your Timezone**:
@@ -277,7 +381,7 @@ timedatectl list-timezones | grep -i europe
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 # Run with Python directly
-python ccusage_monitor.py
+python claude_monitor.py
 ```
 
 **Path Issues**:
@@ -359,11 +463,11 @@ source ~/.profile
 **Debugging**:
 ```bash
 # Monitor memory usage
-top -p $(pgrep -f ccusage_monitor)
-htop  # Look for ccusage_monitor process
+top -p $(pgrep -f claude_monitor)
+htop  # Look for claude_monitor process
 
 # Check for memory leaks
-python -m tracemalloc ccusage_monitor.py
+python -m tracemalloc claude_monitor.py
 ```
 
 **Solutions**:
@@ -409,7 +513,7 @@ python -m tracemalloc ccusage_monitor.py
 ccusage blocks --json | jq .
 
 # Compare with monitor output
-./ccusage_monitor.py --plan custom_max
+./claude_monitor.py --plan custom_max
 ```
 
 ### Burn Rate Calculations Seem Wrong
@@ -447,6 +551,14 @@ systeminfo  # Windows
 python --version
 python3 --version
 
+# Installation method
+# Did you use: pip, pipx, uv, or source?
+
+# Check installation
+pip show claude-monitor  # If using pip
+uv tool list  # If using uv
+pipx list  # If using pipx
+
 # Node.js and npm versions
 node --version
 npm --version
@@ -467,19 +579,28 @@ ccusage blocks --json
 ### Issue Template
 
 ```markdown
+**[MAIN-PROBLEM]: Your specific problem**
+
 **Problem Description**
 Clear description of the issue.
 
+**Installation Method**
+- [ ] pip install claude-monitor
+- [ ] pipx install claude-monitor
+- [ ] uv tool install claude-monitor
+- [ ] Running from source
+
 **Steps to Reproduce**
-1. Command run: `./ccusage_monitor.py --plan pro`
+1. Command run: `claude-monitor --plan pro`
 2. Expected result: ...
 3. Actual result: ...
 
 **Environment**
-- OS: [Ubuntu 20.04 / Windows 11 / macOS 12]
-- Python: [3.9.7]
-- Node.js: [16.14.0]
-- ccusage: [1.2.3]
+- OS: [Ubuntu 24.04 / Windows 11 / macOS 14]
+- Python: [3.11.0]
+- Node.js: [20.0.0]
+- ccusage: [latest]
+- Installation path: [e.g., /home/user/.local/bin/claude-monitor]
 
 **Error Output**
 ```
@@ -497,13 +618,13 @@ Any other relevant information.
 
 ```bash
 # Run with Python verbose output
-python -v ccusage_monitor.py
+python -v claude_monitor.py
 
 # Check ccusage debug output
 ccusage blocks --debug
 
 # Monitor system calls (Linux/Mac)
-strace -e trace=execve python ccusage_monitor.py
+strace -e trace=execve python claude_monitor.py
 ```
 
 ### Network Debugging
@@ -521,8 +642,8 @@ tcpdump -i any host claude.ai  # Requires sudo
 
 ```bash
 # Check if ccusage accesses browser data
-strace -e trace=file python ccusage_monitor.py  # Linux
-dtruss python ccusage_monitor.py               # Mac
+strace -e trace=file python claude_monitor.py  # Linux
+dtruss python claude_monitor.py               # Mac
 
 # Look for browser profile directories
 ls ~/.config/google-chrome/Default/  # Linux Chrome
@@ -539,24 +660,35 @@ If all else fails, complete reset:
 ```bash
 # 1. Uninstall everything
 npm uninstall -g ccusage
-pip uninstall pytz
+pip uninstall claude-monitor  # If installed via pip
+pipx uninstall claude-monitor  # If installed via pipx
+uv tool uninstall claude-monitor  # If installed via uv
 
-# 2. Clear Python cache
+# 2. Clear caches
+find ~/.cache -name "*claude*" -delete 2>/dev/null
 find . -name "*.pyc" -delete
 find . -name "__pycache__" -delete
 
-# 3. Remove virtual environment
-rm -rf venv
+# 3. Fresh installation (choose one method)
+# Method 1: uv (Recommended)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source ~/.bashrc  # or restart terminal
+uv tool install claude-monitor
 
-# 4. Fresh installation
+# Method 2: pipx
+pipx install claude-monitor
+
+# Method 3: pip with venv
+python3 -m venv myenv
+source myenv/bin/activate
+pip install claude-monitor
+
+# 4. Install ccusage if needed
 npm install -g ccusage
-python3 -m venv venv
-source venv/bin/activate
-pip install pytz
 
 # 5. Test basic functionality
 ccusage --version
-python ccusage_monitor.py
+claude-monitor --help
 ```
 
 ### Browser Reset for Claude

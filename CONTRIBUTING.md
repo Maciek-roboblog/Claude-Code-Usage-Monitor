@@ -40,14 +40,11 @@ python3 -m venv venv
 source venv/bin/activate  # Linux/Mac
 # venv\Scripts\activate   # Windows
 
-# Install dependencies
-pip install pytz
-
-# Install development dependencies (when available)
-pip install pytest black flake8
+# Install project and development dependencies
+pip install -e .[dev]
 
 # Make script executable (Linux/Mac)
-chmod +x ccusage_monitor.py
+chmod +x claude_monitor.py
 ```
 
 ### 3. Create a Feature Branch
@@ -93,7 +90,7 @@ We follow **PEP 8** with these specific guidelines:
 current_token_count = 1500
 session_start_time = datetime.now()
 
-# Bad: Unclear abbreviations  
+# Bad: Unclear abbreviations
 curr_tok_cnt = 1500
 sess_st_tm = datetime.now()
 
@@ -105,32 +102,15 @@ def calculate_burn_rate(tokens_used, time_elapsed):
 def predict_token_depletion(current_usage, burn_rate):
     """
     Predicts when tokens will be depleted based on current burn rate.
-    
+
     Args:
         current_usage (int): Current token count
         burn_rate (float): Tokens consumed per minute
-        
+
     Returns:
         datetime: Estimated depletion time
     """
     pass
-```
-
-### 📁 File Organization
-
-```
-Claude-Code-Usage-Monitor/
-├── ccusage_monitor.py     # Main script (current)
-├── claude_monitor/        # Future package structure
-│   ├── __init__.py
-│   ├── core/             # Core monitoring logic
-│   ├── ml/               # Machine learning components
-│   ├── ui/               # User interface components
-│   └── utils/            # Utility functions
-├── tests/                # Test files
-├── docs/                 # Documentation
-├── examples/             # Usage examples
-└── scripts/              # Build and deployment scripts
 ```
 
 ### 🧪 Testing Guidelines
@@ -151,10 +131,10 @@ def test_token_calculation():
 def test_burn_rate_calculation():
     """Test burn rate calculation with edge cases."""
     monitor = TokenMonitor()
-    
+
     # Normal case
     assert monitor.calculate_burn_rate(100, 10) == 10.0
-    
+
     # Edge case: zero time
     assert monitor.calculate_burn_rate(100, 0) == 0
 ```
@@ -172,7 +152,7 @@ git commit -m "Docs: Add examples for timezone configuration"
 
 # Prefixes to use:
 # Add: New features
-# Fix: Bug fixes  
+# Fix: Bug fixes
 # Update: Improvements to existing features
 # Docs: Documentation changes
 # Test: Test additions or changes
@@ -349,7 +329,7 @@ tox
 We aim for high test coverage:
 
 - **Core functionality**: 95%+ coverage
-- **ML components**: 90%+ coverage  
+- **ML components**: 90%+ coverage
 - **UI components**: 80%+ coverage
 - **Utility functions**: 95%+ coverage
 
@@ -360,7 +340,7 @@ Help us test on different platforms:
 - **Linux**: Ubuntu, Fedora, Arch, Debian
 - **macOS**: Intel and Apple Silicon Macs
 - **Windows**: Windows 10/11, different Python installations
-- **Python versions**: 3.6, 3.7, 3.8, 3.9, 3.10, 3.11
+- **Python versions**: 3.7, 3.8, 3.9, 3.10, 3.11, 3.12
 
 ---
 
@@ -402,7 +382,7 @@ We're collecting **anonymized data** about token limits to improve auto-detectio
 
 Help us understand usage patterns:
 - Peak usage times
-- Session duration preferences  
+- Session duration preferences
 - Token consumption patterns
 - Feature usage statistics
 
@@ -471,10 +451,10 @@ If you experience unacceptable behavior, contact: [maciek@roboblog.eu](mailto:ma
 
 Thank you for considering contributing to Claude Code Usage Monitor! Every contribution, no matter how small, helps make this tool better for the entire community.
 
-**Ready to get started?** 
+**Ready to get started?**
 
 1. 🍴 Fork the repository
-2. 💻 Set up your development environment  
+2. 💻 Set up your development environment
 3. 🔍 Look at open issues for ideas
 4. 🚀 Start coding!
 

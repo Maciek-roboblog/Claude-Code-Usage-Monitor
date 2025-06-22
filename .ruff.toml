@@ -1,0 +1,11 @@
+# Ruff configuration - replaces Black, isort, and basic linting
+line-length = 88
+target-version = "py37"
+
+[lint]
+# Essential rules only
+select = ["E", "W", "F", "I"]  # pycodestyle + Pyflakes + isort
+ignore = ["E501"]  # Line length handled by formatter
+
+[format]
+quote-style = "double"

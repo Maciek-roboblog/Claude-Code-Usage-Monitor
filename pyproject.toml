@@ -1,0 +1,75 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "claude-monitor"
+version = "1.0.14"
+description = "A real-time terminal monitoring tool for Claude AI token usage"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    { name = "Maciek", email = "maciek@roboblog.eu" },
+]
+maintainers = [
+    { name = "Maciek", email = "maciek@roboblog.eu" },
+]
+keywords = ["claude", "ai", "token", "monitoring", "usage", "terminal"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development",
+    "Topic :: System :: Monitoring",
+]
+dependencies = [
+    "pytz",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.8.0",
+    "pre-commit>=2.20.0; python_version<'3.8'",
+    "pre-commit>=3.0.0; python_version>='3.8'",
+]
+
+[project.urls]
+Homepage = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor"
+Repository = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git"
+Issues = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues"
+Documentation = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor#readme"
+Changelog = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/blob/main/CHANGELOG.md"
+"Source Code" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor"
+"Bug Tracker" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues"
+"Release Notes" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases"
+
+[project.scripts]
+claude-monitor = "claude_monitor:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+include = ["claude_monitor.py", "check_dependency.py"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "claude_monitor.py",
+    "check_dependency.py",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "CLAUDE.md",
+    "DEVELOPMENT.md",
+    "CONTRIBUTING.md",
+    "TROUBLESHOOTING.md",
+]
