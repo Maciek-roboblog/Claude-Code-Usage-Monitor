@@ -122,11 +122,17 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 # Install from PyPI
 pip install claude-monitor
 
+# If claude-monitor command is not found, add ~/.local/bin to PATH:
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc  # or restart your terminal
+
 # Run from anywhere (dependencies auto-install on first run)
 claude-monitor
 ```
 
 > **Note**: Node.js and ccusage will be automatically installed on first run if not present.
+>
+> **⚠️ PATH Setup**: If you see `WARNING: The script claude-monitor is installed in '/home/username/.local/bin' which is not on PATH`, follow the export PATH command above.
 >
 > **⚠️ Important**: On modern Linux distributions (Ubuntu 23.04+, Debian 12+, Fedora 38+), you may encounter an "externally-managed-environment" error. Instead of using `--break-system-packages`, we strongly recommend:
 > 1. **Use uv instead** (see above) - it's safer and easier
@@ -742,22 +748,28 @@ error: externally-managed-environment
 
 If `claude-monitor` command is not found after pip installation:
 
-1. **Check installation location**
+1. **Check if it's a PATH issue**
    ```bash
-   # Find where pip installed the script
-   pip show -f claude-monitor | grep claude-monitor
+   # Look for the warning message during pip install:
+   # WARNING: The script claude-monitor is installed in '/home/username/.local/bin' which is not on PATH
    ```
 
 2. **Add to PATH**
    ```bash
    # Add this to ~/.bashrc or ~/.zshrc
-   export PATH="$HOME/.local/bin:$PATH"
+   echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 
    # Reload shell
    source ~/.bashrc  # or source ~/.zshrc
    ```
 
-3. **Run directly with Python**
+3. **Verify installation location**
+   ```bash
+   # Find where pip installed the script
+   pip show -f claude-monitor | grep claude-monitor
+   ```
+
+4. **Run directly with Python**
    ```bash
    python3 -m claude_monitor
    ```

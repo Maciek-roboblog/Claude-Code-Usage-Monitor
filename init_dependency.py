@@ -242,11 +242,69 @@ def install_node_windows():
 def ensure_ccusage_available():
     """Ensure ccusage is available via npx."""
     try:
+        # Find npm and npx commands - try multiple locations
+        npm_cmd = shutil.which("npm")
+        npx_cmd = shutil.which("npx")
+
+        # If not found in PATH, check common installation locations
+        if not npm_cmd:
+            common_paths = [
+                os.path.join(os.environ.get("HOME", ""), ".local", "bin", "npm"),
+                "/usr/local/bin/npm",
+                "/usr/bin/npm",
+                "C:\\Program Files\\nodejs\\npm.cmd"
+                if platform.system() == "Windows"
+                else None,
+            ]
+            # Also check in the directory where we might have just installed Node.js
+            if os.path.exists("nodejs"):
+                for subdir in os.listdir("nodejs"):
+                    if subdir.startswith("node-v"):
+                        npm_path = os.path.join("nodejs", subdir, "bin", "npm")
+                        if os.path.exists(npm_path):
+                            common_paths.insert(0, os.path.abspath(npm_path))
+
+            for path in common_paths:
+                if path and os.path.exists(path):
+                    npm_cmd = path
+                    break
+
+        if not npx_cmd:
+            common_paths = [
+                os.path.join(os.environ.get("HOME", ""), ".local", "bin", "npx"),
+                "/usr/local/bin/npx",
+                "/usr/bin/npx",
+                "C:\\Program Files\\nodejs\\npx.cmd"
+                if platform.system() == "Windows"
+                else None,
+            ]
+            # Also check in the directory where we might have just installed Node.js
+            if os.path.exists("nodejs"):
+                for subdir in os.listdir("nodejs"):
+                    if subdir.startswith("node-v"):
+                        npx_path = os.path.join("nodejs", subdir, "bin", "npx")
+                        if os.path.exists(npx_path):
+                            common_paths.insert(0, os.path.abspath(npx_path))
+
+            for path in common_paths:
+                if path and os.path.exists(path):
+                    npx_cmd = path
+                    break
+
+        if not npm_cmd or not npx_cmd:
+            print("\n❌ npm or npx command not found even after installation.")
+            print("PATH environment variable may not be updated in current process.")
+            print("\n🔧 Please try:")
+            print("1. Restart your terminal and run the command again")
+            print("2. Or manually install ccusage: npm install -g ccusage")
+            sys.exit(1)
+
         # Check if ccusage is available
         result = subprocess.run(
-            ["npx", "--no-install", "ccusage", "--version"],
+            [npx_cmd, "--no-install", "ccusage", "--version"],
             capture_output=True,
             text=True,
+            env=os.environ.copy(),  # Use current environment
         )
         if result.returncode == 0:
             print("✓ ccusage is available")
@@ -256,10 +314,11 @@ def ensure_ccusage_available():
         # Try global installation first
         try:
             result = subprocess.run(
-                ["npm", "install", "-g", "ccusage"],
+                [npm_cmd, "install", "-g", "ccusage"],
                 check=True,
                 capture_output=True,
                 text=True,
+                env=os.environ.copy(),  # Use current environment
             )
             print("✓ ccusage installed globally")
         except subprocess.CalledProcessError as e:
@@ -270,10 +329,11 @@ def ensure_ccusage_available():
             # If global fails, install locally
             try:
                 result = subprocess.run(
-                    ["npm", "install", "ccusage"],
+                    [npm_cmd, "install", "ccusage"],
                     check=True,
                     capture_output=True,
                     text=True,
+                    env=os.environ.copy(),  # Use current environment
                 )
                 print("✓ ccusage installed locally")
             except subprocess.CalledProcessError as local_e:
@@ -324,24 +384,47 @@ def ensure_node_installed():
     """Ensure Node.js, npm, npx, and ccusage are all available."""
     print("Checking dependencies...")
 
+    node_bin_path = None
     if not is_node_available():
         # Install Node.js if not present
         system = platform.system()
         if system in ("Linux", "Darwin"):
-            install_node_linux_mac()
+            node_bin_path = install_node_linux_mac()
         elif system == "Windows":
-            install_node_windows()
+            node_bin_path = install_node_windows()
         else:
             print(f"Unsupported OS: {system}")
             sys.exit(1)
 
         # After installation, verify Node.js is now available
-        if not is_node_available():
+        # If we just installed Node.js, we need to use the full path
+        if node_bin_path:
+            # Update PATH for subprocess calls
+            os.environ["PATH"] = node_bin_path + os.pathsep + os.environ.get("PATH", "")
+
+            # Also update npm and npx paths for immediate use
+            node_exe = os.path.join(node_bin_path, "node")
+            npm_exe = os.path.join(node_bin_path, "npm")
+            npx_exe = os.path.join(node_bin_path, "npx")
+
+            # For Windows, add .cmd extension
+            if platform.system() == "Windows":
+                npm_exe += ".cmd"
+                npx_exe += ".cmd"
+
+            # Check if executables exist
+            if not (os.path.exists(node_exe) or os.path.exists(node_exe + ".exe")):
+                print(
+                    "Error: Node.js installation completed but Node.js executable not found."
+                )
+                print(f"Expected location: {node_exe}")
+                print(
+                    "You may need to restart your terminal or manually add Node.js to your PATH."
+                )
+                sys.exit(1)
+        else:
             print(
-                "Error: Node.js installation completed but Node.js is still not available in PATH."
-            )
-            print(
-                "You may need to restart your terminal or manually add Node.js to your PATH."
+                "Error: Node.js installation completed but installation path not returned."
             )
             sys.exit(1)
     else:
