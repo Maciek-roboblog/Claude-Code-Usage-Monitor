@@ -2,7 +2,6 @@
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 import threading
@@ -89,7 +88,7 @@ def create_time_progress_bar(elapsed_minutes, total_minutes, width=50):
 
 
 def print_header():
-    """Print the stylized header with sparkles."""
+    """Return the stylized header with sparkles as a list of strings."""
     cyan = "\033[96m"
     blue = "\033[94m"
     reset = "\033[0m"
@@ -97,9 +96,11 @@ def print_header():
     # Sparkle pattern
     sparkles = f"{cyan}✦ ✧ ✦ ✧ {reset}"
 
-    print(f"{sparkles}{cyan}CLAUDE TOKEN MONITOR{reset} {sparkles}")
-    print(f"{blue}{'=' * 60}{reset}")
-    print()
+    return [
+        f"{sparkles}{cyan}CLAUDE CODE USAGE MONITOR{reset} {sparkles}",
+        f"{blue}{'=' * 60}{reset}",
+        "",
+    ]
 
 
 def get_velocity_indicator(burn_rate):
@@ -298,6 +299,9 @@ def setup_terminal():
 
 def restore_terminal(old_settings):
     """Restore terminal to original settings."""
+    # Show cursor and exit alternate screen buffer
+    print("\033[?25h\033[?1049l", end="", flush=True)
+
     if old_settings and HAS_TERMIOS and sys.stdin.isatty():
         try:
             termios.tcsetattr(sys.stdin, termios.TCSANOW, old_settings)
@@ -337,20 +341,26 @@ def main():
         token_limit = get_token_limit(args.plan)
 
     try:
-        # Initial screen clear and hide cursor
-        os.system("clear" if os.name == "posix" else "cls")
-        print("\033[?25l", end="", flush=True)  # Hide cursor
+        # Enter alternate screen buffer, clear and hide cursor
+        print("\033[?1049h\033[2J\033[H\033[?25l", end="", flush=True)
 
         while True:
             # Flush any pending input to prevent display corruption
             flush_input()
 
-            # Move cursor to top without clearing
-            print("\033[H", end="", flush=True)
+            # Build complete screen in buffer
+            screen_buffer = []
+            screen_buffer.append("\033[H")  # Home position
 
             data = run_ccusage()
             if not data or "blocks" not in data:
-                print("Failed to get usage data")
+                screen_buffer.extend(print_header())
+                screen_buffer.append("Failed to get usage data")
+                # Clear screen and print buffer
+                print(
+                    "\033[2J" + "\n".join(screen_buffer) + "\033[J", end="", flush=True
+                )
+                stop_event.wait(timeout=3.0)
                 continue
 
             # Find the active block
@@ -361,28 +371,31 @@ def main():
                     break
 
             if not active_block:
-                print_header()
-                print(
+                screen_buffer.extend(print_header())
+                screen_buffer.append(
                     "📊 \033[97mToken Usage:\033[0m    \033[92m🟢 [\033[92m░"
                     + "░" * 49
                     + "\033[0m] 0.0%\033[0m"
                 )
-                print()
-                print(
+                screen_buffer.append("")
+                screen_buffer.append(
                     "🎯 \033[97mTokens:\033[0m         \033[97m0\033[0m / \033[90m~{:,}\033[0m (\033[96m0 left\033[0m)".format(
                         token_limit
                     )
                 )
-                print(
+                screen_buffer.append(
                     "🔥 \033[97mBurn Rate:\033[0m      \033[93m0.0\033[0m \033[90mtokens/min\033[0m"
                 )
-                print()
-                print(
+                screen_buffer.append("")
+                screen_buffer.append(
                     "⏰ \033[90m{}\033[0m 📝 \033[96mNo active session\033[0m | \033[90mCtrl+C to exit\033[0m 🟨".format(
                         datetime.now().strftime("%H:%M:%S")
                     )
                 )
-                print("\033[J", end="", flush=True)
+                # Clear screen and print buffer
+                print(
+                    "\033[2J" + "\n".join(screen_buffer) + "\033[J", end="", flush=True
+                )
                 stop_event.wait(timeout=3.0)
                 continue
 
@@ -442,30 +455,30 @@ def main():
             reset = "\033[0m"
 
             # Display header
-            print_header()
+            screen_buffer.extend(print_header())
 
             # Token Usage section
-            print(
+            screen_buffer.append(
                 f"📊 {white}Token Usage:{reset}    {create_token_progress_bar(usage_percentage)}"
             )
-            print()
+            screen_buffer.append("")
 
             # Time to Reset section - calculate progress based on time since last reset
             # Estimate time since last reset (max 5 hours = 300 minutes)
             time_since_reset = max(0, 300 - minutes_to_reset)
-            print(
+            screen_buffer.append(
                 f"⏳ {white}Time to Reset:{reset}  {create_time_progress_bar(time_since_reset, 300)}"
             )
-            print()
+            screen_buffer.append("")
 
             # Detailed stats
-            print(
+            screen_buffer.append(
                 f"🎯 {white}Tokens:{reset}         {white}{tokens_used:,}{reset} / {gray}~{token_limit:,}{reset} ({cyan}{tokens_left:,} left{reset})"
             )
-            print(
+            screen_buffer.append(
                 f"🔥 {white}Burn Rate:{reset}      {yellow}{burn_rate:.1f}{reset} {gray}tokens/min{reset}"
             )
-            print()
+            screen_buffer.append("")
 
             # Predictions - convert to configured timezone for display
             try:
@@ -477,9 +490,9 @@ def main():
 
             predicted_end_str = predicted_end_local.strftime("%H:%M")
             reset_time_str = reset_time_local.strftime("%H:%M")
-            print(f"🏁 {white}Predicted End:{reset} {predicted_end_str}")
-            print(f"🔄 {white}Token Reset:{reset}   {reset_time_str}")
-            print()
+            screen_buffer.append(f"🏁 {white}Predicted End:{reset} {predicted_end_str}")
+            screen_buffer.append(f"🔄 {white}Token Reset:{reset}   {reset_time_str}")
+            screen_buffer.append("")
 
             # Show notification if we switched to custom_max
             show_switch_notification = False
@@ -491,49 +504,46 @@ def main():
 
             # Show notifications
             if show_switch_notification:
-                print(
+                screen_buffer.append(
                     f"🔄 {yellow}Tokens exceeded Pro limit - switched to custom_max ({token_limit:,}){reset}"
                 )
-                print()
+                screen_buffer.append("")
 
             if show_exceed_notification:
-                print(
+                screen_buffer.append(
                     f"🚨 {red}TOKENS EXCEEDED MAX LIMIT! ({tokens_used:,} > {token_limit:,}){reset}"
                 )
-                print()
+                screen_buffer.append("")
 
             # Warning if tokens will run out before reset
             if predicted_end_time < reset_time:
-                print(f"⚠️  {red}Tokens will run out BEFORE reset!{reset}")
-                print()
+                screen_buffer.append(
+                    f"⚠️  {red}Tokens will run out BEFORE reset!{reset}"
+                )
+                screen_buffer.append("")
 
             # Status line
             current_time_str = datetime.now().strftime("%H:%M:%S")
-            print(
+            screen_buffer.append(
                 f"⏰ {gray}{current_time_str}{reset} 📝 {cyan}Smooth sailing...{reset} | {gray}Ctrl+C to exit{reset} 🟨"
             )
 
-            # Clear any remaining lines below to prevent artifacts
-            print("\033[J", end="", flush=True)
+            # Clear screen and print entire buffer at once
+            print("\033[2J" + "\n".join(screen_buffer) + "\033[J", end="", flush=True)
 
             stop_event.wait(timeout=3.0)
 
     except KeyboardInterrupt:
         # Set the stop event for immediate response
         stop_event.set()
-        # Show cursor before exiting
-        print("\033[?25h", end="", flush=True)
         # Restore terminal settings
         restore_terminal(old_terminal_settings)
         print(f"\n\n{cyan}Monitoring stopped.{reset}")
-        # Clear the terminal
-        os.system("clear" if os.name == "posix" else "cls")
         sys.exit(0)
-    except Exception:
-        # Show cursor on any error
-        print("\033[?25h", end="", flush=True)
-        # Restore terminal settings
+    except Exception as e:
+        # Restore terminal on any error
         restore_terminal(old_terminal_settings)
+        print(f"\n\nError: {e}")
         raise
 
 

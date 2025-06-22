@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "claude-monitor"
-version = "1.0.11"
+version = "1.0.14"
 description = "A real-time terminal monitoring tool for Claude AI token usage"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 authors = [
     { name = "Maciek", email = "maciek@roboblog.eu" },
 ]
@@ -34,6 +34,7 @@ classifiers = [
 ]
 dependencies = [
     "pytz",
+    "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]
