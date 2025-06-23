@@ -7,11 +7,14 @@
 - Fixed ccusage command hanging indefinitely by adding 30-second timeout to subprocess calls
 - Added ccusage availability check at startup with helpful error messages
 - Improved error display when ccusage fails with better debugging information
+- Fixed npm 7+ compatibility issue where npx doesn't find globally installed packages
 
 ### Added
 - Timeout handling for all ccusage subprocess calls to prevent hanging
 - Pre-flight check for ccusage availability before entering main loop
 - More informative error messages suggesting installation steps and login requirements
+- Dual command execution: tries direct `ccusage` command first, then falls back to `npx ccusage`
+- Detection and reporting of which method (direct or npx) is being used
 
 ## [1.0.11] - 2025-06-22
 

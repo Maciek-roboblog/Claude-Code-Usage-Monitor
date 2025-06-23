@@ -357,19 +357,46 @@ def main():
     
     # Test if ccusage is available by running a quick command
     print(f"{cyan}Checking ccusage availability...{reset}")
+    ccusage_available = False
+    method_used = None
+    
+    # Try direct command first
     try:
         subprocess.run(
-            ["npx", "ccusage", "--version"],
+            ["ccusage", "--version"],
             capture_output=True,
             text=True,
             check=True,
             timeout=10,
         )
-        print(f"{cyan}✓ ccusage is available{reset}")
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+        ccusage_available = True
+        method_used = "direct"
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+    
+    # If direct command failed, try npx
+    if not ccusage_available:
+        try:
+            subprocess.run(
+                ["npx", "ccusage", "--version"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=10,
+            )
+            ccusage_available = True
+            method_used = "npx"
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+    
+    if ccusage_available:
+        print(f"{cyan}✓ ccusage is available (using {method_used} method){reset}")
+    else:
         print(f"{red}✗ ccusage check failed{reset}")
         print(f"{yellow}Please ensure ccusage is installed:{reset}")
         print(f"  npm install -g ccusage")
+        print(f"\n{yellow}If you're using npm 7+ and have ccusage installed globally,{reset}")
+        print(f"{yellow}you may need to add npm's global bin directory to your PATH.{reset}")
         print(f"\n{yellow}Also make sure you're logged into Claude in your browser{reset}")
         sys.exit(1)
 
@@ -411,6 +438,7 @@ def main():
                 screen_buffer.append("")
                 screen_buffer.append(f"{yellow}Possible causes:{reset}")
                 screen_buffer.append(f"  • ccusage is not installed (run: npm install -g ccusage)")
+                screen_buffer.append(f"  • For npm 7+: ccusage may be in PATH but npx can't find it")
                 screen_buffer.append(f"  • You're not logged into Claude")
                 screen_buffer.append(f"  • Network connection issues")
                 screen_buffer.append("")
