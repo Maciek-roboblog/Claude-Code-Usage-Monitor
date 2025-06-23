@@ -12,12 +12,9 @@ import pytz
 from usage_analyzer.api import analyze_usage
 from check_dependency import test_node, test_npx
 
-<<<<<<< Updated upstream
-=======
 # All internal calculations use UTC, display timezone is configurable
 UTC_TZ = pytz.UTC
 
->>>>>>> Stashed changes
 # Terminal handling for Unix-like systems
 try:
     import termios
@@ -197,68 +194,6 @@ def calculate_hourly_burn_rate(blocks, current_time):
     return total_tokens / 60 if total_tokens > 0 else 0
 
 
-<<<<<<< Updated upstream
-def get_next_reset_time(
-    current_time, custom_reset_hour=None, timezone_str="Europe/Warsaw"
-):
-    """Calculate next token reset time based on fixed 5-hour intervals.
-    Default reset times in specified timezone: 04:00, 09:00, 14:00, 18:00, 23:00
-    Or use custom reset hour if provided.
-    """
-    # Convert to specified timezone
-    try:
-        target_tz = pytz.timezone(timezone_str)
-    except pytz.exceptions.UnknownTimeZoneError:
-        print(f"Warning: Unknown timezone '{timezone_str}', using Europe/Warsaw")
-        target_tz = pytz.timezone("Europe/Warsaw")
-
-    # If current_time is timezone-aware, convert to target timezone
-    if current_time.tzinfo is not None:
-        target_time = current_time.astimezone(target_tz)
-    else:
-        # Assume current_time is in target timezone if not specified
-        target_time = target_tz.localize(current_time)
-
-    if custom_reset_hour is not None:
-        # Use single daily reset at custom hour
-        reset_hours = [custom_reset_hour]
-    else:
-        # Default 5-hour intervals
-        reset_hours = [4, 9, 14, 18, 23]
-
-    # Get current hour and minute
-    current_hour = target_time.hour
-    current_minute = target_time.minute
-
-    # Find next reset hour
-    next_reset_hour = None
-    for hour in reset_hours:
-        if current_hour < hour or (current_hour == hour and current_minute == 0):
-            next_reset_hour = hour
-            break
-
-    # If no reset hour found today, use first one tomorrow
-    if next_reset_hour is None:
-        next_reset_hour = reset_hours[0]
-        next_reset_date = target_time.date() + timedelta(days=1)
-    else:
-        next_reset_date = target_time.date()
-
-    # Create next reset datetime in target timezone
-    next_reset = target_tz.localize(
-        datetime.combine(
-            next_reset_date, datetime.min.time().replace(hour=next_reset_hour)
-        ),
-        is_dst=None,
-    )
-
-    # Convert back to the original timezone if needed
-    if current_time.tzinfo is not None and current_time.tzinfo != target_tz:
-        next_reset = next_reset.astimezone(current_time.tzinfo)
-
-    return next_reset
-=======
->>>>>>> Stashed changes
 
 
 def parse_args():
@@ -437,8 +372,6 @@ def main():
                     "🔥 \033[97mBurn Rate:\033[0m      \033[93m0.0\033[0m \033[90mtokens/min\033[0m"
                 )
                 screen_buffer.append("")
-<<<<<<< Updated upstream
-=======
                 # Use configured timezone for time display
                 try:
                     display_tz = pytz.timezone(args.timezone)
@@ -446,10 +379,9 @@ def main():
                     display_tz = pytz.timezone("Europe/Warsaw")
                 current_time_display = datetime.now(UTC_TZ).astimezone(display_tz)
                 current_time_str = current_time_display.strftime("%H:%M:%S")
->>>>>>> Stashed changes
                 screen_buffer.append(
                     "⏰ \033[90m{}\033[0m 📝 \033[96mNo active session\033[0m | \033[90mCtrl+C to exit\033[0m 🟨".format(
-                        datetime.now().strftime("%H:%M:%S")
+                        current_time_str
                     )
                 )
                 # Clear screen and print buffer
@@ -507,14 +439,6 @@ def main():
             # Calculate burn rate from ALL sessions in the last hour
             burn_rate = calculate_hourly_burn_rate(data["blocks"], current_time)
 
-<<<<<<< Updated upstream
-            # Reset time calculation - use fixed schedule or custom hour with timezone
-            reset_time = get_next_reset_time(
-                current_time, args.reset_hour, args.timezone
-            )
-
-=======
->>>>>>> Stashed changes
             # Calculate time to reset
             time_to_reset = reset_time - current_time
             minutes_to_reset = time_to_reset.total_seconds() / 60
@@ -605,10 +529,6 @@ def main():
                 )
                 screen_buffer.append("")
 
-<<<<<<< Updated upstream
-            # Status line
-            current_time_str = datetime.now().strftime("%H:%M:%S")
-=======
             # Status line - use configured timezone for consistency
             try:
                 display_tz = pytz.timezone(args.timezone)
@@ -616,7 +536,6 @@ def main():
                 display_tz = pytz.timezone("Europe/Warsaw")
             current_time_display = datetime.now(UTC_TZ).astimezone(display_tz)
             current_time_str = current_time_display.strftime("%H:%M:%S")
->>>>>>> Stashed changes
             screen_buffer.append(
                 f"⏰ {gray}{current_time_str}{reset} 📝 {cyan}Smooth sailing...{reset} | {gray}Ctrl+C to exit{reset} 🟨"
             )
