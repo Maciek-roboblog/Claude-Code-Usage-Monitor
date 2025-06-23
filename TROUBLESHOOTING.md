@@ -10,7 +10,6 @@ Common issues and solutions for Claude Code Usage Monitor.
 |---------|-----------|
 | `command not found: claude-monitor` | Add `~/.local/bin` to PATH or use `python3 -m claude_monitor` |
 | `externally-managed-environment` | Use `uv tool install` or `pipx install` instead of pip |
-| `ccusage` not found | Should auto-install, or run `npm install -g ccusage` |
 | No active session | Start a Claude Code session first |
 | Permission denied | Only for source: `chmod +x claude_monitor.py` |
 | Display issues | Resize terminal to 80+ characters width |
@@ -111,41 +110,6 @@ error: externally-managed-environment
    ```bash
    uv tool install claude-monitor
    ```
-
-### ccusage Not Found
-
-**Error Message**:
-```
-Failed to get usage data: [Errno 2] No such file or directory: 'ccusage'
-```
-
-**Note**: The monitor should automatically install Node.js and ccusage on first run. If this fails:
-
-**Manual Solution**:
-```bash
-# Install ccusage globally
-npm install -g ccusage
-
-# Verify installation
-ccusage --version
-
-# Check if it's in PATH
-which ccusage  # Linux/Mac
-where ccusage  # Windows
-```
-
-**Alternative Solutions**:
-```bash
-# If npm install fails, try:
-sudo npm install -g ccusage  # Linux/Mac with sudo
-
-# Or update npm first:
-npm update -g npm
-npm install -g ccusage
-
-# For Windows, run as Administrator
-npm install -g ccusage
-```
 
 ### Python Dependencies Missing
 
@@ -659,7 +623,6 @@ If all else fails, complete reset:
 
 ```bash
 # 1. Uninstall everything
-npm uninstall -g ccusage
 pip uninstall claude-monitor  # If installed via pip
 pipx uninstall claude-monitor  # If installed via pipx
 uv tool uninstall claude-monitor  # If installed via uv
@@ -683,11 +646,7 @@ python3 -m venv myenv
 source myenv/bin/activate
 pip install claude-monitor
 
-# 4. Install ccusage if needed
-npm install -g ccusage
-
 # 5. Test basic functionality
-ccusage --version
 claude-monitor --help
 ```
 
@@ -699,7 +658,6 @@ claude-monitor --help
 # 2. Clear cookies for claude.ai
 # 3. Clear browser cache
 # 4. Login again and start fresh session
-# 5. Test ccusage functionality
 ```
 
 ---

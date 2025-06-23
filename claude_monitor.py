@@ -9,8 +9,15 @@ from datetime import datetime, timedelta
 
 import pytz
 
+from usage_analyzer.api import analyze_usage
 from check_dependency import test_node, test_npx
 
+<<<<<<< Updated upstream
+=======
+# All internal calculations use UTC, display timezone is configurable
+UTC_TZ = pytz.UTC
+
+>>>>>>> Stashed changes
 # Terminal handling for Unix-like systems
 try:
     import termios
@@ -18,50 +25,6 @@ try:
     HAS_TERMIOS = True
 except ImportError:
     HAS_TERMIOS = False
-
-
-def run_ccusage():
-    """Execute ccusage blocks --json command and return parsed JSON data."""
-    # Try direct ccusage command first (for global installations)
-    commands = [
-        ["ccusage", "blocks", "--json"],  # Direct command
-        ["npx", "ccusage", "blocks", "--json"],  # Fallback to npx
-    ]
-
-    for cmd in commands:
-        try:
-            # Add timeout to prevent hanging
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=30,  # 30 second timeout
-            )
-            return json.loads(result.stdout)
-        except subprocess.TimeoutExpired:
-            if cmd[0] == "npx":  # Only show error on final attempt
-                print("Error: ccusage command timed out after 30 seconds")
-                print(
-                    "This might indicate that ccusage is not properly installed or configured"
-                )
-                print("Try running 'npm install -g ccusage' to ensure it's installed")
-            continue
-        except subprocess.CalledProcessError as e:
-            if cmd[0] == "npx":  # Only show error on final attempt
-                print(f"Error running ccusage: {e}")
-                if e.stderr:
-                    print(f"stderr: {e.stderr}")
-            continue
-        except FileNotFoundError:
-            # Command not found, try next option
-            continue
-        except json.JSONDecodeError as e:
-            print(f"Error parsing JSON: {e}")
-            return None
-
-    return None
-
 
 def format_time(minutes):
     """Format minutes into human-readable time (e.g., '3h 45m')."""
@@ -174,8 +137,13 @@ def calculate_hourly_burn_rate(blocks, current_time):
         if not start_time_str:
             continue
 
-        # Parse start time
+        # Parse start time - data from usage_analyzer is in UTC
         start_time = datetime.fromisoformat(start_time_str.replace("Z", "+00:00"))
+        # Ensure it's in UTC for calculations
+        if start_time.tzinfo is None:
+            start_time = UTC_TZ.localize(start_time)
+        else:
+            start_time = start_time.astimezone(UTC_TZ)
 
         # Skip gaps
         if block.get("isGap", False):
@@ -192,6 +160,11 @@ def calculate_hourly_burn_rate(blocks, current_time):
                 session_actual_end = datetime.fromisoformat(
                     actual_end_str.replace("Z", "+00:00")
                 )
+                # Ensure it's in UTC for calculations
+                if session_actual_end.tzinfo is None:
+                    session_actual_end = UTC_TZ.localize(session_actual_end)
+                else:
+                    session_actual_end = session_actual_end.astimezone(UTC_TZ)
             else:
                 session_actual_end = current_time
 
@@ -224,6 +197,7 @@ def calculate_hourly_burn_rate(blocks, current_time):
     return total_tokens / 60 if total_tokens > 0 else 0
 
 
+<<<<<<< Updated upstream
 def get_next_reset_time(
     current_time, custom_reset_hour=None, timezone_str="Europe/Warsaw"
 ):
@@ -283,6 +257,8 @@ def get_next_reset_time(
         next_reset = next_reset.astimezone(current_time.tzinfo)
 
     return next_reset
+=======
+>>>>>>> Stashed changes
 
 
 def parse_args():
@@ -378,64 +354,7 @@ def main():
     gray = "\033[90m"
     reset = "\033[0m"
 
-    # Test if ccusage is available by running a quick command
-    print(f"{cyan}Checking ccusage availability...{reset}")
-    ccusage_available = False
-    method_used = None
 
-    # Try direct command first
-    try:
-        subprocess.run(
-            ["ccusage", "--version"],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=10,
-        )
-        ccusage_available = True
-        method_used = "direct"
-    except (
-        subprocess.CalledProcessError,
-        subprocess.TimeoutExpired,
-        FileNotFoundError,
-    ):
-        pass
-
-    # If direct command failed, try npx
-    if not ccusage_available:
-        try:
-            subprocess.run(
-                ["npx", "ccusage", "--version"],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=10,
-            )
-            ccusage_available = True
-            method_used = "npx"
-        except (
-            subprocess.CalledProcessError,
-            subprocess.TimeoutExpired,
-            FileNotFoundError,
-        ):
-            pass
-
-    if ccusage_available:
-        print(f"{cyan}✓ ccusage is available (using {method_used} method){reset}")
-    else:
-        print(f"{red}✗ ccusage check failed{reset}")
-        print(f"{yellow}Please ensure ccusage is installed:{reset}")
-        print("  npm install -g ccusage")
-        print(
-            f"\n{yellow}If you're using npm 7+ and have ccusage installed globally,{reset}"
-        )
-        print(
-            f"{yellow}you may need to add npm's global bin directory to your PATH.{reset}"
-        )
-        print(
-            f"\n{yellow}Also make sure you're logged into Claude in your browser{reset}"
-        )
-        sys.exit(1)
 
     # Create event for clean refresh timing
     stop_event = threading.Event()
@@ -448,7 +367,7 @@ def main():
         print(
             f"{cyan}Fetching initial data to determine custom max token limit...{reset}"
         )
-        initial_data = run_ccusage()
+        initial_data = analyze_usage()
         if initial_data and "blocks" in initial_data:
             token_limit = get_token_limit(args.plan, initial_data["blocks"])
             print(f"{cyan}Custom max token limit detected: {token_limit:,}{reset}")
@@ -475,18 +394,12 @@ def main():
             screen_buffer = []
             screen_buffer.append("\033[H")  # Home position
 
-            data = run_ccusage()
+            data = analyze_usage()
             if not data or "blocks" not in data:
                 screen_buffer.extend(print_header())
                 screen_buffer.append(f"{red}Failed to get usage data{reset}")
                 screen_buffer.append("")
                 screen_buffer.append(f"{yellow}Possible causes:{reset}")
-                screen_buffer.append(
-                    "  • ccusage is not installed (run: npm install -g ccusage)"
-                )
-                screen_buffer.append(
-                    "  • For npm 7+: ccusage may be in PATH but npx can't find it"
-                )
                 screen_buffer.append("  • You're not logged into Claude")
                 screen_buffer.append("  • Network connection issues")
                 screen_buffer.append("")
@@ -524,6 +437,16 @@ def main():
                     "🔥 \033[97mBurn Rate:\033[0m      \033[93m0.0\033[0m \033[90mtokens/min\033[0m"
                 )
                 screen_buffer.append("")
+<<<<<<< Updated upstream
+=======
+                # Use configured timezone for time display
+                try:
+                    display_tz = pytz.timezone(args.timezone)
+                except pytz.exceptions.UnknownTimeZoneError:
+                    display_tz = pytz.timezone("Europe/Warsaw")
+                current_time_display = datetime.now(UTC_TZ).astimezone(display_tz)
+                current_time_str = current_time_display.strftime("%H:%M:%S")
+>>>>>>> Stashed changes
                 screen_buffer.append(
                     "⏰ \033[90m{}\033[0m 📝 \033[96mNo active session\033[0m | \033[90mCtrl+C to exit\033[0m 🟨".format(
                         datetime.now().strftime("%H:%M:%S")
@@ -551,24 +474,47 @@ def main():
             )
             tokens_left = token_limit - tokens_used
 
-            # Time calculations
+            # Time calculations - all internal calculations in UTC
             start_time_str = active_block.get("startTime")
             if start_time_str:
                 start_time = datetime.fromisoformat(
                     start_time_str.replace("Z", "+00:00")
                 )
-                current_time = datetime.now(start_time.tzinfo)
+                # Ensure start_time is in UTC
+                if start_time.tzinfo is None:
+                    start_time = UTC_TZ.localize(start_time)
+                else:
+                    start_time = start_time.astimezone(UTC_TZ)
+            
+            # Extract endTime from active block (comes in UTC from usage_analyzer)
+            end_time_str = active_block.get("endTime")
+            if end_time_str:
+                reset_time = datetime.fromisoformat(
+                    end_time_str.replace("Z", "+00:00")
+                )
+                # Ensure reset_time is in UTC
+                if reset_time.tzinfo is None:
+                    reset_time = UTC_TZ.localize(reset_time)
+                else:
+                    reset_time = reset_time.astimezone(UTC_TZ)
             else:
-                current_time = datetime.now()
+                # Fallback: if no endTime, estimate 5 hours from startTime
+                reset_time = start_time + timedelta(hours=5) if start_time_str else datetime.now(UTC_TZ) + timedelta(hours=5)
+            
+            # Always use UTC for internal calculations
+            current_time = datetime.now(UTC_TZ)
 
             # Calculate burn rate from ALL sessions in the last hour
             burn_rate = calculate_hourly_burn_rate(data["blocks"], current_time)
 
+<<<<<<< Updated upstream
             # Reset time calculation - use fixed schedule or custom hour with timezone
             reset_time = get_next_reset_time(
                 current_time, args.reset_hour, args.timezone
             )
 
+=======
+>>>>>>> Stashed changes
             # Calculate time to reset
             time_to_reset = reset_time - current_time
             minutes_to_reset = time_to_reset.total_seconds() / 60
@@ -592,11 +538,19 @@ def main():
             )
             screen_buffer.append("")
 
-            # Time to Reset section - calculate progress based on time since last reset
-            # Estimate time since last reset (max 5 hours = 300 minutes)
-            time_since_reset = max(0, 300 - minutes_to_reset)
+            # Time to Reset section - calculate progress based on actual session duration
+            if start_time_str and end_time_str:
+                # Calculate actual session duration and elapsed time
+                total_session_minutes = (reset_time - start_time).total_seconds() / 60
+                elapsed_session_minutes = (current_time - start_time).total_seconds() / 60
+                elapsed_session_minutes = max(0, elapsed_session_minutes)  # Ensure non-negative
+            else:
+                # Fallback to 5 hours if times not available
+                total_session_minutes = 300
+                elapsed_session_minutes = max(0, 300 - minutes_to_reset)
+            
             screen_buffer.append(
-                f"⏳ {white}Time to Reset:{reset}  {create_time_progress_bar(time_since_reset, 300)}"
+                f"⏳ {white}Time to Reset:{reset}  {create_time_progress_bar(elapsed_session_minutes, total_session_minutes)}"
             )
             screen_buffer.append("")
 
@@ -651,8 +605,18 @@ def main():
                 )
                 screen_buffer.append("")
 
+<<<<<<< Updated upstream
             # Status line
             current_time_str = datetime.now().strftime("%H:%M:%S")
+=======
+            # Status line - use configured timezone for consistency
+            try:
+                display_tz = pytz.timezone(args.timezone)
+            except pytz.exceptions.UnknownTimeZoneError:
+                display_tz = pytz.timezone("Europe/Warsaw")
+            current_time_display = datetime.now(UTC_TZ).astimezone(display_tz)
+            current_time_str = current_time_display.strftime("%H:%M:%S")
+>>>>>>> Stashed changes
             screen_buffer.append(
                 f"⏰ {gray}{current_time_str}{reset} 📝 {cyan}Smooth sailing...{reset} | {gray}Ctrl+C to exit{reset} 🟨"
             )
