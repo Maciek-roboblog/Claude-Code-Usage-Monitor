@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.17] - 2025-06-23
+
+### Added
+- Loading screen that displays immediately on startup to eliminate "black screen" experience
+- Visual feedback with header and "Fetching Claude usage data..." message during initial data load
+
 ## [1.0.16] - 2025-06-23
 
 ### Fixed
@@ -68,6 +74,7 @@
 - Proper Ctrl+C handling with cursor restoration
 - Terminal settings restoration on exit
 
+[1.0.17]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.17
 [1.0.16]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.16
 [1.0.11]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.11
 [1.0.8]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.8

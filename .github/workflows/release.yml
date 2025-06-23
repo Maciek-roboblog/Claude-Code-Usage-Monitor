@@ -62,7 +62,7 @@ jobs:
           echo "Extracting changelog for version $VERSION"
 
           # Extract the changelog section for this version
-          awk -v ver="## [$VERSION]" '
+          awk -v ver="## \\[$VERSION\\]" '
             BEGIN { found=0 }
             $0 ~ ver { found=1; next }
             found && /^## \[/ { exit }

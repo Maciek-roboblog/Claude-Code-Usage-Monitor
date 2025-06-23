@@ -128,6 +128,27 @@ def print_header():
     ]
 
 
+def show_loading_screen():
+    """Display a loading screen while fetching data."""
+    cyan = "\033[96m"
+    yellow = "\033[93m"
+    gray = "\033[90m"
+    reset = "\033[0m"
+
+    screen_buffer = []
+    screen_buffer.append("\033[H")  # Home position
+    screen_buffer.extend(print_header())
+    screen_buffer.append("")
+    screen_buffer.append(f"{cyan}⏳ Loading...{reset}")
+    screen_buffer.append("")
+    screen_buffer.append(f"{yellow}Fetching Claude usage data...{reset}")
+    screen_buffer.append("")
+    screen_buffer.append(f"{gray}This may take a few seconds{reset}")
+
+    # Clear screen and print buffer
+    print("\033[2J" + "\n".join(screen_buffer) + "\033[J", end="", flush=True)
+
+
 def get_velocity_indicator(burn_rate):
     """Get velocity emoji based on burn rate."""
     if burn_rate < 50:
@@ -442,6 +463,9 @@ def main():
     try:
         # Enter alternate screen buffer, clear and hide cursor
         print("\033[?1049h\033[2J\033[H\033[?25l", end="", flush=True)
+
+        # Show loading screen immediately
+        show_loading_screen()
 
         while True:
             # Flush any pending input to prevent display corruption
