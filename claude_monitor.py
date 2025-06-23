@@ -24,10 +24,10 @@ def run_ccusage():
     """Execute ccusage blocks --json command and return parsed JSON data."""
     # Try direct ccusage command first (for global installations)
     commands = [
-        ["ccusage", "blocks", "--json"],      # Direct command
-        ["npx", "ccusage", "blocks", "--json"]  # Fallback to npx
+        ["ccusage", "blocks", "--json"],  # Direct command
+        ["npx", "ccusage", "blocks", "--json"],  # Fallback to npx
     ]
-    
+
     for cmd in commands:
         try:
             # Add timeout to prevent hanging
@@ -42,7 +42,9 @@ def run_ccusage():
         except subprocess.TimeoutExpired:
             if cmd[0] == "npx":  # Only show error on final attempt
                 print("Error: ccusage command timed out after 30 seconds")
-                print("This might indicate that ccusage is not properly installed or configured")
+                print(
+                    "This might indicate that ccusage is not properly installed or configured"
+                )
                 print("Try running 'npm install -g ccusage' to ensure it's installed")
             continue
         except subprocess.CalledProcessError as e:
@@ -57,7 +59,7 @@ def run_ccusage():
         except json.JSONDecodeError as e:
             print(f"Error parsing JSON: {e}")
             return None
-    
+
     return None
 
 
@@ -354,12 +356,12 @@ def main():
     white = "\033[97m"
     gray = "\033[90m"
     reset = "\033[0m"
-    
+
     # Test if ccusage is available by running a quick command
     print(f"{cyan}Checking ccusage availability...{reset}")
     ccusage_available = False
     method_used = None
-    
+
     # Try direct command first
     try:
         subprocess.run(
@@ -371,9 +373,13 @@ def main():
         )
         ccusage_available = True
         method_used = "direct"
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+    except (
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+        FileNotFoundError,
+    ):
         pass
-    
+
     # If direct command failed, try npx
     if not ccusage_available:
         try:
@@ -386,18 +392,28 @@ def main():
             )
             ccusage_available = True
             method_used = "npx"
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+        except (
+            subprocess.CalledProcessError,
+            subprocess.TimeoutExpired,
+            FileNotFoundError,
+        ):
             pass
-    
+
     if ccusage_available:
         print(f"{cyan}✓ ccusage is available (using {method_used} method){reset}")
     else:
         print(f"{red}✗ ccusage check failed{reset}")
         print(f"{yellow}Please ensure ccusage is installed:{reset}")
-        print(f"  npm install -g ccusage")
-        print(f"\n{yellow}If you're using npm 7+ and have ccusage installed globally,{reset}")
-        print(f"{yellow}you may need to add npm's global bin directory to your PATH.{reset}")
-        print(f"\n{yellow}Also make sure you're logged into Claude in your browser{reset}")
+        print("  npm install -g ccusage")
+        print(
+            f"\n{yellow}If you're using npm 7+ and have ccusage installed globally,{reset}"
+        )
+        print(
+            f"{yellow}you may need to add npm's global bin directory to your PATH.{reset}"
+        )
+        print(
+            f"\n{yellow}Also make sure you're logged into Claude in your browser{reset}"
+        )
         sys.exit(1)
 
     # Create event for clean refresh timing
@@ -408,14 +424,18 @@ def main():
 
     # For 'custom_max' plan, we need to get data first to determine the limit
     if args.plan == "custom_max":
-        print(f"{cyan}Fetching initial data to determine custom max token limit...{reset}")
+        print(
+            f"{cyan}Fetching initial data to determine custom max token limit...{reset}"
+        )
         initial_data = run_ccusage()
         if initial_data and "blocks" in initial_data:
             token_limit = get_token_limit(args.plan, initial_data["blocks"])
             print(f"{cyan}Custom max token limit detected: {token_limit:,}{reset}")
         else:
             token_limit = get_token_limit("pro")  # Fallback to pro
-            print(f"{yellow}Failed to fetch data, falling back to Pro limit: {token_limit:,}{reset}")
+            print(
+                f"{yellow}Failed to fetch data, falling back to Pro limit: {token_limit:,}{reset}"
+            )
     else:
         token_limit = get_token_limit(args.plan)
 
@@ -437,12 +457,18 @@ def main():
                 screen_buffer.append(f"{red}Failed to get usage data{reset}")
                 screen_buffer.append("")
                 screen_buffer.append(f"{yellow}Possible causes:{reset}")
-                screen_buffer.append(f"  • ccusage is not installed (run: npm install -g ccusage)")
-                screen_buffer.append(f"  • For npm 7+: ccusage may be in PATH but npx can't find it")
-                screen_buffer.append(f"  • You're not logged into Claude")
-                screen_buffer.append(f"  • Network connection issues")
+                screen_buffer.append(
+                    "  • ccusage is not installed (run: npm install -g ccusage)"
+                )
+                screen_buffer.append(
+                    "  • For npm 7+: ccusage may be in PATH but npx can't find it"
+                )
+                screen_buffer.append("  • You're not logged into Claude")
+                screen_buffer.append("  • Network connection issues")
                 screen_buffer.append("")
-                screen_buffer.append(f"{gray}Retrying in 3 seconds... (Ctrl+C to exit){reset}")
+                screen_buffer.append(
+                    f"{gray}Retrying in 3 seconds... (Ctrl+C to exit){reset}"
+                )
                 # Clear screen and print buffer
                 print(
                     "\033[2J" + "\n".join(screen_buffer) + "\033[J", end="", flush=True
