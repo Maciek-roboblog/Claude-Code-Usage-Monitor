@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.16] - 2025-06-23
+
+### Fixed
+- Fixed UnboundLocalError when Ctrl+C is pressed by initializing color variables at the start of main()
+- Fixed ccusage command hanging indefinitely by adding 30-second timeout to subprocess calls
+- Added ccusage availability check at startup with helpful error messages
+- Improved error display when ccusage fails with better debugging information
+
+### Added
+- Timeout handling for all ccusage subprocess calls to prevent hanging
+- Pre-flight check for ccusage availability before entering main loop
+- More informative error messages suggesting installation steps and login requirements
+
 ## [1.0.11] - 2025-06-22
 
 ### Changed
@@ -52,6 +65,7 @@
 - Proper Ctrl+C handling with cursor restoration
 - Terminal settings restoration on exit
 
+[1.0.16]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.16
 [1.0.11]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.11
 [1.0.8]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.8
 [1.0.7]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.7

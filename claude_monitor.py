@@ -22,20 +22,43 @@ except ImportError:
 
 def run_ccusage():
     """Execute ccusage blocks --json command and return parsed JSON data."""
-    try:
-        result = subprocess.run(
-            ["npx", "ccusage", "blocks", "--json"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return json.loads(result.stdout)
-    except subprocess.CalledProcessError as e:
-        print(f"Error running ccusage: {e}")
-        return None
-    except json.JSONDecodeError as e:
-        print(f"Error parsing JSON: {e}")
-        return None
+    # Try direct ccusage command first (for global installations)
+    commands = [
+        ["ccusage", "blocks", "--json"],      # Direct command
+        ["npx", "ccusage", "blocks", "--json"]  # Fallback to npx
+    ]
+    
+    for cmd in commands:
+        try:
+            # Add timeout to prevent hanging
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=30,  # 30 second timeout
+            )
+            return json.loads(result.stdout)
+        except subprocess.TimeoutExpired:
+            if cmd[0] == "npx":  # Only show error on final attempt
+                print("Error: ccusage command timed out after 30 seconds")
+                print("This might indicate that ccusage is not properly installed or configured")
+                print("Try running 'npm install -g ccusage' to ensure it's installed")
+            continue
+        except subprocess.CalledProcessError as e:
+            if cmd[0] == "npx":  # Only show error on final attempt
+                print(f"Error running ccusage: {e}")
+                if e.stderr:
+                    print(f"stderr: {e.stderr}")
+            continue
+        except FileNotFoundError:
+            # Command not found, try next option
+            continue
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON: {e}")
+            return None
+    
+    return None
 
 
 def format_time(minutes):
@@ -324,6 +347,32 @@ def main():
     test_npx()
     args = parse_args()
 
+    # Define color codes at the beginning to ensure they're available in exception handlers
+    cyan = "\033[96m"
+    red = "\033[91m"
+    yellow = "\033[93m"
+    white = "\033[97m"
+    gray = "\033[90m"
+    reset = "\033[0m"
+    
+    # Test if ccusage is available by running a quick command
+    print(f"{cyan}Checking ccusage availability...{reset}")
+    try:
+        subprocess.run(
+            ["npx", "ccusage", "--version"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=10,
+        )
+        print(f"{cyan}✓ ccusage is available{reset}")
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+        print(f"{red}✗ ccusage check failed{reset}")
+        print(f"{yellow}Please ensure ccusage is installed:{reset}")
+        print(f"  npm install -g ccusage")
+        print(f"\n{yellow}Also make sure you're logged into Claude in your browser{reset}")
+        sys.exit(1)
+
     # Create event for clean refresh timing
     stop_event = threading.Event()
 
@@ -332,11 +381,14 @@ def main():
 
     # For 'custom_max' plan, we need to get data first to determine the limit
     if args.plan == "custom_max":
+        print(f"{cyan}Fetching initial data to determine custom max token limit...{reset}")
         initial_data = run_ccusage()
         if initial_data and "blocks" in initial_data:
             token_limit = get_token_limit(args.plan, initial_data["blocks"])
+            print(f"{cyan}Custom max token limit detected: {token_limit:,}{reset}")
         else:
             token_limit = get_token_limit("pro")  # Fallback to pro
+            print(f"{yellow}Failed to fetch data, falling back to Pro limit: {token_limit:,}{reset}")
     else:
         token_limit = get_token_limit(args.plan)
 
@@ -355,7 +407,14 @@ def main():
             data = run_ccusage()
             if not data or "blocks" not in data:
                 screen_buffer.extend(print_header())
-                screen_buffer.append("Failed to get usage data")
+                screen_buffer.append(f"{red}Failed to get usage data{reset}")
+                screen_buffer.append("")
+                screen_buffer.append(f"{yellow}Possible causes:{reset}")
+                screen_buffer.append(f"  • ccusage is not installed (run: npm install -g ccusage)")
+                screen_buffer.append(f"  • You're not logged into Claude")
+                screen_buffer.append(f"  • Network connection issues")
+                screen_buffer.append("")
+                screen_buffer.append(f"{gray}Retrying in 3 seconds... (Ctrl+C to exit){reset}")
                 # Clear screen and print buffer
                 print(
                     "\033[2J" + "\n".join(screen_buffer) + "\033[J", end="", flush=True
@@ -445,14 +504,6 @@ def main():
             else:
                 # If no burn rate or tokens already depleted, use reset time
                 predicted_end_time = reset_time
-
-            # Color codes
-            cyan = "\033[96m"
-            red = "\033[91m"
-            yellow = "\033[93m"
-            white = "\033[97m"
-            gray = "\033[90m"
-            reset = "\033[0m"
 
             # Display header
             screen_buffer.extend(print_header())
