@@ -513,7 +513,7 @@ def main():
                 try:
                     display_tz = pytz.timezone(args.timezone)
                 except pytz.exceptions.UnknownTimeZoneError:
-                    display_tz = pytz.timezone("Europe/Warsaw")
+                    display_tz = pytz.timezone(BASE_TZ)
                 current_time_display = datetime.now(pytz.UTC).astimezone(display_tz)
                 current_time_str = current_time_display.strftime("%H:%M:%S")
                 screen_buffer.append(
