@@ -61,13 +61,8 @@ jobs:
           VERSION="${{ needs.check-version.outputs.version }}"
           echo "Extracting changelog for version $VERSION"
 
-          # Extract the changelog section for this version
-          awk -v ver="## \\[$VERSION\\]" '
-            BEGIN { found=0 }
-            $0 ~ ver { found=1; next }
-            found && /^## \[/ { exit }
-            found { print }
-          ' CHANGELOG.md > release_notes.md
+          # Extract the changelog section for this version using sed
+          sed -n "/^## \\[$VERSION\\]/,/^## \\[/{/^## \\[$VERSION\\]/d; /^## \\[/q; /^$/d; p}" CHANGELOG.md > release_notes.md
 
           # If no changelog found, create a simple message
           if [ ! -s release_notes.md ]; then
