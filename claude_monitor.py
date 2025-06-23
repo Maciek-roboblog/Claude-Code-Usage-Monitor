@@ -509,9 +509,16 @@ def main():
                     "🔥 \033[97mBurn Rate:\033[0m      \033[93m0.0\033[0m \033[90mtokens/min\033[0m"
                 )
                 screen_buffer.append("")
+                # Use configured timezone for time display
+                try:
+                    display_tz = pytz.timezone(args.timezone)
+                except pytz.exceptions.UnknownTimeZoneError:
+                    display_tz = pytz.timezone("Europe/Warsaw")
+                current_time_display = datetime.now(pytz.UTC).astimezone(display_tz)
+                current_time_str = current_time_display.strftime("%H:%M:%S")
                 screen_buffer.append(
                     "⏰ \033[90m{}\033[0m 📝 \033[96mNo active session\033[0m | \033[90mCtrl+C to exit\033[0m 🟨".format(
-                        datetime.now().strftime("%H:%M:%S")
+                        current_time_str
                     )
                 )
                 # Clear screen and print buffer
@@ -634,8 +641,13 @@ def main():
                 )
                 screen_buffer.append("")
 
-            # Status line
-            current_time_str = datetime.now().strftime("%H:%M:%S")
+            # Status line - use configured timezone for consistency
+            try:
+                display_tz = pytz.timezone(args.timezone)
+            except pytz.exceptions.UnknownTimeZoneError:
+                display_tz = pytz.timezone("Europe/Warsaw")
+            current_time_display = datetime.now(pytz.UTC).astimezone(display_tz)
+            current_time_str = current_time_display.strftime("%H:%M:%S")
             screen_buffer.append(
                 f"⏰ {gray}{current_time_str}{reset} 📝 {cyan}Smooth sailing...{reset} | {gray}Ctrl+C to exit{reset} 🟨"
             )
