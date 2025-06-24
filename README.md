@@ -1,5 +1,4 @@
 # 🎯 Claude Code Usage Monitor
-
 [![PyPI Version](https://img.shields.io/pypi/v/claude-monitor.svg)](https://pypi.org/project/claude-monitor/)
 [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -240,6 +239,8 @@ claude-monitor --timezone Europe/London
 >    - [Create Issue Here](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues/new)
 >
 > **Thank you for helping make this tool better! 🚀**
+
+## LATEST STABLE VERSION FOR USE IS ON PYPI THIS VERSION IS LITTLE BIT TRICKY AND I WILL FIX IT 24.06.2025
 
 
 ## ✨ Features & How It Works
