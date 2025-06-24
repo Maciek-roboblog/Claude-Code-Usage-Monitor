@@ -53,21 +53,9 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 - **⚠️ Warning system** - Alerts when tokens exceed limits or will deplete before session reset
 - **💼 Professional UI** - Clean, colorful terminal interface with emojis
 - **⏰ Customizable scheduling** - Set your own reset times and timezones
-- **🚀 Auto-install dependencies** - Automatically installs Node.js and ccusage if needed
 
 
 ## 🚀 Installation
-
-### 🎯 Automatic Dependencies
-
-The Claude Code Usage Monitor **automatically installs all required dependencies** on first run:
-
-- **Node.js** - If not present, downloads and installs Node.js
-- **npm & npx** - Ensures npm package manager and npx are available
-- **ccusage** - Automatically installs the ccusage CLI tool
-
-No manual dependency installation required! Just install the monitor and run.
-
 ### ⚡ Modern Installation with uv (Recommended)
 
 **Why uv is the best choice:**
@@ -130,7 +118,6 @@ source ~/.bashrc  # or restart your terminal
 claude-monitor
 ```
 
-> **Note**: Node.js and ccusage will be automatically installed on first run if not present.
 >
 > **⚠️ PATH Setup**: If you see `WARNING: The script claude-monitor is installed in '/home/username/.local/bin' which is not on PATH`, follow the export PATH command above.
 >
@@ -582,8 +569,8 @@ For immediate testing or development:
 ```bash
 # Install Python dependency
 pip install pytz
+pip install rich>=13.0.0
 
-# Clone and run (Node.js and ccusage auto-install on first run)
 git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
 cd Claude-Code-Usage-Monitor
 python claude_monitor.py
@@ -593,7 +580,6 @@ python claude_monitor.py
 
 1. **Python 3.7+** installed on your system
 
-> **Note**: Node.js and ccusage are automatically installed on first run if not present.
 
 ### Virtual Environment Setup
 
@@ -658,11 +644,11 @@ source venv/bin/activate
 
 # 4. Install Python dependencies
 pip install pytz
-
+pip install rich>=13.0.0
 # 5. Make script executable (Linux/Mac only)
 chmod +x claude_monitor.py
 
-# 6. Run the monitor (Node.js and ccusage auto-install on first run)
+# 6. Run the monitor
 python claude_monitor.py
 ```
 
@@ -810,44 +796,6 @@ If you encounter the error `No active session found`, please follow these steps:
 CLAUDE_CONFIG_DIR=~/.config/claude ./claude_monitor.py
 ```
 
-#### ccusage Not Found
-
-If you see "ccusage not found" error:
-
-1. **Check npm installation**
-   ```bash
-   npm --version
-   npx --version
-   ```
-
-2. **Install manually if needed**
-   ```bash
-   npm install -g ccusage
-   ```
-
-3. **Check PATH**
-   ```bash
-   echo $PATH
-   # Should include npm global bin directory
-   ```
-
-#### Permission Errors
-
-For permission-related issues:
-
-1. **npm global permissions**
-   ```bash
-   # Configure npm to use a different directory
-   mkdir ~/.npm-global
-   npm config set prefix '~/.npm-global'
-   echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
-   source ~/.bashrc
-   ```
-
-2. **Use sudo (not recommended)**
-   ```bash
-   sudo npm install -g ccusage
-   ```
 
 ## 📞 Contact
 
@@ -876,11 +824,6 @@ Whether you need help with setup, have feature requests, found a bug, or want to
 - [@moneroexamples](https://github.com/moneroexamples)
 
 Want to contribute? Check out our [Contributing Guide](CONTRIBUTING.md)!
-
-
-## 🙏 Acknowledgments
-
-This tool builds upon the excellent [ccusage](https://github.com/ryoppippi/ccusage) by [@ryoppippi](https://github.com/ryoppippi), adding a real-time monitoring interface with visual progress bars, burn rate calculations, and predictive analytics.
 
 
 ## Star History

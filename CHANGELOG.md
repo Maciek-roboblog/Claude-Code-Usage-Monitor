@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.19] - 2025-06-23
+
+### Fixed
+- Fixed timezone handling by locking calculation to Europe/Warsaw timezone
+- Separated display timezone from reset time calculation for improved reliability
+- Removed dynamic timezone input and related error handling to simplify reset time logic
+
 ## [1.0.17] - 2025-06-23
 
 ### Added
@@ -74,6 +81,7 @@
 - Proper Ctrl+C handling with cursor restoration
 - Terminal settings restoration on exit
 
+[1.0.19]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.19
 [1.0.17]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.17
 [1.0.16]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.16
 [1.0.11]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.11
