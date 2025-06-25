@@ -51,6 +51,7 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 - **📋 Multiple plan support** - Works with Pro, Max5, Max20, and auto-detect plans
 - **⚠️ Warning system** - Alerts when tokens exceed limits or will deplete before session reset
 - **💼 Professional UI** - Clean, colorful terminal interface with emojis
+- **🎨 Smart Theming** - Automatic light/dark theme detection with manual override options
 - **⏰ Customizable scheduling** - Set your own reset times and timezones
 
 
@@ -209,6 +210,27 @@ claude-monitor --timezone UTC
 claude-monitor --timezone Europe/London
 ```
 
+#### Theme Configuration
+
+The monitor automatically detects your terminal theme (light/dark) and adapts colors accordingly:
+
+```bash
+# Auto-detect theme (default)
+claude-monitor
+
+# Force light theme
+claude-monitor --theme light
+
+# Force dark theme  
+claude-monitor --theme dark
+
+# Auto-detect with explicit setting
+claude-monitor --theme auto
+
+# Debug theme detection
+claude-monitor --theme-debug
+```
+
 ### Available Plans
 
 | Plan | Token Limit | Best For |
@@ -254,8 +276,11 @@ claude-monitor --timezone Europe/London
 
 #### 📊 Visual Progress Bars
 - **Token Progress**: Color-coded bars showing current usage vs limits
-- **Time Progress**: Visual countdown to next session reset
-- **Burn Rate Indicator**: Real-time consumption velocity
+  - 🟢 **Green (0-49%)**: Safe usage level
+  - 🟡 **Yellow (50-89%)**: Warning - approaching limit
+  - 🔴 **Red (90-100%)**: Critical - near or at limit
+- **Time Progress**: Visual countdown to next session reset with blue progress indicator
+- **Burn Rate Indicator**: Real-time consumption velocity with emoji indicators (🐌➡️🚀⚡)
 
 #### 🔮 Smart Predictions
 - Calculates when tokens will run out based on current burn rate
@@ -512,8 +537,9 @@ claude-monitor --plan custom_max
 
 1. **Terminal Setup**
    - Use terminals with at least 80 character width
-   - Enable color support for better visual feedback
+   - Enable color support for better visual feedback (check `COLORTERM` environment variable)
    - Consider dedicated terminal window for monitoring
+   - Use terminals with truecolor support for best theme experience
 
 2. **Workflow Integration**
    ```bash

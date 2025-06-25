@@ -2,6 +2,7 @@
 Simplified JSON Output Formatter
 
 Basic JSON formatting for session blocks to match response_final.json structure.
+Includes theme-aware console output support.
 """
 
 import json
@@ -10,6 +11,7 @@ from typing import Any, Dict, List
 from usage_analyzer.models.data_structures import SessionBlock
 from usage_analyzer.core.calculator import BurnRateCalculator
 from usage_analyzer.utils.pricing_fetcher import ClaudePricingFetcher
+from usage_analyzer.themes import print_themed, get_themed_console
 
 
 class JSONFormatter:
@@ -19,6 +21,43 @@ class JSONFormatter:
         """Initialize formatter."""
         self.calculator = BurnRateCalculator()
         self.pricing_fetcher = ClaudePricingFetcher()
+        
+    def print_summary(self, blocks: List[SessionBlock]) -> None:
+        """Print a themed summary of session blocks."""
+        console = get_themed_console()
+        
+        if not blocks:
+            print_themed("No session blocks found", style="warning")
+            return
+            
+        active_blocks = [b for b in blocks if b.is_active]
+        completed_blocks = [b for b in blocks if not b.is_active and not b.is_gap]
+        
+        print_themed("📊 Session Summary", style="header")
+        print_themed(f"Active sessions: {len(active_blocks)}", style="info")
+        print_themed(f"Completed sessions: {len(completed_blocks)}", style="value")
+        
+        if active_blocks:
+            for block in active_blocks:
+                total_tokens = self._calculate_total_tokens(block.per_model_stats)
+                print_themed(f"  • Session {block.id}: {total_tokens:,} tokens", style="usage.total")
+                
+    def print_costs(self, blocks: List[SessionBlock]) -> None:
+        """Print themed cost breakdown."""
+        total_cost = 0
+        for block in blocks:
+            if not block.is_gap:
+                per_model_costs = self.pricing_fetcher.recalculate_per_model_costs(block.per_model_stats)
+                total_cost += sum(per_model_costs.values())
+        
+        if total_cost > 10:
+            style = "cost.high"
+        elif total_cost > 1:
+            style = "cost.medium" 
+        else:
+            style = "cost.low"
+            
+        print_themed(f"💰 Total Cost: ${total_cost:.4f}", style=style)
 
     def format_blocks(self, blocks: List[SessionBlock]) -> str:
         """Format blocks as JSON string matching response_final.json structure."""

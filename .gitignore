@@ -5,7 +5,8 @@ __pycache__/
 
 # C extensions
 *.so
-
+MAIN_INSTRUCTION.md
+.TASKS
 # Distribution / packaging
 .Python
 build/
@@ -200,3 +201,10 @@ logs/
 *.bak
 *.orig
 /.claude/
+/ULTRATHINK_COMPLETE_GUIDE.md
+/SLASH_COMMANDS.md
+/optimize_tokens.sh
+/MAIN_INSTRUCTION.md
+/CLAUDE_SYSTEM_PROMPT.md
+/claude_optimize.py
+/CLAUDE.md

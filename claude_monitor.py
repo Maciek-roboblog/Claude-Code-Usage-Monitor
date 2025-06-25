@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import pytz
 
 from usage_analyzer.api import analyze_usage
+from usage_analyzer.themes import get_themed_console, print_themed, ThemeType
 
 # All internal calculations use UTC, display timezone is configurable
 UTC_TZ = pytz.UTC
@@ -70,17 +71,15 @@ def format_time(minutes):
 def create_token_progress_bar(percentage, width=50):
     """Create a token usage progress bar with bracket style."""
     filled = int(width * percentage / 100)
-
-    # Create the bar with green fill and red empty space
     green_bar = "█" * filled
     red_bar = "░" * (width - filled)
-
-    # Color codes
-    green = "\033[92m"  # Bright green
-    red = "\033[91m"  # Bright red
-    reset = "\033[0m"
-
-    return f"🟢 [{green}{green_bar}{red}{red_bar}{reset}] {percentage:.1f}%"
+    
+    if percentage >= 90:
+        return f"🟢 [[cost.high]{green_bar}[cost.medium]{red_bar}[/]] {percentage:.1f}%"
+    elif percentage >= 50:
+        return f"🟢 [[cost.medium]{green_bar}[/][table.border]{red_bar}[/]] {percentage:.1f}%"
+    else:
+        return f"🟢 [[cost.low]{green_bar}[/][table.border]{red_bar}[/]] {percentage:.1f}%"
 
 
 def create_time_progress_bar(elapsed_minutes, total_minutes, width=50):
@@ -91,52 +90,40 @@ def create_time_progress_bar(elapsed_minutes, total_minutes, width=50):
         percentage = min(100, (elapsed_minutes / total_minutes) * 100)
 
     filled = int(width * percentage / 100)
-
-    # Create the bar with blue fill and red empty space
     blue_bar = "█" * filled
     red_bar = "░" * (width - filled)
-
-    # Color codes
-    blue = "\033[94m"  # Bright blue
-    red = "\033[91m"  # Bright red
-    reset = "\033[0m"
-
+    
     remaining_time = format_time(max(0, total_minutes - elapsed_minutes))
-    return f"⏰ [{blue}{blue_bar}{red}{red_bar}{reset}] {remaining_time}"
+    return f"⏰ [[progress.bar]{blue_bar}[/][table.border]{red_bar}[/]] {remaining_time}"
 
 
 def print_header():
     """Return the stylized header with sparkles as a list of strings."""
-    cyan = "\033[96m"
-    blue = "\033[94m"
-    reset = "\033[0m"
-
-    # Sparkle pattern
-    sparkles = f"{cyan}✦ ✧ ✦ ✧ {reset}"
-
+    console = get_themed_console()
+    
+    # Build header components for theme-aware styling
+    sparkles = "✦ ✧ ✦ ✧"
+    title = "CLAUDE CODE USAGE MONITOR"
+    separator = "=" * 60
+    
     return [
-        f"{sparkles}{cyan}CLAUDE CODE USAGE MONITOR{reset} {sparkles}",
-        f"{blue}{'=' * 60}{reset}",
+        f"[header]{sparkles}[/] [header]{title}[/] [header]{sparkles}[/]",
+        f"[table.border]{separator}[/]",
         "",
     ]
 
 
 def show_loading_screen():
     """Display a loading screen while fetching data."""
-    cyan = "\033[96m"
-    yellow = "\033[93m"
-    gray = "\033[90m"
-    reset = "\033[0m"
-
     screen_buffer = []
     screen_buffer.append("\033[H")  # Home position
     screen_buffer.extend(print_header())
     screen_buffer.append("")
-    screen_buffer.append(f"{cyan}⏳ Loading...{reset}")
+    screen_buffer.append("[info]⏳ Loading...[/]")
     screen_buffer.append("")
-    screen_buffer.append(f"{yellow}Fetching Claude usage data...{reset}")
+    screen_buffer.append("[warning]Fetching Claude usage data...[/]")
     screen_buffer.append("")
-    screen_buffer.append(f"{gray}This may take a few seconds{reset}")
+    screen_buffer.append("[dim]This may take a few seconds[/]")
 
     # Clear screen and print buffer
     print("\033[2J" + "\n".join(screen_buffer) + "\033[J", end="", flush=True)
@@ -250,6 +237,17 @@ def parse_args():
         default="Europe/Warsaw",
         help="Timezone for reset times (default: Europe/Warsaw). Examples: US/Eastern, Asia/Tokyo, UTC",
     )
+    parser.add_argument(
+        "--theme",
+        type=str,
+        choices=["light", "dark", "auto"],
+        help="Theme to use (auto-detects if not specified). Set to 'auto' for automatic detection based on terminal",
+    )
+    parser.add_argument(
+        "--theme-debug",
+        action="store_true",
+        help="Show theme detection debug information and exit"
+    )
     return parser.parse_args()
 
 
@@ -312,13 +310,31 @@ def main():
     """Main monitoring loop."""
     args = parse_args()
 
-    # Define color codes at the beginning to ensure they're available in exception handlers
-    cyan = "\033[96m"
-    red = "\033[91m"
-    yellow = "\033[93m"
-    white = "\033[97m"
-    gray = "\033[90m"
-    reset = "\033[0m"
+    # Handle theme setup
+    if args.theme:
+        theme_type = ThemeType(args.theme.lower())
+        console = get_themed_console(force_theme=theme_type)
+    else:
+        console = get_themed_console()
+    
+    # Handle theme debug flag
+    if args.theme_debug:
+        from usage_analyzer.themes.console import debug_theme_info
+        debug_info = debug_theme_info()
+        print_themed("🎨 Theme Detection Debug Information", style="header")
+        print_themed(f"Current theme: {debug_info['current_theme']}", style="info")
+        print_themed(f"Console initialized: {debug_info['console_initialized']}", style="value")
+        
+        detector_info = debug_info['detector_info']
+        print_themed("Environment variables:", style="subheader")
+        for key, value in detector_info['environment_vars'].items():
+            if value:
+                print_themed(f"  {key}: {value}", style="label")
+        
+        caps = detector_info['terminal_capabilities']
+        print_themed(f"Terminal capabilities: {caps['colors']} colors, truecolor: {caps['truecolor']}", style="info")
+        print_themed(f"Platform: {detector_info['platform']}", style="value")
+        return
 
 
 
@@ -330,18 +346,14 @@ def main():
 
     # For 'custom_max' plan, we need to get data first to determine the limit
     if args.plan == "custom_max":
-        print(
-            f"{cyan}Fetching initial data to determine custom max token limit...{reset}"
-        )
+        print_themed("Fetching initial data to determine custom max token limit...", style="info")
         initial_data = analyze_usage()
         if initial_data and "blocks" in initial_data:
             token_limit = get_token_limit(args.plan, initial_data["blocks"])
-            print(f"{cyan}Custom max token limit detected: {token_limit:,}{reset}")
+            print_themed(f"Custom max token limit detected: {token_limit:,}", style="info")
         else:
             token_limit = get_token_limit("pro")  # Fallback to pro
-            print(
-                f"{yellow}Failed to fetch data, falling back to Pro limit: {token_limit:,}{reset}"
-            )
+            print_themed(f"Failed to fetch data, falling back to Pro limit: {token_limit:,}", style="warning")
     else:
         token_limit = get_token_limit(args.plan)
 
@@ -363,19 +375,20 @@ def main():
             data = analyze_usage()
             if not data or "blocks" not in data:
                 screen_buffer.extend(print_header())
-                screen_buffer.append(f"{red}Failed to get usage data{reset}")
+                screen_buffer.append("[error]Failed to get usage data[/]")
                 screen_buffer.append("")
-                screen_buffer.append(f"{yellow}Possible causes:{reset}")
+                screen_buffer.append("[warning]Possible causes:[/]")
                 screen_buffer.append("  • You're not logged into Claude")
                 screen_buffer.append("  • Network connection issues")
                 screen_buffer.append("")
                 screen_buffer.append(
-                    f"{gray}Retrying in 3 seconds... (Ctrl+C to exit){reset}"
+                    "[dim]Retrying in 3 seconds... (Ctrl+C to exit)[/]"
                 )
-                # Clear screen and print buffer
-                print(
-                    "\033[2J" + "\n".join(screen_buffer) + "\033[J", end="", flush=True
-                )
+                # Clear screen and print buffer with theme support
+                console = get_themed_console()
+                console.clear()
+                for line in screen_buffer[1:]:  # Skip position control
+                    console.print(line)
                 stop_event.wait(timeout=3.0)
                 continue
 
@@ -389,18 +402,14 @@ def main():
             if not active_block:
                 screen_buffer.extend(print_header())
                 screen_buffer.append(
-                    "📊 \033[97mToken Usage:\033[0m    \033[92m🟢 [\033[92m░"
-                    + "░" * 49
-                    + "\033[0m] 0.0%\033[0m"
+                    "📊 [value]Token Usage:[/]    🟢 [[cost.low]" + "░" * 50 + "[/]] 0.0%"
                 )
                 screen_buffer.append("")
                 screen_buffer.append(
-                    "🎯 \033[97mTokens:\033[0m         \033[97m0\033[0m / \033[90m~{:,}\033[0m (\033[96m0 left\033[0m)".format(
-                        token_limit
-                    )
+                    f"🎯 [value]Tokens:[/]         [value]0[/] / [dim]~{token_limit:,}[/] ([info]0 left[/])"
                 )
                 screen_buffer.append(
-                    "🔥 \033[97mBurn Rate:\033[0m      \033[93m0.0\033[0m \033[90mtokens/min\033[0m"
+                    "🔥 [value]Burn Rate:[/]      [warning]0.0[/] [dim]tokens/min[/]"
                 )
                 screen_buffer.append("")
                 # Use configured timezone for time display
@@ -411,14 +420,13 @@ def main():
                 current_time_display = datetime.now(UTC_TZ).astimezone(display_tz)
                 current_time_str = current_time_display.strftime("%H:%M:%S")
                 screen_buffer.append(
-                    "⏰ \033[90m{}\033[0m 📝 \033[96mNo active session\033[0m | \033[90mCtrl+C to exit\033[0m 🟨".format(
-                        current_time_str
-                    )
+                    f"⏰ [dim]{current_time_str}[/] 📝 [info]No active session[/] | [dim]Ctrl+C to exit[/] 🟨"
                 )
-                # Clear screen and print buffer
-                print(
-                    "\033[2J" + "\n".join(screen_buffer) + "\033[J", end="", flush=True
-                )
+                # Clear screen and print buffer with theme support
+                console = get_themed_console()
+                console.clear()
+                for line in screen_buffer[1:]:  # Skip position control
+                    console.print(line)
                 stop_event.wait(timeout=3.0)
                 continue
 
@@ -492,7 +500,7 @@ def main():
 
             # Token Usage section
             screen_buffer.append(
-                f"📊 {white}Token Usage:{reset}    {create_token_progress_bar(usage_percentage)}"
+                f"📊 [value]Token Usage:[/]    {create_token_progress_bar(usage_percentage)}"
             )
             screen_buffer.append("")
 
@@ -508,16 +516,16 @@ def main():
                 elapsed_session_minutes = max(0, 300 - minutes_to_reset)
             
             screen_buffer.append(
-                f"⏳ {white}Time to Reset:{reset}  {create_time_progress_bar(elapsed_session_minutes, total_session_minutes)}"
+                f"⏳ [value]Time to Reset:[/]  {create_time_progress_bar(elapsed_session_minutes, total_session_minutes)}"
             )
             screen_buffer.append("")
 
             # Detailed stats
             screen_buffer.append(
-                f"🎯 {white}Tokens:{reset}         {white}{tokens_used:,}{reset} / {gray}~{token_limit:,}{reset} ({cyan}{tokens_left:,} left{reset})"
+                f"🎯 [value]Tokens:[/]         [value]{tokens_used:,}[/] / [dim]~{token_limit:,}[/] ([info]{tokens_left:,} left[/])"
             )
             screen_buffer.append(
-                f"🔥 {white}Burn Rate:{reset}      {yellow}{burn_rate:.1f}{reset} {gray}tokens/min{reset}"
+                f"🔥 [value]Burn Rate:[/]      [warning]{burn_rate:.1f}[/] [dim]tokens/min[/]"
             )
             screen_buffer.append("")
 
@@ -531,8 +539,8 @@ def main():
 
             predicted_end_str = predicted_end_local.strftime("%H:%M")
             reset_time_str = reset_time_local.strftime("%H:%M")
-            screen_buffer.append(f"🏁 {white}Predicted End:{reset} {predicted_end_str}")
-            screen_buffer.append(f"🔄 {white}Token Reset:{reset}   {reset_time_str}")
+            screen_buffer.append(f"🏁 [value]Predicted End:[/] {predicted_end_str}")
+            screen_buffer.append(f"🔄 [value]Token Reset:[/]   {reset_time_str}")
             screen_buffer.append("")
 
             # Update persistent notifications using current conditions
@@ -549,19 +557,19 @@ def main():
             # Display persistent notifications
             if show_switch_notification:
                 screen_buffer.append(
-                    f"🔄 {yellow}Tokens exceeded {args.plan.upper()} limit - switched to custom_max ({token_limit:,}){reset}"
+                    f"🔄 [warning]Tokens exceeded {args.plan.upper()} limit - switched to custom_max ({token_limit:,})[/]"
                 )
                 screen_buffer.append("")
 
             if show_exceed_notification:
                 screen_buffer.append(
-                    f"🚨 {red}TOKENS EXCEEDED MAX LIMIT! ({tokens_used:,} > {token_limit:,}){reset}"
+                    f"🚨 [error]TOKENS EXCEEDED MAX LIMIT! ({tokens_used:,} > {token_limit:,})[/]"
                 )
                 screen_buffer.append("")
 
             if show_tokens_will_run_out:
                 screen_buffer.append(
-                    f"⚠️  {red}Tokens will run out BEFORE reset!{reset}"
+                    f"⚠️  [error]Tokens will run out BEFORE reset![/]"
                 )
                 screen_buffer.append("")
 
@@ -573,11 +581,14 @@ def main():
             current_time_display = datetime.now(UTC_TZ).astimezone(display_tz)
             current_time_str = current_time_display.strftime("%H:%M:%S")
             screen_buffer.append(
-                f"⏰ {gray}{current_time_str}{reset} 📝 {cyan}Smooth sailing...{reset} | {gray}Ctrl+C to exit{reset} 🟨"
+                f"⏰ [dim]{current_time_str}[/] 📝 [info]Smooth sailing...[/] | [dim]Ctrl+C to exit[/] 🟨"
             )
 
-            # Clear screen and print entire buffer at once
-            print("\033[2J" + "\n".join(screen_buffer) + "\033[J", end="", flush=True)
+            # Clear screen and print entire buffer at once with theme support
+            console = get_themed_console()
+            console.clear()
+            for line in screen_buffer[1:]:  # Skip position control
+                console.print(line)
 
             stop_event.wait(timeout=3.0)
 
@@ -586,7 +597,7 @@ def main():
         stop_event.set()
         # Restore terminal settings
         restore_terminal(old_terminal_settings)
-        print(f"\n\n{cyan}Monitoring stopped.{reset}")
+        print_themed("\n\nMonitoring stopped.", style="info")
         sys.exit(0)
     except Exception as e:
         # Restore terminal on any error

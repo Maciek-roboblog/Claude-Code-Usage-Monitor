@@ -1,5 +1,41 @@
 # Changelog
 
+## [2.0.0] - 2025-06-25
+
+### Added
+- **🎨 Smart Theme System**: Automatic light/dark theme detection for optimal terminal appearance
+  - Intelligent theme detection based on terminal environment, system settings, and background color
+  - Manual theme override options: `--theme light`, `--theme dark`, `--theme auto`
+  - Theme debug mode: `--theme-debug` for troubleshooting theme detection
+  - Platform-specific theme detection (macOS, Windows, Linux)
+  - Support for VSCode integrated terminal, iTerm2, Windows Terminal
+- **📊 Enhanced Progress Bar Colors**: Improved visual feedback with smart color coding
+  - Token usage progress bars with three-tier color system:
+    - 🟢 Green (0-49%): Safe usage level
+    - 🟡 Yellow (50-89%): Warning - approaching limit  
+    - 🔴 Red (90-100%): Critical - near or at limit
+  - Time progress bars with consistent blue indicators
+  - Burn rate velocity indicators with emoji feedback (🐌➡️🚀⚡)
+- **🌈 Rich Theme Support**: Optimized color schemes for both light and dark terminals
+  - Dark theme: Bright colors optimized for dark backgrounds
+  - Light theme: Darker colors optimized for light backgrounds
+  - Automatic terminal capability detection (truecolor, 256-color, 8-color)
+- **🔧 Advanced Terminal Detection**: Comprehensive environment analysis
+  - COLORTERM, TERM_PROGRAM, COLORFGBG environment variable support
+  - Terminal background color querying using OSC escape sequences
+  - Cross-platform system theme integration
+
+### Changed
+- **Breaking**: Progress bar color logic now uses semantic color names (`cost.low`, `cost.medium`, `cost.high`)
+- Enhanced visual consistency across different terminal environments
+- Improved accessibility with better contrast ratios in both themes
+
+### Technical Details
+- New `usage_analyzer/themes/` module with theme detection and color management
+- `ThemeDetector` class with multi-method theme detection algorithm
+- Rich theme integration with automatic console configuration
+- Environment-aware color selection for maximum compatibility
+
 ## [1.0.19] - 2025-06-23
 
 ### Fixed
@@ -81,6 +117,7 @@
 - Proper Ctrl+C handling with cursor restoration
 - Terminal settings restoration on exit
 
+[2.0.0]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v2.0.0
 [1.0.19]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.19
 [1.0.17]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.17
 [1.0.16]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.16
