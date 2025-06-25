@@ -59,12 +59,11 @@ claude-monitor = "claude_monitor:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["."]
-include = ["claude_monitor.py", "check_dependency.py"]
+include = ["claude_monitor.py"]
 
 [tool.hatch.build.targets.sdist]
 include = [
     "claude_monitor.py",
-    "check_dependency.py",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",

@@ -10,10 +10,43 @@ from datetime import datetime, timedelta
 import pytz
 
 from usage_analyzer.api import analyze_usage
-from check_dependency import test_node, test_npx
 
 # All internal calculations use UTC, display timezone is configurable
 UTC_TZ = pytz.UTC
+
+# Notification persistence configuration
+NOTIFICATION_MIN_DURATION = 5  # seconds - minimum time to display notifications
+
+# Global notification state tracker
+notification_states = {
+    'switch_to_custom': {'triggered': False, 'timestamp': None},
+    'exceed_max_limit': {'triggered': False, 'timestamp': None}, 
+    'tokens_will_run_out': {'triggered': False, 'timestamp': None}
+}
+
+def update_notification_state(notification_type, condition_met, current_time):
+    """Update notification state and return whether to show notification."""
+    state = notification_states[notification_type]
+    
+    if condition_met:
+        if not state['triggered']:
+            # First time triggering - record timestamp
+            state['triggered'] = True
+            state['timestamp'] = current_time
+        return True
+    else:
+        if state['triggered']:
+            # Check if minimum duration has passed
+            elapsed = (current_time - state['timestamp']).total_seconds()
+            if elapsed >= NOTIFICATION_MIN_DURATION:
+                # Reset state after minimum duration
+                state['triggered'] = False
+                state['timestamp'] = None
+                return False
+            else:
+                # Still within minimum duration - keep showing
+                return True
+        return False
 
 # Terminal handling for Unix-like systems
 try:
@@ -221,20 +254,20 @@ def parse_args():
 
 
 def get_token_limit(plan, blocks=None):
+    # TODO calculate old based on limits
+    limits = {"pro": 44000, "max5": 220000, "max20": 880000}
+
     """Get token limit based on plan type."""
     if plan == "custom_max" and blocks:
-        # Find the highest token count from all previous blocks
         max_tokens = 0
         for block in blocks:
             if not block.get("isGap", False) and not block.get("isActive", False):
                 tokens = block.get("totalTokens", 0)
                 if tokens > max_tokens:
                     max_tokens = tokens
-        # Return the highest found, or default to pro if none found
-        return max_tokens if max_tokens > 0 else 7000
+        return max_tokens if max_tokens > 0 else limits["pro"]
 
-    limits = {"pro": 7000, "max5": 35000, "max20": 140000}
-    return limits.get(plan, 7000)
+    return limits.get(plan, 44000)
 
 
 def setup_terminal():
@@ -277,8 +310,6 @@ def flush_input():
 
 def main():
     """Main monitoring loop."""
-    test_node()
-    test_npx()
     args = parse_args()
 
     # Define color codes at the beginning to ensure they're available in exception handlers
@@ -393,10 +424,13 @@ def main():
 
             # Extract data from active block
             tokens_used = active_block.get("totalTokens", 0)
+            
+            # Store original limit for notification
+            original_limit = get_token_limit(args.plan)
 
             # Check if tokens exceed limit and switch to custom_max if needed
-            if tokens_used > token_limit and args.plan == "pro":
-                # Auto-switch to custom_max when pro limit is exceeded
+            if tokens_used > token_limit and args.plan != "custom_max":
+                # Auto-switch to custom_max when any plan limit is exceeded
                 new_limit = get_token_limit("custom_max", data["blocks"])
                 if new_limit > token_limit:
                     token_limit = new_limit
@@ -501,18 +535,21 @@ def main():
             screen_buffer.append(f"🔄 {white}Token Reset:{reset}   {reset_time_str}")
             screen_buffer.append("")
 
-            # Show notification if we switched to custom_max
-            show_switch_notification = False
-            if tokens_used > 7000 and args.plan == "pro" and token_limit > 7000:
-                show_switch_notification = True
+            # Update persistent notifications using current conditions
+            show_switch_notification = update_notification_state(
+                'switch_to_custom', token_limit > original_limit, current_time
+            )
+            show_exceed_notification = update_notification_state(
+                'exceed_max_limit', tokens_used > token_limit, current_time
+            )
+            show_tokens_will_run_out = update_notification_state(
+                'tokens_will_run_out', predicted_end_time < reset_time, current_time
+            )
 
-            # Notification when tokens exceed max limit
-            show_exceed_notification = tokens_used > token_limit
-
-            # Show notifications
+            # Display persistent notifications
             if show_switch_notification:
                 screen_buffer.append(
-                    f"🔄 {yellow}Tokens exceeded Pro limit - switched to custom_max ({token_limit:,}){reset}"
+                    f"🔄 {yellow}Tokens exceeded {args.plan.upper()} limit - switched to custom_max ({token_limit:,}){reset}"
                 )
                 screen_buffer.append("")
 
@@ -522,8 +559,7 @@ def main():
                 )
                 screen_buffer.append("")
 
-            # Warning if tokens will run out before reset
-            if predicted_end_time < reset_time:
+            if show_tokens_will_run_out:
                 screen_buffer.append(
                     f"⚠️  {red}Tokens will run out BEFORE reset!{reset}"
                 )
