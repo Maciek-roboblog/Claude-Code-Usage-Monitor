@@ -42,6 +42,7 @@ dev = [
     "ruff>=0.8.0",
     "pre-commit>=2.20.0; python_version<'3.8'",
     "pre-commit>=3.0.0; python_version>='3.8'",
+    "pytest>=6.0.0",
 ]
 
 [project.urls]
@@ -71,4 +72,9 @@ include = [
     "DEVELOPMENT.md",
     "CONTRIBUTING.md",
     "TROUBLESHOOTING.md",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
 ]
