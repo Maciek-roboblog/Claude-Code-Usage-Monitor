@@ -1,5 +1,5 @@
 # 🎯 Claude Code Usage Monitor
-[![PyPI Version](https://img.shields.io/pypi/v/claude-monitor.svg)](https://pypi.org/project/claude-monitor/)
+[![PyPI Version](https://img.shields.io/pypi/v/claude-usage-monitor.svg)](https://pypi.org/project/claude-usage-monitor/)
 [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
@@ -67,16 +67,16 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 
 The fastest and easiest way to install and use the monitor:
 
-[![PyPI](https://img.shields.io/pypi/v/claude-monitor.svg)](https://pypi.org/project/claude-monitor/)
+[![PyPI](https://img.shields.io/pypi/v/claude-usage-monitor.svg)](https://pypi.org/project/claude-usage-monitor/)
 
 #### Install from PyPI
 
 ```bash
 # Install directly from PyPI with uv (easiest)
-uv tool install claude-monitor
+uv tool install claude-usage-monitor
 
 # Run from anywhere
-claude-monitor
+claude-usage-monitor
 ```
 
 #### Install from Source
@@ -108,14 +108,14 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 ```bash
 # Install from PyPI
-pip install claude-monitor
+pip install claude-usage-monitor
 
 # If claude-monitor command is not found, add ~/.local/bin to PATH:
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc  # or restart your terminal
 
 # Run from anywhere (dependencies auto-install on first run)
-claude-monitor
+claude-usage-monitor
 ```
 
 >
@@ -124,7 +124,7 @@ claude-monitor
 > **⚠️ Important**: On modern Linux distributions (Ubuntu 23.04+, Debian 12+, Fedora 38+), you may encounter an "externally-managed-environment" error. Instead of using `--break-system-packages`, we strongly recommend:
 > 1. **Use uv instead** (see above) - it's safer and easier
 > 2. **Use a virtual environment** - `python3 -m venv myenv && source myenv/bin/activate`
-> 3. **Use pipx** - `pipx install claude-monitor`
+> 3. **Use pipx** - `pipx install claude-usage-monitor`
 >
 > See the Troubleshooting section for detailed solutions.
 
@@ -133,19 +133,19 @@ claude-monitor
 #### pipx (Isolated Environments)
 ```bash
 # Install with pipx
-pipx install claude-monitor
+pipx install claude-usage-monitor
 
 # Run from anywhere (dependencies auto-install on first run)
-claude-monitor
+claude-usage-monitor
 ```
 
 #### conda/mamba
 ```bash
 # Install with pip in conda environment
-pip install claude-monitor
+pip install claude-usage-monitor
 
 # Run from anywhere (dependencies auto-install on first run)
-claude-monitor
+claude-usage-monitor
 ```
 
 ## 📖 Usage
@@ -155,14 +155,14 @@ claude-monitor
 #### With uv tool installation (Recommended)
 ```bash
 # Default (Pro plan - 7,000 tokens)
-claude-monitor
+claude-usage-monitor
 
 # Exit the monitor
 # Press Ctrl+C to gracefully exit
 ```
 
 #### Development mode
-If running from source, use `./claude_monitor.py` instead of `claude-monitor`.
+If running from source, use `./claude_monitor.py` instead of `claude-usage-monitor`.
 
 ### Configuration Options
 
