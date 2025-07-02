@@ -76,7 +76,7 @@ The fastest and easiest way to install and use the monitor:
 uv tool install claude-usage-monitor
 
 # Run from anywhere
-claude-usage-monitor
+claude-monitor
 ```
 
 #### Install from Source
@@ -115,7 +115,7 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc  # or restart your terminal
 
 # Run from anywhere (dependencies auto-install on first run)
-claude-usage-monitor
+claude-monitor
 ```
 
 >
@@ -136,7 +136,7 @@ claude-usage-monitor
 pipx install claude-usage-monitor
 
 # Run from anywhere (dependencies auto-install on first run)
-claude-usage-monitor
+claude-monitor
 ```
 
 #### conda/mamba
@@ -145,7 +145,7 @@ claude-usage-monitor
 pip install claude-usage-monitor
 
 # Run from anywhere (dependencies auto-install on first run)
-claude-usage-monitor
+claude-monitor
 ```
 
 ## 📖 Usage
@@ -155,14 +155,14 @@ claude-usage-monitor
 #### With uv tool installation (Recommended)
 ```bash
 # Default (Pro plan - 7,000 tokens)
-claude-usage-monitor
+claude-monitor
 
 # Exit the monitor
 # Press Ctrl+C to gracefully exit
 ```
 
 #### Development mode
-If running from source, use `./claude_monitor.py` instead of `claude-usage-monitor`.
+If running from source, use `./claude_monitor.py` instead of `claude-monitor`.
 
 ### Configuration Options
 
