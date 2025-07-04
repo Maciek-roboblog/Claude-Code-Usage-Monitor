@@ -5,6 +5,7 @@ import json
 import subprocess
 import sys
 import threading
+from typing import Optional, List, Dict
 from datetime import datetime, timedelta
 
 import pytz
@@ -251,7 +252,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_token_limit(plan, blocks=None):
+def get_token_limit(plan: str, blocks: Optional[List[Dict]] = None) -> int:
     """Get token limit based on plan type."""
     limits = {
         "pro": 45000,  # Claude Pro: ~45K tokens per 5-hour session
@@ -261,12 +262,12 @@ def get_token_limit(plan, blocks=None):
 
     if plan == "custom_max" and blocks:
         # Auto-detect from highest previous usage
-        max_tokens = 0
-        for block in blocks:
-            if not block.get("isGap", False) and not block.get("isActive", False):
-                tokens = block.get("totalTokens", 0)
-                if tokens > max_tokens:
-                    max_tokens = tokens
+        max_tokens = max(
+            (block.get("totalTokens", 0)
+             for block in blocks
+             if not block.get("isGap", False) and not block.get("isActive", False)),
+            default=0
+        )
 
         # Return detected max or fall back to Pro limit
         return max_tokens if max_tokens > 0 else limits["pro"]
