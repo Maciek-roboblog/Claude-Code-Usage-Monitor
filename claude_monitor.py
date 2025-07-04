@@ -252,20 +252,26 @@ def parse_args():
 
 
 def get_token_limit(plan, blocks=None):
-    # TODO calculate old based on limits
-    limits = {"pro": 44000, "max5": 220000, "max20": 880000}
-
     """Get token limit based on plan type."""
+    limits = {
+        "pro": 45000,  # Claude Pro: ~45K tokens per 5-hour session
+        "max5": 225000,  # Claude Max5: ~225K tokens (5x Pro)
+        "max20": 900000  # Claude Max20: ~900K tokens (20x Pro)
+    }
+
     if plan == "custom_max" and blocks:
+        # Auto-detect from highest previous usage
         max_tokens = 0
         for block in blocks:
             if not block.get("isGap", False) and not block.get("isActive", False):
                 tokens = block.get("totalTokens", 0)
                 if tokens > max_tokens:
                     max_tokens = tokens
+
+        # Return detected max or fall back to Pro limit
         return max_tokens if max_tokens > 0 else limits["pro"]
 
-    return limits.get(plan, 44000)
+    return limits.get(plan, limits["pro"])  # Default to Pro if plan not found
 
 
 def setup_terminal():

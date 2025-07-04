@@ -80,14 +80,13 @@ class JSONFormatter:
         """
         total_tokens = 0
 
-        for model_name, stats in per_model_stats.items():
+        for stats in per_model_stats.values():
             input_tokens = stats.get("input_tokens", 0)
             output_tokens = stats.get("output_tokens", 0)
 
-            if "opus" in model_name:
-                total_tokens += 5 * (input_tokens + output_tokens)
-            elif "sonnet" in model_name:
-                total_tokens += input_tokens + output_tokens
+            # Sum only input and output tokens
+            # Cache tokens (cache_creation_tokens, cache_read_tokens) don't count against limits
+            total_tokens += input_tokens + output_tokens
 
         return total_tokens
 
