@@ -76,7 +76,7 @@ The fastest and easiest way to install and use the monitor:
 uv tool install claude-usage-monitor
 
 # Run from anywhere
-claude-usage-monitor
+claude-monitor
 ```
 
 #### Install from Source
