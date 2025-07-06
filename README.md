@@ -17,6 +17,7 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
   - [⚡ Modern Installation with uv (Recommended)](#-modern-installation-with-uv-recommended)
   - [📦 Installation with pip](#-installation-with-pip)
   - [🛠️ Other Package Managers](#️-other-package-managers)
+  - [� Docker Installation (Containerized)](#-docker-installation-containerized)
 - [📖 Usage](#-usage)
   - [Basic Usage](#basic-usage)
   - [Configuration Options](#configuration-options)
@@ -33,6 +34,7 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 - [🔧 Development Installation](#-development-installation)
 - [Troubleshooting](#troubleshooting)
   - [Installation Issues](#installation-issues)
+  - [Docker Issues](#docker-issues)
   - [Runtime Issues](#runtime-issues)
 - [📞 Contact](#-contact)
 - [📚 Additional Documentation](#-additional-documentation)
@@ -148,6 +150,100 @@ pip install claude-usage-monitor
 claude-usage-monitor
 ```
 
+### 🐳 Docker Installation (Containerized)
+
+Perfect for isolated environments without installing Python dependencies on your system.
+
+#### Quick Start
+
+```bash
+# Build the optimized image
+docker build -t claude-monitor .
+
+# Run with your Claude data
+docker run -it --rm \
+  -v ~/.claude/projects:/data:ro \
+  claude-monitor
+```
+
+#### Docker Compose (Recommended)
+
+```bash
+# Start monitoring service
+docker-compose up -d
+
+# View clean interface (without Docker prefixes)
+docker logs claude-usage-monitor -f
+
+# Stop the service
+docker-compose down
+```
+
+#### Windows PowerShell
+
+```powershell
+# Set your Claude data path
+$env:CLAUDE_DATA_PATH = "$env:USERPROFILE\.claude\projects"
+
+# Run with Windows paths
+docker run -it --rm -v "${env:CLAUDE_DATA_PATH}:/data:ro" claude-monitor
+```
+
+#### Configuration Options
+
+| Environment Variable | Description | Values | Default |
+|---------------------|-------------|---------|---------|
+| `CLAUDE_PLAN` | Claude plan type | `pro`, `max5`, `max20`, `custom_max` | `pro` |
+| `CLAUDE_THEME` | Interface theme | `light`, `dark`, `auto` | `auto` |
+| `CLAUDE_TIMEZONE` | Display timezone | `UTC`, `Europe/Paris`, `US/Eastern`... | `UTC` |
+| `CLAUDE_REFRESH_INTERVAL` | Refresh rate (seconds) | `3`, `5`, `10`... | `10` |
+| `CLAUDE_DEBUG_MODE` | Debug logging | `true`, `false` | `false` |
+
+#### Advanced Usage
+
+```bash
+# Custom configuration
+docker run -it --rm \
+  -v ~/.claude/projects:/data:ro \
+  -e CLAUDE_PLAN=max5 \
+  -e CLAUDE_THEME=dark \
+  -e CLAUDE_TIMEZONE=Europe/Paris \
+  -e CLAUDE_REFRESH_INTERVAL=5 \
+  claude-monitor
+
+# Resource limits (production)
+docker run -it --rm \
+  -v ~/.claude/projects:/data:ro \
+  --memory=256m \
+  --cpus="0.5" \
+  claude-monitor
+```
+
+#### Clean Interface Tips
+
+**Problem**: Docker Compose shows repetitive `claude-usage-monitor |` prefixes?
+
+**Solution**: Use these methods for a cleaner experience:
+
+```bash
+# Method 1: Detached mode + direct logs (cleanest)
+docker-compose up -d
+docker logs claude-usage-monitor -f
+
+# Method 2: Use the provided management script
+.\scripts\claude-monitor-clean.ps1  # Windows
+./scripts/claude-monitor-clean.sh   # Linux/macOS
+```
+
+#### Docker Features
+
+- ✅ **Multi-stage optimized build** - Small final image (~286MB)
+- ✅ **Non-root security** - Runs as user `claude:claude` (UID 1001)
+- ✅ **Health checks** - Built-in container health monitoring
+- ✅ **Read-only data mount** - Your Claude data is never modified
+- ✅ **Smart .dockerignore** - Optimized build context (faster builds)
+- ✅ **Resource limits** - Memory and CPU controls available
+
 ## 📖 Usage
 
 ### Basic Usage
@@ -163,6 +259,24 @@ claude-usage-monitor
 
 #### Development mode
 If running from source, use `./claude_monitor.py` instead of `claude-usage-monitor`.
+
+#### With Docker
+
+```bash
+# Quick start with Docker
+docker run -it --rm \
+  -v ~/.claude/projects:/data:ro \
+  claude-monitor
+
+# With Docker Compose (background service)
+docker-compose up -d
+docker logs claude-usage-monitor -f
+
+# Windows PowerShell
+docker run -it --rm \
+  -v "$env:USERPROFILE\.claude\projects:/data:ro" \
+  claude-monitor
+```
 
 ### Configuration Options
 
@@ -229,6 +343,38 @@ claude-monitor --theme auto
 
 # Debug theme detection
 claude-monitor --theme-debug
+```
+
+#### Docker Configuration Examples
+
+All command-line options can be used with Docker via environment variables:
+
+```bash
+# Plan configuration
+docker run -it --rm \
+  -v ~/.claude/projects:/data:ro \
+  -e CLAUDE_PLAN=max5 \
+  claude-monitor
+
+# Timezone and theme
+docker run -it --rm \
+  -v ~/.claude/projects:/data:ro \
+  -e CLAUDE_TIMEZONE=US/Eastern \
+  -e CLAUDE_THEME=dark \
+  claude-monitor
+
+# Complete configuration
+docker run -it --rm \
+  -v ~/.claude/projects:/data:ro \
+  -e CLAUDE_PLAN=max20 \
+  -e CLAUDE_TIMEZONE=Europe/London \
+  -e CLAUDE_THEME=light \
+  -e CLAUDE_REFRESH_INTERVAL=5 \
+  -e CLAUDE_DEBUG_MODE=true \
+  claude-monitor
+
+# With Docker Compose (edit docker-compose.yml)
+docker-compose up
 ```
 
 ### Available Plans
@@ -806,6 +952,122 @@ If you have multiple Python versions:
 3. **Use uv (handles Python versions automatically)**
    ```bash
    uv tool install claude-monitor
+   ```
+
+### Docker Issues
+
+#### Container Starts but Shows No Data
+
+**Problem**: Container runs but shows "No active session" or can't find Claude data.
+
+**Solutions**:
+
+1. **Check data path mapping**
+   ```bash
+   # Verify your Claude data location
+   ls -la ~/.claude/projects/
+   # or
+   ls -la ~/.config/claude/projects/
+
+   # Test volume mount
+   docker run --rm -v ~/.claude/projects:/data:ro alpine ls -la /data
+   ```
+
+2. **Windows path issues**
+   ```powershell
+   # Use correct Windows path format
+   docker run -it --rm -v "$env:USERPROFILE\.claude\projects:/data:ro" claude-monitor
+   ```
+
+3. **Permission issues**
+   ```bash
+   # Check permissions
+   ls -la ~/.claude/projects/
+   
+   # Fix if needed (temporary)
+   chmod -R 755 ~/.claude/projects/
+   ```
+
+#### Docker Compose Interface Issues
+
+**Problem**: Too many `claude-usage-monitor |` prefixes and screen flickering.
+
+**Solutions**:
+
+1. **Use clean interface (recommended)**
+   ```bash
+   # Start in background, view clean logs
+   docker-compose up -d
+   docker logs claude-usage-monitor -f
+   ```
+
+2. **Use management scripts**
+   ```powershell
+   # Windows
+   .\scripts\claude-monitor-clean.ps1
+   
+   # Quick commands
+   .\quick.ps1 start    # Start service
+   .\quick.ps1 logs     # Clean interface
+   .\quick.ps1 stop     # Stop service
+   ```
+
+3. **Reduce refresh rate**
+   ```bash
+   # Edit docker-compose.yml or set environment
+   -e CLAUDE_REFRESH_INTERVAL=10  # Less flickering
+   ```
+
+#### Docker Build Issues
+
+**Problem**: Build fails or takes too long.
+
+**Solutions**:
+
+1. **Use .dockerignore** (already included)
+   ```bash
+   # Verify .dockerignore exists
+   cat .dockerignore
+   ```
+
+2. **Clean build**
+   ```bash
+   # Build without cache
+   docker build --no-cache -t claude-monitor .
+   
+   # Clean Docker system
+   docker system prune -f
+   ```
+
+3. **Check system resources**
+   ```bash
+   # Monitor build resources
+   docker system df
+   docker stats
+   ```
+
+#### Container Health Check Failures
+
+**Problem**: Container shows as unhealthy.
+
+**Solutions**:
+
+1. **Check health status**
+   ```bash
+   docker inspect claude-usage-monitor | grep -A 10 Health
+   ```
+
+2. **Run health check manually**
+   ```bash
+   docker exec claude-usage-monitor ./scripts/health-check.sh
+   ```
+
+3. **Debug mode**
+   ```bash
+   docker run -it --rm \
+     -v ~/.claude/projects:/data:ro \
+     -e CLAUDE_DEBUG_MODE=true \
+     claude-monitor
    ```
 
 ### Runtime Issues

@@ -43,6 +43,13 @@ dev = [
     "pre-commit>=2.20.0; python_version<'3.8'",
     "pre-commit>=3.0.0; python_version>='3.8'",
 ]
+test = [
+    "pytest>=7.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+    "PyYAML>=6.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor"
