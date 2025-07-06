@@ -141,8 +141,8 @@ def get_default_data_paths() -> List[str]:
     docker_data_path = Path("/data")
     if docker_data_path.exists() and docker_data_path.is_dir():
         # Quick check for .jsonl files to confirm this is a data directory
-        jsonl_files = list(docker_data_path.glob("*.jsonl"))
-        if jsonl_files or any(docker_data_path.glob("**/*.jsonl")):
+        has_jsonl = any(docker_data_path.rglob("*.jsonl"))
+        if has_jsonl:
             return [str(docker_data_path)]
 
     # Return standard paths for auto-discovery

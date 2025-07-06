@@ -13,84 +13,57 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
+def _run_docker_test_suite(test_file=None, extra_args=None):
+    """Helper pour exécuter une suite de tests Docker avec options communes."""
+    base_path = Path(__file__).parent / "docker"
+    if test_file:
+        target = str(base_path / test_file)
+    else:
+        target = str(base_path)
+    test_args = [target, "-v", "--tb=short"]
+    if extra_args:
+        test_args.extend(extra_args)
+    return pytest.main(test_args)
+
+
 def run_all_docker_tests():
     """Exécute tous les tests Docker avec des options spécifiques."""
-    test_args = [
-        str(Path(__file__).parent / "docker"),  # Répertoire des tests Docker
-        "-v",  # Verbose
-        "--tb=short",  # Traceback court
-        "--strict-markers",  # Marqueurs stricts
-        "--disable-warnings",  # Désactiver les avertissements mineurs
-        "-x",  # Arrêter au premier échec
+    extra_args = [
+        "--strict-markers",
+        "--disable-warnings",
+        "-x",
     ]
-
-    return pytest.main(test_args)
+    return _run_docker_test_suite(extra_args=extra_args)
 
 
 def run_health_system_tests():
     """Exécute uniquement les tests du système de santé."""
-    test_args = [
-        str(Path(__file__).parent / "docker" / "test_health_system.py"),
-        "-v",
-        "--tb=short",
-    ]
-
-    return pytest.main(test_args)
+    return _run_docker_test_suite("test_health_system.py")
 
 
 def run_entrypoint_tests():
     """Exécute uniquement les tests du script d'entrée."""
-    test_args = [
-        str(Path(__file__).parent / "docker" / "test_entrypoint.py"),
-        "-v",
-        "--tb=short",
-    ]
-
-    return pytest.main(test_args)
+    return _run_docker_test_suite("test_entrypoint.py")
 
 
 def run_dockerfile_tests():
     """Exécute uniquement les tests du Dockerfile."""
-    test_args = [
-        str(Path(__file__).parent / "docker" / "test_dockerfile.py"),
-        "-v",
-        "--tb=short",
-    ]
-
-    return pytest.main(test_args)
+    return _run_docker_test_suite("test_dockerfile.py")
 
 
 def run_compose_tests():
     """Exécute uniquement les tests Docker Compose."""
-    test_args = [
-        str(Path(__file__).parent / "docker" / "test_compose.py"),
-        "-v",
-        "--tb=short",
-    ]
-
-    return pytest.main(test_args)
+    return _run_docker_test_suite("test_compose.py")
 
 
 def run_integration_tests():
     """Exécute uniquement les tests d'intégration."""
-    test_args = [
-        str(Path(__file__).parent / "docker" / "test_integration.py"),
-        "-v",
-        "--tb=short",
-    ]
-
-    return pytest.main(test_args)
+    return _run_docker_test_suite("test_integration.py")
 
 
 def run_edge_case_tests():
     """Exécute uniquement les tests de cas limites."""
-    test_args = [
-        str(Path(__file__).parent / "docker" / "test_edge_cases.py"),
-        "-v",
-        "--tb=short",
-    ]
-
-    return pytest.main(test_args)
+    return _run_docker_test_suite("test_edge_cases.py")
 
 
 def run_quick_tests():
