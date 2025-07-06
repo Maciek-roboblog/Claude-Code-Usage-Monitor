@@ -53,6 +53,7 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 - **💼 Professional UI** - Clean, colorful terminal interface with emojis
 - **🎨 Smart Theming** - Automatic light/dark theme detection with manual override options
 - **⏰ Customizable scheduling** - Set your own reset times and timezones
+- **🌍 Multilingual Support** - Available in English, French, Spanish and German with automatic locale detection
 
 
 ## 🚀 Installation
@@ -208,6 +209,40 @@ claude-monitor --timezone UTC
 
 # Use London time
 claude-monitor --timezone Europe/London
+```
+
+#### Language Configuration
+
+Configure your preferred language for the interface:
+
+```bash
+# French interface
+claude-monitor --language fr
+
+# English interface  
+claude-monitor --language en
+
+# Spanish interface
+claude-monitor --language es
+
+# German interface
+claude-monitor --language de
+
+# Auto-detect from system (default)
+claude-monitor --language auto
+
+# Combined with other options
+claude-monitor --plan max5 --language fr --timezone Europe/Paris
+```
+
+**Configuration File Example:**
+```yaml
+# config.yaml
+plan: max5
+language: fr
+timezone: Europe/Paris
+reset_hour: 2
+theme: auto
 ```
 
 #### Theme Configuration

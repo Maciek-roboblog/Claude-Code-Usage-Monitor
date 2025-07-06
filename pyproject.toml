@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "claude-monitor"
-version = "1.0.19"
-description = "A real-time terminal monitoring tool for Claude AI token usage"
+version = "2.0.0"
+description = "A multilingual real-time terminal monitoring tool for Claude AI token usage"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.8"
@@ -15,7 +15,7 @@ authors = [
 maintainers = [
     { name = "Maciek", email = "maciek@roboblog.eu" },
 ]
-keywords = ["claude", "ai", "token", "monitoring", "usage", "terminal"]
+keywords = ["claude", "ai", "token", "monitoring", "usage", "terminal", "i18n", "multilingual", "french"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -42,6 +42,7 @@ dev = [
     "ruff>=0.8.0",
     "pre-commit>=2.20.0; python_version<'3.8'",
     "pre-commit>=3.0.0; python_version>='3.8'",
+    "babel>=2.12.0",
 ]
 
 [project.urls]
@@ -58,17 +59,27 @@ Changelog = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/blob/m
 claude-monitor = "claude_monitor:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["."]
-include = ["claude_monitor.py"]
+packages = ["usage_analyzer"]
+include = [
+    "claude_monitor.py",
+    "usage_analyzer/**/*.py",
+    "usage_analyzer/locales/**/*.mo",
+    "usage_analyzer/locales/**/*.po"
+]
 
 [tool.hatch.build.targets.sdist]
 include = [
     "claude_monitor.py",
+    "usage_analyzer/**/*.py",
+    "usage_analyzer/locales/**/*.mo", 
+    "usage_analyzer/locales/**/*.po",
+    "babel.cfg",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
     "CLAUDE.md",
     "DEVELOPMENT.md",
     "CONTRIBUTING.md",
+    "CONTRIBUTING_i18n.md",
     "TROUBLESHOOTING.md",
 ]

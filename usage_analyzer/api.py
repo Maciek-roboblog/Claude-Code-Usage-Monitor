@@ -6,15 +6,12 @@ with only the essential functionality needed.
 """
 
 import json
-from datetime import datetime
-from pathlib import Path
 
+from usage_analyzer.core.calculator import BurnRateCalculator
 from usage_analyzer.core.data_loader import DataLoader
 from usage_analyzer.core.identifier import SessionBlockIdentifier
-from usage_analyzer.core.calculator import BurnRateCalculator
-from usage_analyzer.output.json_formatter import JSONFormatter
-from usage_analyzer.utils.path_discovery import discover_claude_data_paths
 from usage_analyzer.models.data_structures import CostMode
+from usage_analyzer.output.json_formatter import JSONFormatter
 
 
 def analyze_usage():

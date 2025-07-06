@@ -1,0 +1,167 @@
+# English translations for Claude Monitor.
+# Copyright (C) 2025 Claude Monitor
+# This file is distributed under the same license as the Claude Monitor project.
+# Claude Monitor Team <team@example.com>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Claude Monitor 2.1.0\n"
+"Report-Msgid-Bugs-To: <https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor>\n"
+"POT-Creation-Date: 2025-07-06 15:45+0200\n"
+"PO-Revision-Date: 2025-07-06 15:45+0200\n"
+"Last-Translator: GiGiDKR <https://github.com/GiGiDKR>\n"
+"Language: en\n"
+"Language-Team: English\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+# Main interface messages
+msgid "ui.header.title"
+msgstr "CLAUDE CODE USAGE MONITOR"
+
+msgid "ui.loading.message"
+msgstr "⏳ Loading..."
+
+msgid "ui.loading.detail"
+msgstr "Fetching Claude usage data..."
+
+msgid "ui.loading.wait"
+msgstr "This may take a few seconds"
+
+msgid "ui.status.running"
+msgstr "Smooth sailing..."
+
+msgid "ui.exit.instruction"
+msgstr "Ctrl+C to quit"
+
+msgid "ui.monitoring.stopped"
+msgstr "Monitoring stopped."
+
+# Status and metrics messages
+msgid "status.token_usage"
+msgstr "Token Usage"
+
+msgid "status.time_to_reset"
+msgstr "Time to Reset"
+
+msgid "status.tokens"
+msgstr "Tokens"
+
+msgid "status.burn_rate"
+msgstr "Burn Rate"
+
+msgid "status.predicted_end"
+msgstr "Predicted End"
+
+msgid "status.token_reset"
+msgstr "Token Reset"
+
+msgid "status.tokens_left"
+msgstr "Tokens Left"
+
+msgid "status.left_word"
+msgstr "left"
+
+msgid "status.no_active_session"
+msgstr "No active session"
+
+msgid "status.custom_limit_detected"
+msgstr "Custom max token limit detected: {limit:,}"
+
+msgid "status.fallback_pro_limit"
+msgstr "Fallback to Pro limit"
+
+# Error messages
+msgid "error.data_fetch_failed"
+msgstr "Failed to get usage data"
+
+msgid "error.not_logged_in"
+msgstr "You're not logged into Claude"
+
+msgid "error.network_connection"
+msgstr "Network connection issues"
+
+msgid "error.possible_causes"
+msgstr "Possible causes:"
+
+msgid "error.unknown_message_key"
+msgstr "Unknown message key"
+
+# Notification messages
+msgid "notification.limit_exceeded"
+msgstr "Tokens exceed {plan} limit - switching to custom max ({limit})"
+
+msgid "notification.tokens_exceeded_max"
+msgstr "TOKENS EXCEEDED MAX LIMIT!"
+
+msgid "notification.tokens_exhausted"
+msgstr "Tokens will run out BEFORE reset!"
+
+msgid "notification.switch_to_custom"
+msgstr "Switching to custom limit"
+
+# Messages for JSON formatter and reports
+msgid "report.session_summary"
+msgstr "📊 Session Summary"
+
+msgid "report.active_sessions"
+msgstr "Active sessions: {count}"
+
+msgid "report.completed_sessions"
+msgstr "Completed sessions: {count}"
+
+msgid "report.no_session_blocks"
+msgstr "No session blocks found"
+
+msgid "report.total_cost"
+msgstr "💰 Total Cost: {cost}"
+
+msgid "report.session_id_tokens"
+msgstr "  • Session {id}: {tokens} tokens"
+
+# Command-line interface messages
+msgid "cli.description"
+msgstr "Claude Token Monitor - Real-time token usage monitoring"
+
+msgid "cli.help.language"
+msgstr "Interface language (fr=French, en=English, auto=system detection)"
+
+msgid "cli.help.plan"
+msgstr "Claude plan type (default: pro). Use \"custom_max\" to auto-detect from highest previous block"
+
+msgid "cli.help.timezone"
+msgstr "Timezone for reset times (default: Europe/Warsaw). Examples: US/Eastern, Asia/Tokyo, UTC"
+
+msgid "cli.help.watch"
+msgstr "Continuous monitoring mode"
+
+# Validation and test messages
+msgid "validation.test_message"
+msgstr "Test message"
+
+msgid "validation.fallback_test"
+msgstr "Fallback test"
+
+# Messages with English plurals
+msgid "plural.sessions_active"
+msgid_plural "plural.sessions_active"
+msgstr[0] "active session"
+msgstr[1] "active sessions"
+
+msgid "plural.tokens_left"
+msgid_plural "plural.tokens_left"
+msgstr[0] "token left"
+msgstr[1] "tokens left"
+
+msgid "plural.minutes_remaining"
+msgid_plural "plural.minutes_remaining"
+msgstr[0] "minute remaining"
+msgstr[1] "minutes remaining"
+
+msgid "plural.sessions_completed"
+msgid_plural "plural.sessions_completed"
+msgstr[0] "session completed"
+msgstr[1] "sessions completed"
