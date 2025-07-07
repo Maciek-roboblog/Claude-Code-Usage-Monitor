@@ -672,7 +672,7 @@ head -5 usage_analyzer/locales/fr/LC_MESSAGES/claude_monitor.po
 
 #### 3. New Keys Not Extracted
 
-**Symptoms**: Added new keys but they don't appear in translations
+**Symptoms**: Added new keys, but they don't appear in translations
 
 **Solutions**:
 ```bash
@@ -878,6 +878,6 @@ For i18n-related contributions:
 
 ---
 
-**Happy translating! 🌍✨**
+## Happy translating! 🌍✨
 
 > This guide is a living document. Please contribute improvements and updates as the i18n system evolves!
