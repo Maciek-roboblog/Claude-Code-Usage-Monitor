@@ -1,5 +1,5 @@
 """
-Tests unitaires pour le Dockerfile.
+Unit tests for the Dockerfile.
 """
 
 import re
@@ -9,33 +9,33 @@ import pytest
 
 
 class TestDockerfile:
-    """Tests pour le Dockerfile."""
+    """Tests for the Dockerfile."""
 
     @property
     def dockerfile_path(self):
-        """Chemin vers le Dockerfile."""
+        """Path to the Dockerfile."""
         return Path(__file__).parent.parent.parent / "Dockerfile"
 
     def test_dockerfile_exists(self):
-        """Test que le Dockerfile existe."""
+        """Test that the Dockerfile exists."""
         assert self.dockerfile_path.exists()
         assert self.dockerfile_path.is_file()
 
     def test_dockerfile_multi_stage_build(self):
-        """Test que le Dockerfile utilise un build multi-étapes."""
+        """Test that the Dockerfile uses multi-stage build."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier les étapes de build
+        # Check build stages
         assert "FROM python:3.11-slim AS builder" in content
         assert "FROM python:3.11-slim AS runtime" in content
 
     def test_dockerfile_labels(self):
-        """Test les métadonnées LABEL du Dockerfile."""
+        """Test Dockerfile LABEL metadata."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier les labels requis
+        # Check required labels
         required_labels = [
             'LABEL maintainer="GiGiDKR',
             'LABEL description="Claude Code Usage Monitor',
@@ -47,20 +47,20 @@ class TestDockerfile:
         ]
 
         for label in required_labels:
-            assert label in content, f"Label manquant: {label}"
+            assert label in content, f"Missing label: {label}"
 
     def test_dockerfile_base_images(self):
-        """Test les images de base utilisées."""
+        """Test the base images used."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Rechercher toutes les lignes FROM
+        # Find all FROM lines
         from_lines = re.findall(r"^FROM\s+(.+)$", content, re.MULTILINE)
 
-        # Devrait avoir exactement 2 lignes FROM (multi-stage)
+        # Should have exactly 2 FROM lines (multi-stage)
         assert len(from_lines) == 2
 
-        # Les deux devraient utiliser python:3.11-slim
+        # Both should use python:3.11-slim
         for from_line in from_lines:
             if "AS" in from_line:
                 base_image = from_line.split(" AS ")[0].strip()
@@ -69,70 +69,70 @@ class TestDockerfile:
             assert base_image == "python:3.11-slim"
 
     def test_dockerfile_workdir(self):
-        """Test les répertoires de travail."""
+        """Test working directories."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier les WORKDIR
-        assert "WORKDIR /build" in content  # Stage builder
-        assert "WORKDIR /app" in content  # Stage runtime
+        # Check WORKDIRs
+        assert "WORKDIR /build" in content  # Builder stage
+        assert "WORKDIR /app" in content  # Runtime stage
 
     def test_dockerfile_system_dependencies(self):
-        """Test l'installation des dépendances système."""
+        """Test installation of system dependencies."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier l'installation de curl et git dans le builder
+        # Check installation of curl and git in builder
         assert "apt-get install -y --no-install-recommends" in content
         assert "curl" in content
         assert "git" in content
 
-        # Vérifier le nettoyage des listes APT
+        # Check APT list cleanup
         assert "rm -rf /var/lib/apt/lists/*" in content
 
     def test_dockerfile_python_dependencies(self):
-        """Test l'installation des dépendances Python."""
+        """Test installation of Python dependencies."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier l'installation d'uv
+        # Check uv installation
         assert "pip install --no-cache-dir uv" in content
 
-        # Vérifier l'installation des dépendances
+        # Check dependencies installation
         assert "uv pip install --system --no-cache-dir ." in content
 
     def test_dockerfile_file_copy_operations(self):
-        """Test les opérations de copie de fichiers."""
+        """Test file copy operations."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier les copies dans le stage builder
+        # Check copies in builder stage
         assert "COPY pyproject.toml ./" in content
         assert "COPY uv.lock ./" in content
         assert "COPY README.md ./" in content
         assert "COPY usage_analyzer/ ./usage_analyzer/" in content
         assert "COPY claude_monitor.py ./" in content
 
-        # Vérifier les copies dans le stage runtime
+        # Check copies in runtime stage
         assert "COPY --from=builder" in content
 
     def test_dockerfile_user_creation(self):
-        """Test la création d'un utilisateur non-root."""
+        """Test creation of non-root user."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier la création du groupe et de l'utilisateur
+        # Check group and user creation
         assert "groupadd -r claude" in content
         assert "useradd -r -g claude -u 1001 claude" in content
         assert "mkdir -p /data /app" in content
         assert "chown -R claude:claude /data /app" in content
 
     def test_dockerfile_environment_variables(self):
-        """Test les variables d'environnement par défaut."""
+        """Test default environment variables."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier les variables d'environnement essentielles
+        # Check essential environment variables
         env_vars = [
             'CLAUDE_DATA_PATH="/data"',
             'CLAUDE_PLAN="pro"',
@@ -145,28 +145,28 @@ class TestDockerfile:
         ]
 
         for env_var in env_vars:
-            assert env_var in content, f"Variable d'environnement manquante: {env_var}"
+            assert env_var in content, f"Missing environment variable: {env_var}"
 
     def test_dockerfile_volume_declaration(self):
-        """Test la déclaration du volume."""
+        """Test volume declaration."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
         assert 'VOLUME ["/data"]' in content
 
     def test_dockerfile_user_switch(self):
-        """Test le passage à l'utilisateur non-root."""
+        """Test switching to non-root user."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
         assert "USER claude" in content
 
     def test_dockerfile_healthcheck(self):
-        """Test la configuration du contrôle de santé."""
+        """Test healthcheck configuration."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier la présence du HEALTHCHECK
+        # Check HEALTHCHECK presence
         assert "HEALTHCHECK" in content
         assert "--interval=30s" in content
         assert "--timeout=10s" in content
@@ -175,7 +175,7 @@ class TestDockerfile:
         assert "./scripts/health-check.sh" in content
 
     def test_dockerfile_entrypoint_and_cmd(self):
-        """Test l'ENTRYPOINT et CMD."""
+        """Test ENTRYPOINT and CMD."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
@@ -183,62 +183,62 @@ class TestDockerfile:
         assert "CMD []" in content
 
     def test_dockerfile_script_permissions(self):
-        """Test que les scripts ont les bonnes permissions."""
+        """Test that scripts have correct permissions."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier que les scripts sont rendus exécutables
+        # Check that scripts are made executable
         assert "chmod +x docker-entrypoint.sh scripts/health-check.sh" in content
 
     def test_dockerfile_no_exposed_ports(self):
-        """Test qu'aucun port n'est exposé (application console)."""
+        """Test that no port is exposed (console app)."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier qu'il n'y a pas de directive EXPOSE
-        # Le commentaire devrait indiquer pourquoi
+        # Check that there is no EXPOSE directive
+        # The comment should indicate why
         assert (
             "# EXPOSE directive intentionally omitted as this is a console app"
             in content
         )
 
-        # S'assurer qu'il n'y a pas de EXPOSE non commenté
+        # Ensure there is no uncommented EXPOSE
         lines = content.split("\n")
         for line in lines:
             if line.strip().startswith("EXPOSE") and not line.strip().startswith("#"):
                 pytest.fail(
-                    f"Port exposé trouvé alors qu'aucun ne devrait l'être: {line}"
+                    f"Exposed port found when none should be: {line}"
                 )
 
     def test_dockerfile_optimization_practices(self):
-        """Test les bonnes pratiques d'optimisation Docker."""
+        """Test Docker optimization best practices."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier l'utilisation de --no-cache-dir
+        # Check use of --no-cache-dir
         assert "--no-cache-dir" in content
 
-        # Vérifier l'utilisation de --no-install-recommends
+        # Check use of --no-install-recommends
         assert "--no-install-recommends" in content
 
-        # Vérifier le nettoyage des caches apt
+        # Check apt cache cleanup
         assert "rm -rf /var/lib/apt/lists/*" in content
 
     def test_dockerfile_layer_efficiency(self):
-        """Test l'efficacité des couches Docker."""
+        """Test Docker layer efficiency."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier que les installations APT sont combinées avec &&
+        # Check that APT installs are combined with &&
         apt_install_pattern = r"apt-get install.*&&.*rm -rf /var/lib/apt/lists/\*"
         assert re.search(apt_install_pattern, content, re.DOTALL)
 
     def test_dockerfile_build_context_optimization(self):
-        """Test l'optimisation du contexte de build."""
+        """Test build context optimization."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier que les fichiers de dépendances sont copiés en premier
+        # Check that dependency files are copied first
         lines = content.split("\n")
 
         copy_lines = [
@@ -252,79 +252,79 @@ class TestDockerfile:
             if line.strip().startswith("COPY") and "usage_analyzer/" in line
         ]
 
-        # pyproject.toml devrait être copié avant le code source pour optimiser le cache
+        # pyproject.toml should be copied before source code to optimize cache
         if copy_lines and source_copy_lines:
             assert copy_lines[0] < source_copy_lines[0]
 
     def test_dockerfile_security_practices(self):
-        """Test les bonnes pratiques de sécurité."""
+        """Test Docker security best practices."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier l'utilisation d'un utilisateur non-root
+        # Check use of non-root user
         assert "USER claude" in content
 
-        # Vérifier que l'utilisateur a un UID spécifique
+        # Check that user has a specific UID
         assert "-u 1001" in content
 
-        # Vérifier que les répertoires ont les bonnes permissions
+        # Check that directories have correct permissions
         assert "chown -R claude:claude" in content
 
     def test_dockerfile_metadata_completeness(self):
-        """Test la complétude des métadonnées."""
+        """Test metadata completeness."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Extraire toutes les lignes LABEL
+        # Extract all LABEL lines
         label_lines = re.findall(r"^LABEL\s+(.+)$", content, re.MULTILINE)
 
-        # Vérifier qu'il y a suffisamment de métadonnées
+        # Check that there are enough metadata labels
         assert len(label_lines) >= 5
 
-        # Vérifier que les labels contiennent des valeurs
+        # Check that labels contain values
         for label_line in label_lines:
             assert "=" in label_line or '"' in label_line
 
     def test_dockerfile_stage_naming(self):
-        """Test que les étapes ont des noms significatifs."""
+        """Test that stages have meaningful names."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier les noms des étapes
+        # Check stage names
         assert "AS builder" in content
         assert "AS runtime" in content
 
     def test_dockerfile_consistent_base_images(self):
-        """Test la cohérence des images de base."""
+        """Test consistency of base images."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Rechercher toutes les versions de Python mentionnées
+        # Find all mentioned Python versions
         python_versions = re.findall(r"python:([0-9.]+)", content)
 
-        # Toutes les versions devraient être identiques
+        # All versions should be identical
         if python_versions:
             base_version = python_versions[0]
             for version in python_versions:
                 assert version == base_version, (
-                    f"Versions Python incohérentes: {version} vs {base_version}"
+                    f"Inconsistent Python versions: {version} vs {base_version}"
                 )
 
 
 class TestDockerfileBuildInstructions:
-    """Tests pour les instructions spécifiques du Dockerfile."""
+    """Tests for specific Dockerfile instructions."""
 
     @property
     def dockerfile_path(self):
-        """Chemin vers le Dockerfile."""
+        """Path to the Dockerfile."""
         return Path(__file__).parent.parent.parent / "Dockerfile"
 
     def test_dockerfile_copy_instructions_order(self):
-        """Test l'ordre des instructions COPY pour optimiser le cache."""
+        """Test order of COPY instructions for cache optimization."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
-        # Trouver les instructions COPY dans le stage builder
+        # Find COPY instructions in builder stage
         builder_section = False
         copy_instructions = []
 
@@ -339,7 +339,7 @@ class TestDockerfileBuildInstructions:
             if builder_section and line.strip().startswith("COPY"):
                 copy_instructions.append((i, line.strip()))
 
-        # Vérifier l'ordre optimal: dependencies d'abord, puis source
+        # Check optimal order: dependencies first, then source
         dependency_files = ["pyproject.toml", "uv.lock", "README.md"]
         source_files = ["usage_analyzer/", "claude_monitor.py"]
 
@@ -356,39 +356,39 @@ class TestDockerfileBuildInstructions:
                     source_indices.append(i)
                     break
 
-        # Les fichiers de dépendances devraient être copiés avant les sources
+        # Dependency files should be copied before sources
         if dependency_indices and source_indices:
             assert max(dependency_indices) < min(source_indices)
 
     def test_dockerfile_run_instruction_optimization(self):
-        """Test l'optimisation des instructions RUN."""
+        """Test optimization of RUN instructions."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier que les commandes apt sont combinées
+        # Check that apt commands are combined
         apt_commands = re.findall(
             r"RUN apt-get.*?(?=RUN|\n\n|FROM|$)", content, re.DOTALL
         )
 
         for apt_command in apt_commands:
-            # Chaque commande apt devrait inclure update, install et cleanup
+            # Each apt command should include update, install, and cleanup
             if "apt-get" in apt_command:
                 assert "apt-get update" in apt_command
                 assert "apt-get install" in apt_command
                 assert "rm -rf /var/lib/apt/lists/*" in apt_command
 
     def test_dockerfile_env_instruction_format(self):
-        """Test le format de l'instruction ENV."""
+        """Test ENV instruction format."""
         with open(self.dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Trouver l'instruction ENV
+        # Find ENV instruction
         env_match = re.search(r"ENV\s+(.*?)(?=\n\n|\n[A-Z]|$)", content, re.DOTALL)
-        assert env_match, "Instruction ENV non trouvée"
+        assert env_match, "ENV instruction not found"
 
         env_content = env_match.group(1)
 
-        # Vérifier que toutes les variables sont définies
+        # Check that all variables are defined
         required_vars = [
             "CLAUDE_DATA_PATH",
             "CLAUDE_PLAN",
@@ -401,7 +401,7 @@ class TestDockerfileBuildInstructions:
         ]
 
         for var in required_vars:
-            assert var in env_content, f"Variable d'environnement {var} manquante"
+            assert var in env_content, f"Missing environment variable {var}"
 
 
 if __name__ == "__main__":

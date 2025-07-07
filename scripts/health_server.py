@@ -8,7 +8,7 @@ import json
 import os
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any, Dict
@@ -67,7 +67,7 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
 
             response = {
                 "status": "alive",
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "service": "claude-usage-monitor",
             }
 

@@ -61,7 +61,8 @@ validate_environment() {
         log_warn "No .jsonl files found in ${CLAUDE_DATA_PATH}"
         log_warn "Make sure your Claude data directory contains usage data files"
     else
-        local jsonl_count=$(find "${CLAUDE_DATA_PATH}" -name "*.jsonl" -type f | wc -l)
+        local jsonl_count
+        jsonl_count=$(find "${CLAUDE_DATA_PATH}" -name "*.jsonl" -type f | wc -l)
         log_success "Found ${jsonl_count} .jsonl files in data directory"
     fi
     
@@ -165,6 +166,7 @@ main() {
         
         # Build arguments from environment variables
         local cmd_args
+        readarray -t cmd_args < <(build_args)
         cmd_args=($(build_args))
         
         if [[ "${CLAUDE_DEBUG_MODE:-false}" == "true" ]]; then

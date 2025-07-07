@@ -1,6 +1,6 @@
 #!/bin/bash
-# 🐳 Claude Monitor - Configuration Docker Automatisée (Linux/macOS)
-# Ce script configure automatiquement l'environnement Docker pour Claude Monitor
+# 🐳 Claude Monitor - Automated Docker Configuration (Linux/macOS)
+# This script automatically configures the Docker environment for Claude Monitor
 
 set -euo pipefail
 
@@ -10,14 +10,14 @@ IMAGE_NAME="claude-monitor"
 CONTAINER_NAME="claude-usage-monitor"
 COMPOSE_PROJECT="claude-code-usage-monitor"
 
-# Couleurs pour l'affichage
+# Colors for display
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Fonctions utilitaires
+# Utility functions
 log_info() {
     echo -e "${BLUE}ℹ️  $1${NC}"
 }
@@ -34,34 +34,34 @@ log_error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
-# Vérification des prérequis
+# Prerequisite checks
 check_prerequisites() {
-    log_info "Vérification des prérequis..."
+    log_info "Checking prerequisites..."
     
-    # Vérifier Docker
+    # Check Docker
     if ! command -v docker &> /dev/null; then
-        log_error "Docker n'est pas installé. Veuillez installer Docker Desktop."
+        log_error "Docker is not installed. Please install Docker Desktop."
         exit 1
     fi
     
-    # Vérifier Docker Compose
+    # Check Docker Compose
     if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
-        log_error "Docker Compose n'est pas installé."
+        log_error "Docker Compose is not installed."
         exit 1
     fi
     
-    # Vérifier que Docker fonctionne
+    # Check if Docker is running
     if ! docker info &> /dev/null; then
-        log_error "Docker n'est pas démarré. Veuillez démarrer Docker Desktop."
+        log_error "Docker is not running. Please start Docker Desktop."
         exit 1
     fi
     
-    log_success "Prérequis vérifiés"
+    log_success "Prerequisites verified"
 }
 
-# Détection automatique des données Claude
+# Automatic detection of Claude data
 detect_claude_data() {
-    log_info "Détection des données Claude..."
+    log_info "Detecting Claude data..."
     
     local claude_paths=(
         "$HOME/.claude/projects"
@@ -74,75 +74,75 @@ detect_claude_data() {
     for path in "${claude_paths[@]}"; do
         if [ -d "$path" ] && [ "$(ls -A "$path"/*.jsonl 2>/dev/null)" ]; then
             CLAUDE_DATA_PATH="$path"
-            log_success "Données Claude trouvées: $CLAUDE_DATA_PATH"
+            log_success "Claude data found: $CLAUDE_DATA_PATH"
             return 0
         fi
     done
     
-    # Recherche avancée
-    log_warning "Recherche avancée des données Claude..."
+    # Advanced search
+    log_warning "Advanced search for Claude data..."
     local found_path
     found_path=$(find "$HOME" -name "*.jsonl" -path "*claude*" -print -quit 2>/dev/null | head -1)
     
     if [ -n "$found_path" ]; then
         CLAUDE_DATA_PATH=$(dirname "$found_path")
-        log_success "Données Claude trouvées: $CLAUDE_DATA_PATH"
+        log_success "Claude data found: $CLAUDE_DATA_PATH"
         return 0
     fi
     
-    log_warning "Aucune donnée Claude trouvée automatiquement."
-    read -p "Veuillez entrer le chemin vers vos données Claude: " CLAUDE_DATA_PATH
+    log_warning "No Claude data found automatically."
+    read -p "Please enter the path to your Claude data: " CLAUDE_DATA_PATH
     
     if [ ! -d "$CLAUDE_DATA_PATH" ]; then
-        log_error "Le chemin spécifié n'existe pas: $CLAUDE_DATA_PATH"
+        log_error "The specified path does not exist: $CLAUDE_DATA_PATH"
         exit 1
     fi
 }
 
-# Nettoyage des ressources existantes
+# Cleanup existing resources
 cleanup_existing() {
-    log_info "Nettoyage des ressources existantes..."
+    log_info "Cleaning up existing resources..."
     
-    # Arrêter les containers existants
+    # Stop existing containers
     docker stop "$CONTAINER_NAME" 2>/dev/null || true
     docker-compose down 2>/dev/null || true
     
-    # Supprimer les containers existants
+    # Remove existing containers
     docker rm "$CONTAINER_NAME" 2>/dev/null || true
     
-    log_success "Nettoyage terminé"
+    log_success "Cleanup complete"
 }
 
-# Build de l'image Docker
+# Build Docker image
 build_image() {
-    log_info "Construction de l'image Docker..."
+    log_info "Building Docker image..."
     
-    # Build avec optimisations
+    # Build with optimizations
     DOCKER_BUILDKIT=1 docker build \
         --target runtime \
         --tag "$IMAGE_NAME:latest" \
         --tag "$IMAGE_NAME:$(date +%Y%m%d-%H%M%S)" \
         . || {
-        log_error "Échec de la construction de l'image"
+        log_error "Image build failed"
         exit 1
     }
     
-    log_success "Image Docker construite: $IMAGE_NAME:latest"
+    log_success "Docker image built: $IMAGE_NAME:latest"
     
-    # Afficher la taille de l'image
+    # Show image size
     local image_size
     image_size=$(docker images "$IMAGE_NAME:latest" --format "table {{.Size}}" | tail -1)
-    log_info "Taille de l'image: $image_size"
+    log_info "Image size: $image_size"
 }
 
-# Configuration de Docker Compose
+# Docker Compose configuration
 setup_compose() {
-    log_info "Configuration de Docker Compose..."
+    log_info "Configuring Docker Compose..."
     
-    # Créer un fichier .env local si nécessaire
+    # Create a local .env file if needed
     if [ ! -f ".env" ]; then
         cat > .env << EOF
-# Configuration Docker Compose pour Claude Monitor
+# Docker Compose configuration for Claude Monitor
 CLAUDE_DATA_PATH=$CLAUDE_DATA_PATH
 CLAUDE_PLAN=pro
 CLAUDE_TIMEZONE=UTC
@@ -150,67 +150,67 @@ CLAUDE_THEME=auto
 CLAUDE_DEBUG_MODE=false
 COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT
 EOF
-        log_success "Fichier .env créé"
+        log_success ".env file created"
     fi
     
-    # Valider la configuration
+    # Validate configuration
     docker-compose config > /dev/null || {
-        log_error "Configuration Docker Compose invalide"
+        log_error "Invalid Docker Compose configuration"
         exit 1
     }
     
-    log_success "Configuration Docker Compose validée"
+    log_success "Docker Compose configuration validated"
 }
 
-# Test de l'installation
+# Installation test
 test_installation() {
-    log_info "Test de l'installation..."
+    log_info "Testing installation..."
     
-    # Test du health check
+    # Health check test
     docker run --rm \
         -v "$CLAUDE_DATA_PATH:/data:ro" \
         --entrypoint python \
         "$IMAGE_NAME:latest" \
-        -c "from usage_analyzer.api import analyze_usage; result = analyze_usage(); print(f'✅ Test réussi: {len(result.get(\"blocks\", []))} blocs trouvés')" || {
-        log_warning "Le test de base a échoué, mais l'image semble fonctionnelle"
+        -c "from usage_analyzer.api import analyze_usage; result = analyze_usage(); print(f'✅ Test passed: {len(result.get(\"blocks\", []))} blocks found')" || {
+        log_warning "Basic test failed, but the image seems functional"
     }
     
-    log_success "Installation testée avec succès"
+    log_success "Installation tested successfully"
 }
 
-# Démarrage du service
+# Start the service
 start_service() {
-    log_info "Démarrage du service Claude Monitor..."
+    log_info "Starting Claude Monitor service..."
     
     echo
-    echo "Choisissez le mode de démarrage:"
-    echo "1) Mode interactif (docker run)"
-    echo "2) Mode service (docker-compose)"
-    echo "3) Mode arrière-plan (docker-compose -d)"
+    echo "Choose startup mode:"
+    echo "1) Interactive mode (docker run)"
+    echo "2) Service mode (docker-compose)"
+    echo "3) Background mode (docker-compose -d)"
     echo
-    read -p "Votre choix (1-3): " choice
+    read -p "Your choice (1-3): " choice
     
     case $choice in
         1)
-            log_info "Démarrage en mode interactif..."
+            log_info "Starting in interactive mode..."
             docker run -it --rm \
                 --name "$CONTAINER_NAME" \
                 -v "$CLAUDE_DATA_PATH:/data:ro" \
                 "$IMAGE_NAME:latest"
             ;;
         2)
-            log_info "Démarrage avec Docker Compose..."
+            log_info "Starting with Docker Compose..."
             docker-compose up
             ;;
         3)
-            log_info "Démarrage en arrière-plan..."
+            log_info "Starting in background..."
             docker-compose up -d
-            log_success "Service démarré en arrière-plan"
-            log_info "Utilisez 'docker-compose logs -f' pour voir les logs"
-            log_info "Utilisez 'docker-compose down' pour arrêter"
+            log_success "Service started in background"
+            log_info "Use 'docker-compose logs -f' to view logs"
+            log_info "Use 'docker-compose down' to stop"
             ;;
         *)
-            log_warning "Option invalide. Démarrage en mode interactif par défaut..."
+            log_warning "Invalid option. Starting in interactive mode by default..."
             docker run -it --rm \
                 --name "$CONTAINER_NAME" \
                 -v "$CLAUDE_DATA_PATH:/data:ro" \
@@ -219,39 +219,39 @@ start_service() {
     esac
 }
 
-# Affichage de l'aide
+# Show help
 show_help() {
     cat << EOF
-Claude Monitor - Script de Configuration Docker
+Claude Monitor - Docker Configuration Script
 
 Usage: $0 [OPTIONS]
 
 OPTIONS:
-    --help, -h              Afficher cette aide
-    --cleanup-only          Nettoyer uniquement (pas de build)
-    --build-only           Builder uniquement (pas de démarrage)
-    --no-start             Ne pas démarrer le service
-    --data-path PATH       Spécifier le chemin des données Claude
-    --quiet                Mode silencieux
+    --help, -h              Show this help
+    --cleanup-only          Only clean up (no build)
+    --build-only            Only build the image (no start)
+    --no-start              Do not start the service
+    --data-path PATH        Specify the path to Claude data
+    --quiet                 Quiet mode
 
-EXEMPLES:
-    $0                     Configuration complète automatique
-    $0 --build-only        Builder l'image uniquement
+EXAMPLES:
+    $0                      Full automatic configuration
+    $0 --build-only         Only build the image
     $0 --data-path ~/.claude/projects
-                          Utiliser un chemin spécifique
-    $0 --cleanup-only      Nettoyer les ressources existantes
+                            Use a specific path
+    $0 --cleanup-only       Clean up existing resources
 
 EOF
 }
 
-# Fonction principale
+# Main function
 main() {
     local cleanup_only=false
     local build_only=false
     local no_start=false
     local quiet=false
     
-    # Parse des arguments
+    # Parse arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
             --help|-h)
@@ -274,19 +274,17 @@ main() {
                 CLAUDE_DATA_PATH="$2"
                 shift 2
                 ;;
-            --quiet)
-                quiet=true
-                shift
+
                 ;;
             *)
-                log_error "Option inconnue: $1"
+                log_error "Unknown option: $1"
                 show_help
                 exit 1
                 ;;
         esac
     done
     
-    echo "Configuration Docker - $PROJECT_NAME"
+    echo "Docker Configuration - $PROJECT_NAME"
     echo "=================================================="
     echo
     
@@ -294,7 +292,7 @@ main() {
     
     if [ "$cleanup_only" = true ]; then
         cleanup_existing
-        log_success "Nettoyage terminé"
+        log_success "Cleanup complete"
         exit 0
     fi
     
@@ -306,7 +304,7 @@ main() {
     build_image
     
     if [ "$build_only" = true ]; then
-        log_success "Build terminé"
+        log_success "Build complete"
         exit 0
     fi
     
@@ -319,16 +317,17 @@ main() {
     
     echo
     echo "=================================================="
-    log_success "Configuration Docker terminée avec succès!"
+    log_success "Docker configuration completed successfully!"
     echo
-    echo "Commandes utiles:"
-    echo "  docker-compose up                 # Démarrer"
-    echo "  docker-compose down               # Arrêter"
-    echo "  docker-compose logs -f            # Voir les logs"
-    echo "  docker exec -it $CONTAINER_NAME bash  # Entrer dans le container"
+    echo "Useful commands:"
+    echo "  docker-compose up                 # Start"
+    echo "  docker-compose down               # Stop"
+    echo "  docker-compose logs -f            # View logs"
+    echo "  docker exec -it $CONTAINER_NAME bash  # Enter the container"
     echo
     echo "Documentation: docs/docker/README.md"
 }
 
-# Exécution du script
+# Run the script
 main "$@"
+

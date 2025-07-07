@@ -1,5 +1,5 @@
 """
-Tests unitaires pour le script d'entrée Docker (docker-entrypoint.sh).
+Unit tests for the Docker entrypoint script (docker-entrypoint.sh).
 """
 
 import os
@@ -10,35 +10,35 @@ import pytest
 
 
 class TestDockerEntrypoint:
-    """Tests pour le script d'entrée Docker."""
+    """Tests for the Docker entrypoint script."""
 
     @property
     def entrypoint_script(self):
-        """Chemin vers le script d'entrée Docker."""
+        """Path to the Docker entrypoint script."""
         return Path(__file__).parent.parent.parent / "docker-entrypoint.sh"
 
     def test_entrypoint_script_exists(self):
-        """Test que le script d'entrée existe."""
+        """Test that the entrypoint script exists."""
         assert self.entrypoint_script.exists()
         assert self.entrypoint_script.is_file()
 
     def test_entrypoint_script_executable(self):
-        """Test que le script d'entrée est exécutable."""
-        if os.name != "nt":  # Pas sur Windows
+        """Test that the entrypoint script is executable."""
+        if os.name != "nt":  # Not on Windows
             stat_info = self.entrypoint_script.stat()
-            assert stat_info.st_mode & 0o111  # Permissions d'exécution
+            assert stat_info.st_mode & 0o111  # Executable permissions
 
     def test_entrypoint_script_shebang(self):
-        """Test que le script a le bon shebang."""
+        """Test that the script has the correct shebang."""
         with open(self.entrypoint_script, "r", encoding="utf-8") as f:
             first_line = f.readline().strip()
         assert first_line == "#!/bin/bash"
 
-    @pytest.mark.skipif(os.name == "nt", reason="Bash non disponible sur Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Bash not available on Windows")
     def test_entrypoint_validation_missing_data_path(self):
-        """Test la validation quand CLAUDE_DATA_PATH est manquant."""
+        """Test validation when CLAUDE_DATA_PATH is missing."""
         env = os.environ.copy()
-        # Supprimer CLAUDE_DATA_PATH si présent
+        # Remove CLAUDE_DATA_PATH if present
         env.pop("CLAUDE_DATA_PATH", None)
 
         try:
@@ -49,15 +49,15 @@ class TestDockerEntrypoint:
                 text=True,
                 timeout=10,
             )
-            # Le script devrait échouer
+            # The script should fail
             assert result.returncode != 0
             assert "CLAUDE_DATA_PATH environment variable is not set" in result.stderr
         except subprocess.TimeoutExpired:
-            pytest.skip("Script timeout - comportement dans certains environnements")
+            pytest.skip("Script timeout - may occur in some environments")
 
-    @pytest.mark.skipif(os.name == "nt", reason="Bash non disponible sur Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Bash not available on Windows")
     def test_entrypoint_validation_nonexistent_data_path(self):
-        """Test la validation avec un chemin de données inexistant."""
+        """Test validation with a nonexistent data path."""
         env = os.environ.copy()
         env["CLAUDE_DATA_PATH"] = "/nonexistent/path"
 
@@ -74,9 +74,9 @@ class TestDockerEntrypoint:
         except subprocess.TimeoutExpired:
             pytest.skip("Script timeout")
 
-    @pytest.mark.skipif(os.name == "nt", reason="Bash non disponible sur Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Bash not available on Windows")
     def test_entrypoint_with_valid_data_path(self, temp_data_dir, jsonl_file_with_data):
-        """Test le script d'entrée avec un chemin de données valide."""
+        """Test the entrypoint script with a valid data path."""
         env = os.environ.copy()
         env.update(
             {
@@ -88,7 +88,7 @@ class TestDockerEntrypoint:
         )
 
         try:
-            # Utiliser echo comme commande de test au lieu du script principal
+            # Use echo as a test command instead of the main script
             result = subprocess.run(
                 ["bash", str(self.entrypoint_script), "echo", "test_successful"],
                 env=env,
@@ -97,23 +97,23 @@ class TestDockerEntrypoint:
                 timeout=15,
             )
 
-            # Le script ne devrait pas échouer pendant la validation
+            # The script should not fail during validation
             if result.returncode != 0:
                 print(f"STDOUT: {result.stdout}")
                 print(f"STDERR: {result.stderr}")
 
-            # Devrait passer la validation et exécuter la commande
+            # Should pass validation and execute the command
             assert "test_successful" in result.stdout
             assert "Initialization complete" in result.stderr
 
         except subprocess.TimeoutExpired:
             pytest.skip("Script timeout")
 
-    @pytest.mark.skipif(os.name == "nt", reason="Bash non disponible sur Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Bash not available on Windows")
     def test_entrypoint_invalid_plan_validation(
         self, temp_data_dir, jsonl_file_with_data
     ):
-        """Test la validation avec un plan Claude invalide."""
+        """Test validation with an invalid Claude plan."""
         env = os.environ.copy()
         env.update(
             {
@@ -132,18 +132,18 @@ class TestDockerEntrypoint:
                 timeout=10,
             )
 
-            # Le script devrait corriger automatiquement le plan invalide
+            # The script should automatically correct the invalid plan
             assert "Invalid CLAUDE_PLAN" in result.stderr
             assert "defaulting to 'pro'" in result.stderr
 
         except subprocess.TimeoutExpired:
             pytest.skip("Script timeout")
 
-    @pytest.mark.skipif(os.name == "nt", reason="Bash non disponible sur Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Bash not available on Windows")
     def test_entrypoint_invalid_theme_validation(
         self, temp_data_dir, jsonl_file_with_data
     ):
-        """Test la validation avec un thème invalide."""
+        """Test validation with an invalid theme."""
         env = os.environ.copy()
         env.update(
             {
@@ -168,11 +168,11 @@ class TestDockerEntrypoint:
         except subprocess.TimeoutExpired:
             pytest.skip("Script timeout")
 
-    @pytest.mark.skipif(os.name == "nt", reason="Bash non disponible sur Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Bash not available on Windows")
     def test_entrypoint_invalid_refresh_interval(
         self, temp_data_dir, jsonl_file_with_data
     ):
-        """Test la validation avec un intervalle de rafraîchissement invalide."""
+        """Test validation with an invalid refresh interval."""
         env = os.environ.copy()
         env.update(
             {
@@ -197,9 +197,9 @@ class TestDockerEntrypoint:
         except subprocess.TimeoutExpired:
             pytest.skip("Script timeout")
 
-    @pytest.mark.skipif(os.name == "nt", reason="Bash non disponible sur Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Bash not available on Windows")
     def test_entrypoint_debug_mode_output(self, temp_data_dir, jsonl_file_with_data):
-        """Test la sortie du mode debug."""
+        """Test debug mode output."""
         env = os.environ.copy()
         env.update(
             {
@@ -221,7 +221,7 @@ class TestDockerEntrypoint:
                 timeout=10,
             )
 
-            # Vérifier que les informations de debug sont affichées
+            # Check that debug information is displayed
             assert "Debug mode enabled" in result.stderr
             assert "Environment variables:" in result.stderr
             assert f"CLAUDE_DATA_PATH={temp_data_dir}" in result.stderr
@@ -233,16 +233,16 @@ class TestDockerEntrypoint:
         except subprocess.TimeoutExpired:
             pytest.skip("Script timeout")
 
-    @pytest.mark.skipif(os.name == "nt", reason="Bash non disponible sur Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Bash not available on Windows")
     def test_entrypoint_signal_handling(self, temp_data_dir, jsonl_file_with_data):
-        """Test la gestion des signaux (arrêt gracieux)."""
+        """Test signal handling (graceful shutdown)."""
         env = os.environ.copy()
         env.update(
             {"CLAUDE_DATA_PATH": str(temp_data_dir), "CLAUDE_DEBUG_MODE": "true"}
         )
 
         try:
-            # Démarrer le processus avec une commande qui attend
+            # Start the process with a command that waits
             process = subprocess.Popen(
                 ["bash", str(self.entrypoint_script), "sleep", "30"],
                 env=env,
@@ -251,49 +251,49 @@ class TestDockerEntrypoint:
                 text=True,
             )
 
-            # Attendre un peu puis envoyer SIGTERM
+            # Wait a bit then send SIGTERM
             import time
 
             time.sleep(2)
             process.terminate()
 
-            # Attendre que le processus se termine
+            # Wait for the process to finish
             stdout, stderr = process.communicate(timeout=5)
 
-            # Le processus devrait se terminer proprement
-            assert process.returncode != 0  # Terminé par signal
+            # The process should exit cleanly
+            assert process.returncode != 0  # Terminated by signal
 
         except (subprocess.TimeoutExpired, ProcessLookupError):
-            # Forcer l'arrêt si nécessaire
+            # Force kill if necessary
             try:
                 process.kill()
-            except:
+            except (OSError, ProcessLookupError):
                 pass
-            pytest.skip("Test de signal complexe - peut varier selon l'environnement")
+            pytest.skip("Complex signal test - may vary by environment")
 
     def test_entrypoint_script_logging_functions(self):
-        """Test que les fonctions de logging sont définies dans le script."""
+        """Test that logging functions are defined in the script."""
         with open(self.entrypoint_script, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier que les fonctions de logging sont présentes
+        # Check that logging functions are present
         assert "log_info()" in content
         assert "log_warn()" in content
         assert "log_error()" in content
         assert "log_success()" in content
 
-        # Vérifier les codes de couleur
+        # Check color codes
         assert "RED=" in content
         assert "GREEN=" in content
         assert "YELLOW=" in content
         assert "BLUE=" in content
 
     def test_entrypoint_script_validation_functions(self):
-        """Test que les fonctions de validation sont définies."""
+        """Test that validation functions are defined."""
         with open(self.entrypoint_script, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier les fonctions principales
+        # Check main functions
         assert "validate_environment()" in content
         assert "test_application()" in content
         assert "initialize()" in content
@@ -301,15 +301,15 @@ class TestDockerEntrypoint:
         assert "cleanup()" in content
 
     def test_entrypoint_script_trap_signals(self):
-        """Test que les signaux sont capturés."""
+        """Test that signals are trapped."""
         with open(self.entrypoint_script, "r", encoding="utf-8") as f:
             content = f.read()
 
         assert "trap cleanup SIGTERM SIGINT SIGQUIT" in content
 
-    @pytest.mark.skipif(os.name == "nt", reason="Bash non disponible sur Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Bash not available on Windows")
     def test_entrypoint_no_jsonl_warning(self, empty_data_dir):
-        """Test l'avertissement quand aucun fichier .jsonl n'est trouvé."""
+        """Test warning when no .jsonl file is found."""
         env = os.environ.copy()
         env.update(
             {"CLAUDE_DATA_PATH": str(empty_data_dir), "CLAUDE_DEBUG_MODE": "true"}
@@ -324,7 +324,7 @@ class TestDockerEntrypoint:
                 timeout=10,
             )
 
-            # Devrait afficher un avertissement mais continuer
+            # Should display a warning but continue
             assert "No .jsonl files found" in result.stderr
             assert (
                 "Make sure your Claude data directory contains usage data files"
@@ -334,9 +334,9 @@ class TestDockerEntrypoint:
         except subprocess.TimeoutExpired:
             pytest.skip("Script timeout")
 
-    @pytest.mark.skipif(os.name == "nt", reason="Bash non disponible sur Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Bash not available on Windows")
     def test_entrypoint_jsonl_files_count(self, multiple_jsonl_files):
-        """Test le comptage des fichiers .jsonl."""
+        """Test counting of .jsonl files."""
         data_dir = multiple_jsonl_files[0].parent
         env = os.environ.copy()
         env.update({"CLAUDE_DATA_PATH": str(data_dir), "CLAUDE_DEBUG_MODE": "true"})
@@ -350,7 +350,7 @@ class TestDockerEntrypoint:
                 timeout=10,
             )
 
-            # Devrait compter et afficher le nombre de fichiers .jsonl
+            # Should count and display the number of .jsonl files
             assert "Found 3 .jsonl files in data directory" in result.stderr
 
         except subprocess.TimeoutExpired:
@@ -358,16 +358,16 @@ class TestDockerEntrypoint:
 
 
 class TestDockerEntrypointIntegration:
-    """Tests d'intégration pour le script d'entrée Docker."""
+    """Integration tests for the Docker entrypoint script."""
 
-    @pytest.mark.skipif(os.name == "nt", reason="Bash non disponible sur Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Bash not available on Windows")
     def test_full_docker_environment_simulation(
         self, temp_data_dir, jsonl_file_with_data
     ):
-        """Test complet simulant un environnement Docker."""
+        """Full test simulating a Docker environment."""
         entrypoint_script = Path(__file__).parent.parent.parent / "docker-entrypoint.sh"
 
-        # Configuration complète de l'environnement Docker
+        # Full Docker environment configuration
         env = os.environ.copy()
         env.update(
             {
@@ -391,7 +391,7 @@ class TestDockerEntrypointIntegration:
                 timeout=15,
             )
 
-            # Le script devrait compléter l'initialisation et exécuter la commande
+            # The script should complete initialization and execute the command
             assert "Initialization complete" in result.stderr
             assert (
                 "Starting Claude Code Usage Monitor" in result.stderr
@@ -399,13 +399,13 @@ class TestDockerEntrypointIntegration:
             )
 
         except subprocess.TimeoutExpired:
-            pytest.skip("Test d'intégration timeout")
+            pytest.skip("Integration test timeout")
 
-    @pytest.mark.skipif(os.name == "nt", reason="Bash non disponible sur Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Bash not available on Windows")
     def test_entrypoint_build_args_functionality(
         self, temp_data_dir, jsonl_file_with_data
     ):
-        """Test la construction des arguments à partir des variables d'environnement."""
+        """Test building arguments from environment variables."""
         entrypoint_script = Path(__file__).parent.parent.parent / "docker-entrypoint.sh"
 
         env = os.environ.copy()
@@ -420,7 +420,7 @@ class TestDockerEntrypointIntegration:
         )
 
         try:
-            # Utiliser echo au lieu du script principal pour voir les arguments
+            # Use echo instead of the main script to see the arguments
             result = subprocess.run(
                 ["bash", str(entrypoint_script), "echo", "args_test"],
                 env=env,
@@ -429,7 +429,7 @@ class TestDockerEntrypointIntegration:
                 timeout=10,
             )
 
-            # En mode debug, le script devrait afficher les arguments construits
+            # In debug mode, the script should display the built arguments
             assert "Initialization complete" in result.stderr
 
         except subprocess.TimeoutExpired:

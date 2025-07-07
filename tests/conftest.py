@@ -1,5 +1,5 @@
 """
-Configuration et fixtures pour les tests Docker.
+Configuration and fixtures for Docker tests.
 """
 
 import json
@@ -14,14 +14,14 @@ import pytest
 
 @pytest.fixture
 def temp_data_dir():
-    """Crée un répertoire temporaire pour les tests de données."""
+    """Creates a temporary directory for data tests."""
     with tempfile.TemporaryDirectory() as temp_dir:
         yield Path(temp_dir)
 
 
 @pytest.fixture
 def sample_jsonl_data():
-    """Données JSONL d'exemple pour les tests."""
+    """Sample JSONL data for tests."""
     return [
         {
             "timestamp": "2024-01-15T10:30:00Z",
@@ -43,7 +43,7 @@ def sample_jsonl_data():
 
 @pytest.fixture
 def jsonl_file_with_data(temp_data_dir, sample_jsonl_data):
-    """Crée un fichier JSONL avec des données d'exemple."""
+    """Creates a JSONL file with sample data."""
     jsonl_file = temp_data_dir / "test_usage.jsonl"
 
     with open(jsonl_file, "w") as f:
@@ -55,17 +55,17 @@ def jsonl_file_with_data(temp_data_dir, sample_jsonl_data):
 
 @pytest.fixture
 def empty_data_dir(temp_data_dir):
-    """Répertoire de données vide pour tester les cas d'erreur."""
+    """Empty data directory for error case tests."""
     return temp_data_dir
 
 
 @pytest.fixture
 def invalid_jsonl_file(temp_data_dir):
-    """Fichier JSONL avec des données invalides."""
+    """JSONL file with invalid data."""
     invalid_file = temp_data_dir / "invalid.jsonl"
 
     with open(invalid_file, "w") as f:
-        f.write('{"invalid": json}\n')  # JSON malformé
+        f.write('{"invalid": json}\n')  # Malformed JSON
         f.write("valid json but wrong structure\n")
 
     return invalid_file
@@ -73,13 +73,13 @@ def invalid_jsonl_file(temp_data_dir):
 
 @pytest.fixture
 def multiple_jsonl_files(temp_data_dir, sample_jsonl_data):
-    """Plusieurs fichiers JSONL pour tester l'agrégation."""
+    """Multiple JSONL files to test aggregation."""
     files = []
 
     for i in range(3):
         file_path = temp_data_dir / f"usage_{i}.jsonl"
         with open(file_path, "w") as f:
-            # Chaque fichier contient une partie des données
+            # Each file contains a part of the data
             start_idx = i * len(sample_jsonl_data) // 3
             end_idx = (i + 1) * len(sample_jsonl_data) // 3
 
@@ -93,7 +93,7 @@ def multiple_jsonl_files(temp_data_dir, sample_jsonl_data):
 
 @pytest.fixture
 def docker_env_vars():
-    """Variables d'environnement Docker par défaut."""
+    """Default Docker environment variables."""
     return {
         "CLAUDE_DATA_PATH": "/data",
         "CLAUDE_PLAN": "pro",
@@ -106,7 +106,7 @@ def docker_env_vars():
 
 @pytest.fixture
 def invalid_env_vars():
-    """Variables d'environnement invalides pour tester la validation."""
+    """Invalid environment variables for validation tests."""
     return {
         "CLAUDE_PLAN": "invalid_plan",
         "CLAUDE_THEME": "invalid_theme",
@@ -117,7 +117,7 @@ def invalid_env_vars():
 
 @pytest.fixture
 def mock_analyze_usage():
-    """Mock de la fonction analyze_usage."""
+    """Mock for the analyze_usage function."""
 
     def _mock_result(blocks_count: int = 3) -> Dict[str, Any]:
         return {
@@ -142,10 +142,10 @@ def mock_analyze_usage():
 
 @pytest.fixture
 def large_jsonl_dataset(temp_data_dir):
-    """Dataset JSONL volumineux pour tester les performances."""
+    """Large JSONL dataset for performance tests."""
     large_file = temp_data_dir / "large_usage.jsonl"
 
-    # Génère 10000 entrées
+    # Generate 10000 entries
     with open(large_file, "w") as f:
         for i in range(10000):
             entry = {
@@ -163,17 +163,17 @@ def large_jsonl_dataset(temp_data_dir):
 
 @pytest.fixture
 def corrupted_data_dir(temp_data_dir):
-    """Répertoire avec des fichiers corrompus et des permissions limitées."""
-    # Fichier avec permissions limitées
+    """Directory with corrupted files and restricted permissions."""
+    # File with restricted permissions
     restricted_file = temp_data_dir / "restricted.jsonl"
     with open(restricted_file, "w") as f:
         f.write('{"test": "data"}\n')
 
-    # Rendre le fichier non-lisible (sur Unix)
-    if os.name != "nt":  # Pas sur Windows
+    # Make the file unreadable (on Unix)
+    if os.name != "nt":  # Not on Windows
         os.chmod(restricted_file, 0o000)
 
-    # Fichier binaire avec extension .jsonl
+    # Binary file with .jsonl extension
     binary_file = temp_data_dir / "binary.jsonl"
     with open(binary_file, "wb") as f:
         f.write(b"\x00\x01\x02\x03\x04\x05")
@@ -182,13 +182,13 @@ def corrupted_data_dir(temp_data_dir):
 
 
 class DockerTestUtils:
-    """Utilitaires pour les tests Docker."""
+    """Utilities for Docker tests."""
 
     @staticmethod
     def create_test_volume_mount(
         source_dir: Path, target_path: str = "/data"
     ) -> Dict[str, str]:
-        """Crée une configuration de montage de volume pour les tests."""
+        """Creates a volume mount config for tests."""
         return {
             "source": str(source_dir.absolute()),
             "target": target_path,
@@ -198,20 +198,20 @@ class DockerTestUtils:
 
     @staticmethod
     def validate_env_vars(env_vars: Dict[str, str]) -> List[str]:
-        """Valide les variables d'environnement et retourne les erreurs."""
+        """Validates environment variables and returns errors."""
         errors = []
 
-        # Validation CLAUDE_PLAN
+        # Validate CLAUDE_PLAN
         valid_plans = ["pro", "max5", "max20", "custom_max"]
         if "CLAUDE_PLAN" in env_vars and env_vars["CLAUDE_PLAN"] not in valid_plans:
             errors.append(f"Invalid CLAUDE_PLAN: {env_vars['CLAUDE_PLAN']}")
 
-        # Validation CLAUDE_THEME
+        # Validate CLAUDE_THEME
         valid_themes = ["light", "dark", "auto"]
         if "CLAUDE_THEME" in env_vars and env_vars["CLAUDE_THEME"] not in valid_themes:
             errors.append(f"Invalid CLAUDE_THEME: {env_vars['CLAUDE_THEME']}")
 
-        # Validation CLAUDE_REFRESH_INTERVAL
+        # Validate CLAUDE_REFRESH_INTERVAL
         if "CLAUDE_REFRESH_INTERVAL" in env_vars:
             try:
                 interval = int(env_vars["CLAUDE_REFRESH_INTERVAL"])
@@ -224,10 +224,10 @@ class DockerTestUtils:
 
     @staticmethod
     def simulate_docker_environment(env_vars: Dict[str, str]) -> Dict[str, str]:
-        """Simule l'environnement Docker en définissant les variables d'environnement."""
+        """Simulates the Docker environment by setting environment variables."""
         original_env = {}
 
-        # Sauvegarde l'environnement original
+        # Save the original environment
         for key in env_vars:
             original_env[key] = os.environ.get(key)
             os.environ[key] = env_vars[key]
@@ -236,7 +236,7 @@ class DockerTestUtils:
 
     @staticmethod
     def restore_environment(original_env: Dict[str, str]):
-        """Restaure l'environnement original."""
+        """Restores the original environment."""
         for key, value in original_env.items():
             if value is None:
                 os.environ.pop(key, None)
@@ -246,5 +246,5 @@ class DockerTestUtils:
 
 @pytest.fixture
 def docker_utils():
-    """Fixture pour les utilitaires Docker."""
+    """Fixture for Docker utilities."""
     return DockerTestUtils()

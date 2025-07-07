@@ -1,5 +1,5 @@
 """
-Tests de cas limites et gestion d'erreurs pour l'implémentation Docker.
+Edge case tests and error handling for the Docker implementation.
 """
 
 import json
@@ -11,16 +11,17 @@ from unittest.mock import patch
 
 import pytest
 import yaml
+from contextlib import contextmanager
 
 
 class TestDockerEdgeCases:
-    """Tests pour les cas limites de l'implémentation Docker."""
+    """Tests for edge cases in the Docker implementation."""
 
     def test_empty_data_directory_handling(self, empty_data_dir, docker_utils):
-        """Test la gestion d'un répertoire de données vide via un vrai serveur HTTP."""
+        """Test handling of an empty data directory via a real HTTP server."""
         from http.client import HTTPConnection
 
-        # Simuler l'environnement Docker avec un répertoire vide
+        # Simulate the Docker environment with an empty directory
         original_env = docker_utils.simulate_docker_environment(
             {"CLAUDE_DATA_PATH": str(empty_data_dir)}
         )
@@ -35,21 +36,27 @@ class TestDockerEdgeCases:
 
                 from scripts.health_server import HealthCheckHandler
 
-                # Trouver un port libre
+                # Find a free port
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     s.bind(("localhost", 0))
                     port = s.getsockname()[1]
 
                 server = HTTPServer(("localhost", port), HealthCheckHandler)
+                @contextmanager
+                def run_test_server(handler_class, port):
+                    server = HTTPServer(("localhost", port), handler_class)
+                    thread = threading.Thread(target=server.serve_forever, daemon=True)
+                    thread.start()
+                    time.sleep(0.2)  # Let the server start
+                    try:
+                        yield server
+                    finally:
+                        server.shutdown()
+                        thread.join(timeout=2)
+                        if thread.is_alive():
+                            server.server_close()
 
-                def run_server():
-                    server.serve_forever()
-
-                thread = threading.Thread(target=run_server, daemon=True)
-                thread.start()
-                time.sleep(0.2)  # Laisser le serveur démarrer
-
-                try:
+                with run_test_server(HealthCheckHandler, port) as server:
                     conn = HTTPConnection("localhost", port)
                     conn.request("GET", "/health")
                     resp = conn.getresponse()
@@ -60,18 +67,15 @@ class TestDockerEdgeCases:
                     assert (
                         health_status["checks"]["data_access"]["status"] == "unhealthy"
                     )
-                finally:
-                    server.shutdown()
-                    thread.join(timeout=1)
 
         finally:
             docker_utils.restore_environment(original_env)
 
     def test_corrupted_jsonl_files_handling(self, temp_data_dir, docker_utils):
-        """Test la gestion de fichiers JSONL corrompus via un vrai serveur HTTP."""
+        """Test handling of corrupted JSONL files via a real HTTP server."""
         from http.client import HTTPConnection
 
-        # Créer un fichier JSONL corrompu
+        # Create a corrupted JSONL file
         corrupted_file = temp_data_dir / "corrupted.jsonl"
         with open(corrupted_file, "w") as f:
             f.write('{"invalid": json syntax}\n')
@@ -89,7 +93,7 @@ class TestDockerEdgeCases:
                 "scripts.health_server.analyze_usage"
             ) as mock_analyze:
                 mock_get_paths.return_value = [str(temp_data_dir)]
-                mock_analyze.side_effect = Exception("Erreur de parsing JSON")
+                mock_analyze.side_effect = Exception("JSON parsing error")
 
                 from http.server import HTTPServer
 
@@ -126,15 +130,15 @@ class TestDockerEdgeCases:
             docker_utils.restore_environment(original_env)
 
     def test_permission_denied_data_directory(self, temp_data_dir, docker_utils):
-        """Test la gestion des erreurs de permissions via un vrai serveur HTTP."""
+        """Test handling of permission errors via a real HTTP server."""
         from http.client import HTTPConnection
 
-        # Créer un fichier avec des permissions restrictives
+        # Create a file with restrictive permissions
         restricted_file = temp_data_dir / "restricted.jsonl"
         with open(restricted_file, "w") as f:
             f.write('{"test": "data"}\n')
 
-        # Simuler une erreur de permission
+        # Simulate a permission error
         original_env = docker_utils.simulate_docker_environment(
             {"CLAUDE_DATA_PATH": str(temp_data_dir)}
         )
@@ -179,10 +183,10 @@ class TestDockerEdgeCases:
             docker_utils.restore_environment(original_env)
 
     def test_very_large_jsonl_files(self, temp_data_dir, docker_utils):
-        """Test la gestion de fichiers JSONL très volumineux via un vrai serveur HTTP."""
+        """Test handling of very large JSONL files via a real HTTP server."""
         from http.client import HTTPConnection
 
-        # Créer un fichier JSONL très volumineux
+        # Create a very large JSONL file
         large_file = temp_data_dir / "very_large.jsonl"
         with open(large_file, "w") as f:
             for i in range(100000):
@@ -209,6 +213,24 @@ class TestDockerEdgeCases:
                 from http.server import HTTPServer
 
                 from scripts.health_server import HealthCheckHandler
+                from contextlib import contextmanager
+
+                @contextmanager
+                def run_test_server(handler, port):
+                    server = HTTPServer(("localhost", port), handler)
+
+                    def run_server():
+                        server.serve_forever()
+
+                    thread = threading.Thread(target=run_server, daemon=True)
+                    thread.start()
+                    time.sleep(0.2)
+
+                    try:
+                        yield server
+                    finally:
+                        server.shutdown()
+                        thread.join(timeout=1)
 
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     s.bind(("localhost", 0))
@@ -240,77 +262,77 @@ class TestDockerEdgeCases:
             docker_utils.restore_environment(original_env)
 
     def test_malformed_environment_variables(self, docker_utils):
-        """Test la gestion de variables d'environnement malformées."""
+        """Test handling of malformed environment variables."""
         malformed_env = {
-            "CLAUDE_PLAN": "",  # Vide
+            "CLAUDE_PLAN": "",  # Empty
             "CLAUDE_THEME": "invalid_theme",
             "CLAUDE_REFRESH_INTERVAL": "not_a_number",
-            "CLAUDE_DEBUG_MODE": "maybe",  # Pas un booléen
+            "CLAUDE_DEBUG_MODE": "maybe",  # Not a boolean
             "CLAUDE_TIMEZONE": "Invalid/Timezone",
         }
 
         errors = docker_utils.validate_env_vars(malformed_env)
 
-        # Devrait détecter plusieurs erreurs
-        assert len(errors) >= 2, f"Pas assez d'erreurs détectées: {errors}"
+        # Should detect multiple errors
+        assert len(errors) >= 2, f"Not enough errors detected: {errors}"
 
     def test_dockerfile_parsing_edge_cases(self):
-        """Test les cas limites de parsing du Dockerfile."""
+        """Test edge cases in Dockerfile parsing."""
         dockerfile_path = Path(__file__).parent.parent.parent / "Dockerfile"
 
         with open(dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Test parsing avec des lignes vides et commentaires
+        # Test parsing with empty lines and comments
         lines = content.split("\n")
 
-        # Compter les lignes non vides et non commentaires
+        # Count non-empty, non-comment lines
         instruction_lines = [
             line.strip()
             for line in lines
             if line.strip() and not line.strip().startswith("#")
         ]
 
-        assert len(instruction_lines) > 10, "Dockerfile trop simple"
+        assert len(instruction_lines) > 10, "Dockerfile too simple"
 
-        # Vérifier qu'il n'y a pas de syntaxe étrange
+        # Check for malformed syntax
         for line in instruction_lines:
             if line.startswith(("FROM", "RUN", "COPY", "ENV")):
-                # Les instructions devraient avoir du contenu après le mot-clé
+                # Instructions should have content after the keyword
                 parts = line.split(" ", 1)
-                assert len(parts) >= 2, f"Instruction malformée: {line}"
+                assert len(parts) >= 2, f"Malformed instruction: {line}"
 
     def test_docker_compose_parsing_edge_cases(self):
-        """Test les cas limites de parsing docker-compose.yml."""
+        """Test edge cases in docker-compose.yml parsing."""
 
         compose_path = Path(__file__).parent.parent.parent / "docker-compose.yml"
 
         with open(compose_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Test parsing YAML avec différents encodages
+        # Test YAML parsing with various encodings
         try:
             compose_config = yaml.safe_load(content)
             assert isinstance(compose_config, dict)
 
-            # Vérifier la structure profonde
+            # Check deep structure
             service = compose_config["services"]["claude-monitor"]
 
-            # Test des valeurs par défaut manquantes
+            # Test for missing default values
             env_vars = service["environment"]
             for key, value in env_vars.items():
-                assert value is not None, f"Valeur None pour {key}"
-                assert str(value).strip() != "", f"Valeur vide pour {key}"
+                assert value is not None, f"None value for {key}"
+                assert str(value).strip() != "", f"Empty value for {key}"
 
         except yaml.YAMLError as e:
-            pytest.fail(f"Erreur de parsing YAML: {e}")
+            pytest.fail(f"YAML parsing error: {e}")
 
 
 class TestDockerErrorRecovery:
-    """Tests de récupération d'erreurs Docker."""
+    """Docker error recovery tests."""
 
     def test_container_restart_behavior(self):
-        """Test le comportement de redémarrage du conteneur."""
+        """Test container restart behavior."""
 
         compose_path = Path(__file__).parent.parent.parent / "docker-compose.yml"
 
@@ -319,40 +341,40 @@ class TestDockerErrorRecovery:
 
         service = compose_config["services"]["claude-monitor"]
 
-        # Vérifier la politique de redémarrage
+        # Check restart policy
         assert "restart" in service
         restart_policy = service["restart"]
 
-        # Politiques de redémarrage acceptables
+        # Acceptable restart policies
         valid_policies = ["unless-stopped", "always", "on-failure"]
         assert restart_policy in valid_policies
 
     def test_graceful_shutdown_handling(self):
-        """Test la gestion de l'arrêt gracieux."""
+        """Test graceful shutdown handling."""
         entrypoint_path = Path(__file__).parent.parent.parent / "docker-entrypoint.sh"
 
         with open(entrypoint_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier la gestion des signaux
+        # Check signal handling
         assert "cleanup()" in content
         assert "trap cleanup SIGTERM SIGINT SIGQUIT" in content
 
-        # Vérifier que le cleanup tue les processus en arrière-plan
+        # Check that cleanup kills background processes
         assert "jobs -p | xargs" in content
 
 
 class TestDockerSecurityEdgeCases:
-    """Tests de sécurité et cas limites."""
+    """Security and edge case tests."""
 
     def test_container_escape_prevention(self):
-        """Test la prévention d'évasion de conteneur."""
+        """Test container escape prevention."""
         dockerfile_path = Path(__file__).parent.parent.parent / "Dockerfile"
 
         with open(dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Vérifier l'absence de configurations dangereuses
+        # Check for dangerous configurations
         dangerous_patterns = [
             "--privileged",
             "docker.sock",
@@ -364,12 +386,12 @@ class TestDockerSecurityEdgeCases:
 
         for pattern in dangerous_patterns:
             assert pattern not in content, (
-                f"Configuration dangereuse détectée: {pattern}"
+                f"Dangerous configuration detected: {pattern}"
             )
 
     def test_secrets_exposure_prevention(self):
-        """Test la prévention d'exposition de secrets."""
-        # Vérifier les fichiers de configuration
+        """Test prevention of secrets exposure."""
+        # Check configuration files
         config_files = [
             Path(__file__).parent.parent.parent / "Dockerfile",
             Path(__file__).parent.parent.parent / "docker-compose.yml",
@@ -384,13 +406,13 @@ class TestDockerSecurityEdgeCases:
                     content = f.read().lower()
 
                 for pattern in sensitive_patterns:
-                    # Permettre les références aux variables d'environnement
+                    # Allow references to environment variables
                     if pattern in content and not any(
                         env_ref in content
                         for env_ref in ["${", "$", "environment", "env_file"]
                     ):
                         pytest.fail(
-                            f"Possible exposition de secret '{pattern}' dans {config_file}"
+                            f"Possible secret exposure '{pattern}' in {config_file}"
                         )
 
 

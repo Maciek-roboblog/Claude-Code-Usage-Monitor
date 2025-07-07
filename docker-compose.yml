@@ -31,7 +31,7 @@ services:
     volumes:
       # Mount your local Claude data directory to /data in container
       # Adjust the left side path to match your Claude data location
-      - ~/.claude/projects:/data:ro
+      - ${CLAUDE_PROJECTS_DIR:-~/.claude/projects}:/data:ro
       
       # Alternative mount examples (uncomment and adjust as needed):
       # - ~/.config/claude/projects:/data:ro    # Alternative Claude location

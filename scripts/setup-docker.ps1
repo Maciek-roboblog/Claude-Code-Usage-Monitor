@@ -1,5 +1,5 @@
-# 🐳 Claude Monitor - Configuration Docker Automatisée (Windows PowerShell)
-# Ce script configure automatiquement l'environnement Docker pour Claude Monitor
+# 🐳 Claude Monitor - Automated Docker Setup (Windows PowerShell)
+# This script automatically configures the Docker environment for Claude Monitor
 
 param(
     [switch]$Help,
@@ -16,7 +16,7 @@ $ImageName = "claude-monitor"
 $ContainerName = "claude-usage-monitor"
 $ComposeProject = "claude-code-usage-monitor"
 
-# Fonctions utilitaires
+# Utility functions
 function Write-InfoLog {
     param([string]$Message)
     Write-Host "ℹ️  $Message" -ForegroundColor Blue
@@ -37,45 +37,45 @@ function Write-ErrorLog {
     Write-Host "❌ $Message" -ForegroundColor Red
 }
 
-# Vérification des prérequis
+# Prerequisite check
 function Test-Prerequisites {
-    Write-InfoLog "Vérification des prérequis..."
-    
-    # Vérifier Docker
+    Write-InfoLog "Checking prerequisites..."
+
+    # Check Docker
     try {
         $null = Get-Command docker -ErrorAction Stop
     } catch {
-        Write-ErrorLog "Docker n'est pas installé. Veuillez installer Docker Desktop."
+        Write-ErrorLog "Docker is not installed. Please install Docker Desktop."
         exit 1
     }
-    
-    # Vérifier Docker Compose
+
+    # Check Docker Compose
     try {
         $null = Get-Command docker-compose -ErrorAction Stop
     } catch {
         try {
             docker compose version | Out-Null
         } catch {
-            Write-ErrorLog "Docker Compose n'est pas installé."
+            Write-ErrorLog "Docker Compose is not installed."
             exit 1
         }
     }
-    
-    # Vérifier que Docker fonctionne
+
+    # Check that Docker is running
     try {
         docker info | Out-Null
     } catch {
-        Write-ErrorLog "Docker n'est pas démarré. Veuillez démarrer Docker Desktop."
+        Write-ErrorLog "Docker is not running. Please start Docker Desktop."
         exit 1
     }
-    
-    Write-SuccessLog "Prérequis vérifiés"
+
+    Write-SuccessLog "Prerequisites verified"
 }
 
-# Détection automatique des données Claude
+# Automatic detection of Claude data
 function Find-ClaudeData {
-    Write-InfoLog "Détection des données Claude..."
-    
+    Write-InfoLog "Detecting Claude data..."
+
     $claudePaths = @(
         "$env:USERPROFILE\.claude\projects",
         "$env:APPDATA\Claude\projects",
@@ -83,130 +83,154 @@ function Find-ClaudeData {
         "$env:USERPROFILE\AppData\Local\Claude\projects",
         "$env:USERPROFILE\AppData\Roaming\Claude\projects"
     )
-    
+
     foreach ($path in $claudePaths) {
         if (Test-Path $path) {
             $jsonlFiles = Get-ChildItem -Path $path -Filter "*.jsonl" -ErrorAction SilentlyContinue
             if ($jsonlFiles.Count -gt 0) {
                 $script:ClaudeDataPath = $path
-                Write-SuccessLog "Données Claude trouvées: $path"
+                Write-SuccessLog "Claude data found: $path"
                 return $true
             }
         }
     }
-    
-    # Recherche avancée
-    Write-WarningLog "Recherche avancée des données Claude..."
+
+    # Advanced search
+    Write-WarningLog "Advanced search for Claude data..."
     try {
-        $foundFiles = Get-ChildItem -Path $env:USERPROFILE -Filter "*.jsonl" -Recurse -ErrorAction SilentlyContinue | 
-                     Where-Object { $_.FullName -like "*claude*" } | 
-                     Select-Object -First 1
-        
+        $searchDirs = @(
+            "$env:USERPROFILE\AppData",
+            "$env:USERPROFILE\Documents"
+        )
+        $foundFiles = @()
+        foreach ($dir in $searchDirs) {
+            if (Test-Path $dir) {
+            $foundFiles += Get-ChildItem -Path $dir -Filter "*.jsonl" -Recurse -Depth 3 -ErrorAction SilentlyContinue |
+                       Where-Object { $_.FullName -like "*claude*" }
+            if ($foundFiles.Count -gt 0) { break }
+            }
+        }
+        $foundFiles = $foundFiles | Select-Object -First 1
+
         if ($foundFiles) {
             $script:ClaudeDataPath = $foundFiles.Directory.FullName
-            Write-SuccessLog "Données Claude trouvées: $script:ClaudeDataPath"
+            Write-SuccessLog "Claude data found: $script:ClaudeDataPath"
             return $true
         }
-    } catch {
+        } catch {
         # Silently continue
-    }
-    
-    Write-WarningLog "Aucune donnée Claude trouvée automatiquement."
-    do {
-        $userPath = Read-Host "Veuillez entrer le chemin vers vos données Claude"
+        }
+
+        Write-WarningLog "No Claude data found automatically."
+
+        do {
+        $userPath = Read-Host "Please enter the path to your Claude data (or 'exit' to cancel)"
+        if ($userPath -eq 'exit') {
+            Write-InfoLog "Installation cancelled"
+            exit 0
+        }
         if (Test-Path $userPath) {
             $script:ClaudeDataPath = $userPath
             return $true
         } else {
-            Write-ErrorLog "Le chemin spécifié n'existe pas: $userPath"
+            Write-ErrorLog "The specified path does not exist: $userPath"
+        }
+        } while ($true)
+    do {
+        $userPath = Read-Host "Please enter the path to your Claude data"
+        if (Test-Path $userPath) {
+            $script:ClaudeDataPath = $userPath
+            return $true
+        } else {
+            Write-ErrorLog "The specified path does not exist: $userPath"
         }
     } while ($true)
 }
 
-# Nettoyage des ressources existantes
+# Cleanup of existing resources
 function Remove-ExistingResources {
-    Write-InfoLog "Nettoyage des ressources existantes..."
-    
-    # Déterminer le répertoire racine du projet
+    Write-InfoLog "Cleaning up existing resources..."
+
+    # Determine the project root directory
     $scriptDir = Split-Path -Parent $MyInvocation.ScriptName
     $projectRoot = Split-Path -Parent $scriptDir
-    
-    # Arrêter les containers existants
+
+    # Stop existing containers
     try {
         docker stop $ContainerName 2>$null
     } catch { }
-    
+
     try {
         Push-Location $projectRoot
         docker-compose down 2>$null
-    } catch { 
+    } catch {
     } finally {
         Pop-Location
     }
-    
-    # Supprimer les containers existants
+
+    # Remove existing containers
     try {
         docker rm $ContainerName 2>$null
     } catch { }
-    
-    Write-SuccessLog "Nettoyage terminé"
+
+    Write-SuccessLog "Cleanup complete"
 }
 
-# Build de l'image Docker
+# Build Docker image
 function Build-DockerImage {
-    Write-InfoLog "Construction de l'image Docker..."
-    
-    # Déterminer le répertoire racine du projet
+    Write-InfoLog "Building Docker image..."
+
+    # Determine the project root directory
     $scriptDir = Split-Path -Parent $MyInvocation.ScriptName
     $projectRoot = Split-Path -Parent $scriptDir
-    
-    # Vérifier que le Dockerfile existe
+
+    # Check that the Dockerfile exists
     $dockerfilePath = Join-Path $projectRoot "Dockerfile"
     if (-not (Test-Path $dockerfilePath)) {
-        Write-ErrorLog "Dockerfile non trouvé: $dockerfilePath"
-        Write-InfoLog "Assurez-vous d'exécuter ce script depuis le projet Claude Monitor"
+        Write-ErrorLog "Dockerfile not found: $dockerfilePath"
+        Write-InfoLog "Make sure you are running this script from the Claude Monitor project"
         exit 1
     }
-    
+
     # Set Docker Buildkit
     $env:DOCKER_BUILDKIT = "1"
-    
-    # Build avec optimisations depuis le répertoire racine
+
+    # Build with optimizations from the root directory
     $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-    
+
     try {
         Push-Location $projectRoot
-        docker build --target runtime --tag "${ImageName}:latest" --tag "${ImageName}:$timestamp" . 
+        docker build --target runtime --tag "${ImageName}:latest" --tag "${ImageName}:$timestamp" .
         if ($LASTEXITCODE -ne 0) {
             throw "Build failed"
         }
     } catch {
-        Write-ErrorLog "Échec de la construction de l'image"
+        Write-ErrorLog "Image build failed"
         exit 1
     } finally {
         Pop-Location
     }
-    
-    Write-SuccessLog "Image Docker construite: ${ImageName}:latest"
-    
-    # Afficher la taille de l'image
+
+    Write-SuccessLog "Docker image built: ${ImageName}:latest"
+
+    # Show image size
     $imageInfo = docker images $ImageName --format "table {{.Size}}" | Select-Object -Skip 1 -First 1
-    Write-InfoLog "Taille de l'image: $imageInfo"
+    Write-InfoLog "Image size: $imageInfo"
 }
 
-# Configuration de Docker Compose
+# Docker Compose configuration
 function Set-ComposeConfiguration {
-    Write-InfoLog "Configuration de Docker Compose..."
-    
-    # Déterminer le répertoire racine du projet
+    Write-InfoLog "Configuring Docker Compose..."
+
+    # Determine the project root directory
     $scriptDir = Split-Path -Parent $MyInvocation.ScriptName
     $projectRoot = Split-Path -Parent $scriptDir
-    
-    # Créer un fichier .env local si nécessaire dans le répertoire racine
+
+    # Create a local .env file if needed in the root directory
     $envPath = Join-Path $projectRoot ".env"
     if (-not (Test-Path $envPath)) {
         $envContent = @"
-# Configuration Docker Compose pour Claude Monitor
+# Docker Compose configuration for Claude Monitor
 CLAUDE_DATA_PATH=$ClaudeDataPath
 CLAUDE_PLAN=pro
 CLAUDE_TIMEZONE=UTC
@@ -215,64 +239,64 @@ CLAUDE_DEBUG_MODE=false
 COMPOSE_PROJECT_NAME=$ComposeProject
 "@
         $envContent | Out-File -FilePath $envPath -Encoding UTF8
-        Write-SuccessLog "Fichier .env créé: $envPath"
+        Write-SuccessLog ".env file created: $envPath"
     }
-    
-    # Valider la configuration depuis le répertoire racine
+
+    # Validate configuration from the root directory
     try {
         Push-Location $projectRoot
         docker-compose config | Out-Null
     } catch {
-        Write-ErrorLog "Configuration Docker Compose invalide"
+        Write-ErrorLog "Invalid Docker Compose configuration"
         exit 1
     } finally {
         Pop-Location
     }
-    
-    Write-SuccessLog "Configuration Docker Compose validée"
+
+    Write-SuccessLog "Docker Compose configuration validated"
 }
 
-# Test de l'installation
+# Installation test
 function Test-Installation {
-    Write-InfoLog "Test de l'installation..."
-    
-    # Test du health check
+    Write-InfoLog "Testing installation..."
+
+    # Health check test
     try {
-        $testResult = docker run --rm -v "${ClaudeDataPath}:/data:ro" --entrypoint python "${ImageName}:latest" -c "from usage_analyzer.api import analyze_usage; result = analyze_usage(); print(f'✅ Test réussi: {len(result.get(`"blocks`", []))} blocs trouvés')"
+        $testResult = docker run --rm -v "${ClaudeDataPath}:/data:ro" --entrypoint python "${ImageName}:latest" -c "from usage_analyzer.api import analyze_usage; result = analyze_usage(); print(f'✅ Test passed: {len(result.get(`"blocks`", []))} blocks found')"
         Write-InfoLog $testResult
     } catch {
-        Write-WarningLog "Le test de base a échoué, mais l'image semble fonctionnelle"
+        Write-WarningLog "Basic test failed, but the image seems functional"
     }
-    
-    Write-SuccessLog "Installation testée avec succès"
+
+    Write-SuccessLog "Installation tested successfully"
 }
 
-# Démarrage du service
+# Start the service
 function Start-Service {
-    Write-InfoLog "Démarrage du service Claude Monitor..."
-    
-    # Déterminer le répertoire racine du projet
+    Write-InfoLog "Starting Claude Monitor service..."
+
+    # Determine the project root directory
     $scriptDir = Split-Path -Parent $MyInvocation.ScriptName
     $projectRoot = Split-Path -Parent $scriptDir
-    
+
     Write-Host ""
-    Write-Host "Choisissez le mode de démarrage:"
-    Write-Host "1) Mode interactif (docker run)"
-    Write-Host "2) Mode service (docker-compose)"
-    Write-Host "3) Mode arrière-plan (docker-compose -d)"
+    Write-Host "Choose startup mode:"
+    Write-Host "1) Interactive mode (docker run)"
+    Write-Host "2) Service mode (docker-compose)"
+    Write-Host "3) Background mode (docker-compose -d)"
     Write-Host ""
-    
+
     do {
-        $choice = Read-Host "Votre choix (1-3)"
+        $choice = Read-Host "Your choice (1-3)"
     } while ($choice -notmatch "^[1-3]$")
-    
+
     switch ($choice) {
         "1" {
-            Write-InfoLog "Démarrage en mode interactif..."
+            Write-InfoLog "Starting in interactive mode..."
             docker run -it --rm --name $ContainerName -v "${ClaudeDataPath}:/data:ro" "${ImageName}:latest"
         }
         "2" {
-            Write-InfoLog "Démarrage avec Docker Compose..."
+            Write-InfoLog "Starting with Docker Compose..."
             Push-Location $projectRoot
             try {
                 docker-compose up
@@ -281,13 +305,13 @@ function Start-Service {
             }
         }
         "3" {
-            Write-InfoLog "Démarrage en arrière-plan..."
+            Write-InfoLog "Starting in background..."
             Push-Location $projectRoot
             try {
                 docker-compose up -d
-                Write-SuccessLog "Service démarré en arrière-plan"
-                Write-InfoLog "Utilisez 'docker-compose logs -f' pour voir les logs"
-                Write-InfoLog "Utilisez 'docker-compose down' pour arrêter"
+                Write-SuccessLog "Service started in background"
+                Write-InfoLog "Use 'docker-compose logs -f' to see logs"
+                Write-InfoLog "Use 'docker-compose down' to stop"
             } finally {
                 Pop-Location
             }
@@ -295,90 +319,91 @@ function Start-Service {
     }
 }
 
-# Affichage de l'aide
+# Show help
 function Show-Help {
     Write-Host @"
-Claude Monitor - Script de Configuration Docker
+Claude Monitor - Docker Setup Script
 
 Usage: .\setup-docker.ps1 [OPTIONS]
 
 OPTIONS:
-    -Help                   Afficher cette aide
-    -CleanupOnly           Nettoyer uniquement (pas de build)
-    -BuildOnly             Builder uniquement (pas de démarrage)
-    -NoStart               Ne pas démarrer le service
-    -DataPath PATH         Spécifier le chemin des données Claude
-    -Quiet                 Mode silencieux
+    -Help                   Show this help
+    -CleanupOnly            Cleanup only (no build)
+    -BuildOnly              Build only (no start)
+    -NoStart                Do not start the service
+    -DataPath PATH          Specify the path to Claude data
+    -Quiet                  Quiet mode
 
-EXEMPLES:
-    .\setup-docker.ps1                          Configuration complète automatique
-    .\setup-docker.ps1 -BuildOnly               Builder l'image uniquement
-    .\setup-docker.ps1 -DataPath "C:\Claude"    Utiliser un chemin spécifique
-    .\setup-docker.ps1 -CleanupOnly             Nettoyer les ressources existantes
+EXAMPLES:
+    .\setup-docker.ps1                          Full automatic setup
+    .\setup-docker.ps1 -BuildOnly               Build image only
+    .\setup-docker.ps1 -DataPath "C:\Claude"    Use a specific path
+    .\setup-docker.ps1 -CleanupOnly             Cleanup existing resources
 
 "@
 }
 
-# Fonction principale
+# Main function
 function Main {
     if ($Help) {
         Show-Help
         return
     }
-    
-    Write-Host "Configuration Docker - $ProjectName" -ForegroundColor Cyan
+
+    Write-Host "Docker Setup - $ProjectName" -ForegroundColor Cyan
     Write-Host "==================================================" -ForegroundColor Cyan
     Write-Host ""
-    
+
     Test-Prerequisites
-    
+
     if ($CleanupOnly) {
         Remove-ExistingResources
-        Write-SuccessLog "Nettoyage terminé"
+        Write-SuccessLog "Cleanup complete"
         return
     }
-    
+
     if (-not $DataPath) {
         Find-ClaudeData
     } else {
         if (Test-Path $DataPath) {
             $script:ClaudeDataPath = $DataPath
         } else {
-            Write-ErrorLog "Le chemin spécifié n'existe pas: $DataPath"
+            Write-ErrorLog "The specified path does not exist: $DataPath"
             exit 1
         }
     }
-    
+
     Remove-ExistingResources
     Build-DockerImage
-    
+
     if ($BuildOnly) {
-        Write-SuccessLog "Build terminé"
+        Write-SuccessLog "Build complete"
         return
     }
-    
+
     Set-ComposeConfiguration
     Test-Installation
-    
+
     if (-not $NoStart) {
         Start-Service
     }
-    
+
     Write-Host ""
     Write-Host "==================================================" -ForegroundColor Cyan
-    Write-SuccessLog "Configuration Docker terminée avec succès!"
+    Write-SuccessLog "Docker setup completed successfully!"
     Write-Host ""
-    Write-Host "Commandes utiles:" -ForegroundColor Yellow
-    Write-Host "  docker-compose up                      # Démarrer"
-    Write-Host "  docker-compose down                    # Arrêter"
-    Write-Host "  docker-compose logs -f                 # Voir les logs"
-    Write-Host "  docker exec -it $ContainerName bash    # Entrer dans le container"
+    Write-Host "Useful commands:" -ForegroundColor Yellow
+    Write-Host "  docker-compose up                      # Start"
+    Write-Host "  docker-compose down                    # Stop"
+    Write-Host "  docker-compose logs -f                 # View logs"
+    Write-Host "  docker exec -it $ContainerName bash    # Enter the container"
     Write-Host ""
     Write-Host "Documentation: docs/docker/README.md" -ForegroundColor Yellow
 }
 
-# Variables globales
+# Global variables
 $ClaudeDataPath = $DataPath
 
-# Exécution du script
+# Script execution
 Main
+

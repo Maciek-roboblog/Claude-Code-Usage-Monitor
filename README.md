@@ -199,6 +199,39 @@ docker run -it --rm -v "${env:CLAUDE_DATA_PATH}:/data:ro" claude-monitor
 | `CLAUDE_REFRESH_INTERVAL` | Refresh rate (seconds) | `3`, `5`, `10`... | `10` |
 | `CLAUDE_DEBUG_MODE` | Debug logging | `true`, `false` | `false` |
 
+## 📁 Customizing the Claude Projects Directory
+
+By default, the container's `projects` volume is mounted from the `~/.claude/projects` folder on your host machine. You can customize this path by setting the `CLAUDE_PROJECTS_DIR` environment variable.
+
+##### Usage
+
+- **Default**:
+   - If `CLAUDE_PROJECTS_DIR` is not set, the path `~/.claude/projects` will be used.
+- **Customization**:
+   - Set `CLAUDE_PROJECTS_DIR` in a `.env` file at the project root or in your shell before starting Docker Compose.
+
+###### Example in a `.env` file:
+
+```env
+CLAUDE_PROJECTS_DIR=/path/to/my/projects
+```
+
+###### Example in the shell (PowerShell):
+
+```powershell
+$env:CLAUDE_PROJECTS_DIR = "D:/Claude/my_projects"
+docker compose up
+```
+
+###### Example in the shell (bash):
+
+```bash
+export CLAUDE_PROJECTS_DIR=~/my_projects
+docker compose up
+```
+
+The container will then use the specified path for the `/data` volume.
+
 #### Advanced Usage
 
 ```bash

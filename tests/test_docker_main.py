@@ -1,7 +1,7 @@
 """
-Suite de tests principale pour l'implémentation Docker de Claude Code Usage Monitor.
+Main test suite for the Docker implementation of Claude Code Usage Monitor.
 
-Ce module orchestre tous les tests Docker et fournit des utilitaires de test.
+This module orchestrates all Docker tests and provides test utilities.
 """
 
 import sys
@@ -9,12 +9,12 @@ from pathlib import Path
 
 import pytest
 
-# Ajouter le répertoire du projet au chemin Python
+# Add the project directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 def _run_docker_test_suite(test_file=None, extra_args=None):
-    """Helper pour exécuter une suite de tests Docker avec options communes."""
+    """Helper to run a Docker test suite with common options."""
     base_path = Path(__file__).parent / "docker"
     if test_file:
         target = str(base_path / test_file)
@@ -27,7 +27,7 @@ def _run_docker_test_suite(test_file=None, extra_args=None):
 
 
 def run_all_docker_tests():
-    """Exécute tous les tests Docker avec des options spécifiques."""
+    """Run all Docker tests with specific options."""
     extra_args = [
         "--strict-markers",
         "--disable-warnings",
@@ -37,43 +37,43 @@ def run_all_docker_tests():
 
 
 def run_health_system_tests():
-    """Exécute uniquement les tests du système de santé."""
+    """Run only the health system tests."""
     return _run_docker_test_suite("test_health_system.py")
 
 
 def run_entrypoint_tests():
-    """Exécute uniquement les tests du script d'entrée."""
+    """Run only the entrypoint script tests."""
     return _run_docker_test_suite("test_entrypoint.py")
 
 
 def run_dockerfile_tests():
-    """Exécute uniquement les tests du Dockerfile."""
+    """Run only the Dockerfile tests."""
     return _run_docker_test_suite("test_dockerfile.py")
 
 
 def run_compose_tests():
-    """Exécute uniquement les tests Docker Compose."""
+    """Run only the Docker Compose tests."""
     return _run_docker_test_suite("test_compose.py")
 
 
 def run_integration_tests():
-    """Exécute uniquement les tests d'intégration."""
+    """Run only the integration tests."""
     return _run_docker_test_suite("test_integration.py")
 
 
 def run_edge_case_tests():
-    """Exécute uniquement les tests de cas limites."""
+    """Run only the edge case tests."""
     return _run_docker_test_suite("test_edge_cases.py")
 
 
 def run_quick_tests():
-    """Exécute uniquement les tests rapides (sans Docker réel)."""
+    """Run only the quick tests (without real Docker)."""
     test_args = [
         str(Path(__file__).parent / "docker"),
         "-v",
         "--tb=short",
         "-m",
-        "not slow",  # Exclure les tests marqués comme lents
+        "not slow",  # Exclude tests marked as slow
         "--disable-warnings",
     ]
 
@@ -81,7 +81,7 @@ def run_quick_tests():
 
 
 def run_docker_tests_with_coverage():
-    """Exécute les tests avec couverture de code."""
+    """Run tests with code coverage."""
     import importlib.util
 
     if importlib.util.find_spec("pytest_cov") is not None:
@@ -97,17 +97,17 @@ def run_docker_tests_with_coverage():
         return pytest.main(test_args)
     else:
         print(
-            "pytest-cov non installé. Installation recommandée : pip install pytest-cov"
+            "pytest-cov not installed. Recommended installation: pip install pytest-cov"
         )
         return run_all_docker_tests()
 
 
 class DockerTestSuite:
-    """Classe utilitaire pour gérer la suite de tests Docker."""
+    """Utility class to manage the Docker test suite."""
 
     @staticmethod
     def check_docker_availability():
-        """Vérifie si Docker est disponible sur le système."""
+        """Check if Docker is available on the system."""
         import shutil
 
         docker_available = shutil.which("docker") is not None
@@ -124,31 +124,31 @@ class DockerTestSuite:
 
     @staticmethod
     def print_test_environment_info():
-        """Affiche les informations sur l'environnement de test."""
+        """Display information about the test environment."""
         import platform
         import sys
 
         availability = DockerTestSuite.check_docker_availability()
 
-        print("=== Environnement de Test Docker ===")
-        print(f"Système: {platform.system()} {platform.release()}")
+        print("=== Docker Test Environment ===")
+        print(f"System: {platform.system()} {platform.release()}")
         print(f"Python: {sys.version}")
-        print(f"Docker disponible: {'✓' if availability['docker'] else '✗'}")
-        print(f"Docker Compose disponible: {'✓' if availability['compose'] else '✗'}")
+        print(f"Docker available: {'✓' if availability['docker'] else '✗'}")
+        print(f"Docker Compose available: {'✓' if availability['compose'] else '✗'}")
         print(
-            f"Tests d'intégration possibles: {'✓' if availability['can_run_integration'] else '✗'}"
+            f"Integration tests possible: {'✓' if availability['can_run_integration'] else '✗'}"
         )
         print("=" * 40)
 
     @staticmethod
     def run_compatibility_check():
-        """Exécute une vérification de compatibilité."""
+        """Run a compatibility check."""
         import tempfile
         from pathlib import Path
 
-        print("Vérification de compatibilité Docker...")
+        print("Checking Docker compatibility...")
 
-        # Vérifier les fichiers requis
+        # Check required files
         project_root = Path(__file__).parent.parent
         required_files = [
             "Dockerfile",
@@ -164,37 +164,37 @@ class DockerTestSuite:
                 missing_files.append(file_path)
 
         if missing_files:
-            print(f"❌ Fichiers manquants: {missing_files}")
+            print(f"❌ Missing files: {missing_files}")
             return False
 
-        print("✅ Tous les fichiers Docker requis sont présents")
+        print("✅ All required Docker files are present")
 
-        # Vérifier les dépendances Python
+        # Check Python dependencies
         import importlib.util
         if importlib.util.find_spec("yaml") is not None:
-            print("✅ PyYAML disponible")
+            print("✅ PyYAML available")
         else:
-            print("⚠️  PyYAML manquant (requis pour les tests Docker Compose)")
+            print("⚠️  PyYAML missing (required for Docker Compose tests)")
 
-        # Vérifier l'environnement de test
+        # Check test environment
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 test_file = Path(temp_dir) / "test.jsonl"
                 test_file.write_text('{"test": "data"}\n')
-                print("✅ Environnement de test fonctionnel")
+                print("✅ Test environment functional")
         except Exception as e:
-            print(f"❌ Problème avec l'environnement de test: {e}")
+            print(f"❌ Problem with test environment: {e}")
             return False
 
         return True
 
 
 def main():
-    """Point d'entrée principal pour exécuter les tests Docker."""
+    """Main entry point to run Docker tests."""
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Suite de tests Docker pour Claude Code Usage Monitor"
+        description="Docker test suite for Claude Code Usage Monitor"
     )
     parser.add_argument(
         "--suite",
@@ -209,16 +209,16 @@ def main():
             "quick",
         ],
         default="all",
-        help="Suite de tests à exécuter",
+        help="Test suite to run",
     )
     parser.add_argument(
-        "--coverage", action="store_true", help="Exécuter avec couverture de code"
+        "--coverage", action="store_true", help="Run with code coverage"
     )
     parser.add_argument(
-        "--check", action="store_true", help="Vérifier la compatibilité seulement"
+        "--check", action="store_true", help="Only check compatibility"
     )
     parser.add_argument(
-        "--info", action="store_true", help="Afficher les informations d'environnement"
+        "--info", action="store_true", help="Show environment information"
     )
 
     args = parser.parse_args()
@@ -231,7 +231,7 @@ def main():
         success = DockerTestSuite.run_compatibility_check()
         return 0 if success else 1
 
-    # Exécuter la suite de tests appropriée
+    # Run the appropriate test suite
     if args.coverage:
         return run_docker_tests_with_coverage()
     elif args.suite == "all":
@@ -251,9 +251,9 @@ def main():
     elif args.suite == "quick":
         return run_quick_tests()
     else:
-        print(f"Suite de tests inconnue: {args.suite}")
+        print(f"Unknown test suite: {args.suite}")
         return 1
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

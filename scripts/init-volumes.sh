@@ -228,7 +228,8 @@ init_test_data() {
     fi
     
     # Create a sample .jsonl file for testing
-    local test_file="$DATA_PATH/test-usage-$(date +%Y%m%d).jsonl"
+    local test_file
+    test_file="$DATA_PATH/test-usage-$(date +%Y%m%d).jsonl"
     
     if [[ -f "$test_file" ]]; then
         log_warn "Test file already exists: $test_file"

@@ -1,17 +1,17 @@
 """
-Test simple pour vérifier la structure des tests Docker.
+Simple test to verify the structure of the Docker tests.
 """
 
 
 def test_basic_structure():
-    """Test basique pour vérifier que la structure est correcte."""
+    """Basic test to check that the structure is correct."""
     from pathlib import Path
 
-    # Vérifier que les fichiers de test existent
+    # Check that the test files exist
     test_dir = Path(__file__).parent
     docker_dir = test_dir / "docker"
 
-    assert docker_dir.exists(), "Répertoire docker manquant"
+    assert docker_dir.exists(), "Missing 'docker' directory"
 
     expected_files = [
         "test_health_system.py",
@@ -24,26 +24,26 @@ def test_basic_structure():
 
     for expected_file in expected_files:
         file_path = docker_dir / expected_file
-        assert file_path.exists(), f"Fichier manquant: {expected_file}"
+        assert file_path.exists(), f"Missing file: {expected_file}"
 
-    # Vérifier les fichiers de configuration
+    # Check configuration files
     root_dir = test_dir.parent
 
     config_files = ["Dockerfile", "docker-compose.yml", "docker-entrypoint.sh"]
 
     for config_file in config_files:
         file_path = root_dir / config_file
-        assert file_path.exists(), f"Fichier de configuration manquant: {config_file}"
+        assert file_path.exists(), f"Missing config file: {config_file}"
 
 
 def test_imports():
-    """Test que les imports principaux fonctionnent."""
+    """Test that main imports work."""
 
-    # Si on arrive ici, les imports de base fonctionnent
+    # If we get here, basic imports work
     assert True
 
 
 if __name__ == "__main__":
     test_basic_structure()
     test_imports()
-    print("✅ Tests de structure passés avec succès !")
+    print("✅ Structure tests passed successfully!")

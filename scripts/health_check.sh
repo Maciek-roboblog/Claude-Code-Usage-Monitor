@@ -257,10 +257,10 @@ run_health_checks() {
     for check in "${checks[@]}"; do
         if $check; then
             case $? in
-                $EXIT_OK)
+                "$EXIT_OK")
                     ((checks_passed++))
                     ;;
-                $EXIT_WARNING)
+                "$EXIT_WARNING")
                     ((checks_warned++))
                     if [[ $overall_status -eq $EXIT_OK ]]; then
                         overall_status=$EXIT_WARNING
@@ -287,13 +287,13 @@ run_health_checks() {
     echo "  Load Average: $(get_load_average)"
     
     case $overall_status in
-        $EXIT_OK)
+        "$EXIT_OK")
             echo -e "${GREEN}✅ All health checks passed${NC}"
             ;;
-        $EXIT_WARNING)
+        "$EXIT_WARNING")
             echo -e "${YELLOW}⚠️  Health checks passed with warnings${NC}"
             ;;
-        $EXIT_CRITICAL)
+        "$EXIT_CRITICAL")
             echo -e "${RED}❌ Health checks failed${NC}"
             ;;
     esac
