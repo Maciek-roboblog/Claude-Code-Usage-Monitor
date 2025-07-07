@@ -127,7 +127,7 @@ msgid "cli.description"
 msgstr "Moniteur de Tokens Claude - Surveillance en temps réel de l'usage des tokens"
 
 msgid "cli.help.language"
-msgstr "Langue d'affichage (fr, en, auto)"
+msgstr "Langue d'affichage (fr, en, es, de, auto)"
 
 msgid "cli.help.plan"
 msgstr "Type de plan Claude (défaut: pro). Utilisez \"custom_max\" pour détection auto depuis le bloc le plus élevé"
@@ -146,8 +146,8 @@ msgid "validation.fallback_test"
 msgstr "Test de fallback"
 
 # Messages avec pluriels français
-msgid "plural.sessions_active"
-msgid_plural "plural.sessions_active"
+msgid "plural.sessions_active_one"
+msgid_plural "plural.sessions_active_other"
 msgstr[0] "session active"
 msgstr[1] "sessions actives"
 

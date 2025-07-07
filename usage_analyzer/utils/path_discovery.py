@@ -106,14 +106,7 @@ def parse_path_list(path_string: str, separator: str = None) -> List[str]:
         return []
 
     if separator is None:
-        # Auto-detect separator
-        if ":" in path_string and "," not in path_string:
-            separator = ":"
-        elif "," in path_string:
-            separator = ","
-        else:
-            # Single path
-            return [path_string.strip()]
+        separator = os.pathsep if os.pathsep in path_string else ","
 
     paths = [path.strip() for path in path_string.split(separator)]
     return [path for path in paths if path]  # Filter out empty strings

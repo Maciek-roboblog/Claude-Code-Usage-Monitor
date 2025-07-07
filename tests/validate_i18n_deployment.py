@@ -162,7 +162,7 @@ def test_cli_arguments():
             print("   ❌ --language option missing")
 
         # Check for choices fr, en, auto
-        if "fr,en,auto" in help_text:
+        if all(lang in help_text for lang in ["fr", "en", "es", "de", "auto"]):
             print("   ✅ Correct language choices")
         else:
             print("   ❌ Missing language choices")

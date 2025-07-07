@@ -130,7 +130,11 @@ def update_translations(project_root, languages):
 
             except FileNotFoundError:
                 log_warning(
-                    f"     msgmerge non disponible, conservation du fichier pour {lang}"
+                    f"     msgmerge not available for {lang}. "
+                    "Install gettext tools: "
+                    "Ubuntu/Debian: sudo apt-get install gettext, "
+                    "macOS: brew install gettext, "
+                    "Windows: download from https://www.gnu.org/software/gettext/"
                 )
                 backup_file.replace(po_file)
                 updated.append(lang)

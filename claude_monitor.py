@@ -108,9 +108,6 @@ def create_time_progress_bar(elapsed_minutes, total_minutes, width=50):
 def print_header():
     """Return the stylized header with sparkles as a list of strings."""
     from usage_analyzer.i18n.message_keys import UI
-    from usage_analyzer.themes.console import get_themed_console
-
-    console = get_themed_console()
 
     # Build header components for theme-aware styling
     sparkles = "✦ ✧ ✦ ✧"
@@ -390,24 +387,27 @@ def main():
         from usage_analyzer.themes.console import debug_theme_info
 
         debug_info = debug_theme_info()
-        print_themed("🎨 Theme Detection Debug Information", style="header")
-        print_themed(f"Current theme: {debug_info['current_theme']}", style="info")
+        print_themed(message="🎨 Theme Detection Debug Information", style="header")
         print_themed(
-            f"Console initialized: {debug_info['console_initialized']}", style="value"
+            message=f"Current theme: {debug_info['current_theme']}", style="info"
+        )
+        print_themed(
+            message=f"Console initialized: {debug_info['console_initialized']}",
+            style="value",
         )
 
         detector_info = debug_info["detector_info"]
-        print_themed("Environment variables:", style="subheader")
+        print_themed(message="Environment variables:", style="subheader")
         for key, value in detector_info["environment_vars"].items():
             if value:
-                print_themed(f"  {key}: {value}", style="label")
+                print_themed(message=f"  {key}: {value}", style="label")
 
         caps = detector_info["terminal_capabilities"]
         print_themed(
-            f"Terminal capabilities: {caps['colors']} colors, truecolor: {caps['truecolor']}",
+            message=f"Terminal capabilities: {caps['colors']} colors, truecolor: {caps['truecolor']}",
             style="info",
         )
-        print_themed(f"Platform: {detector_info['platform']}", style="value")
+        print_themed(message=f"Platform: {detector_info['platform']}", style="value")
         return
 
     # Create event for clean refresh timing
@@ -419,18 +419,20 @@ def main():
     # For 'custom_max' plan, we need to get data first to determine the limit
     if args.plan == "custom_max":
         print_themed(
-            "Fetching initial data to determine custom max token limit...", style="info"
+            message="Fetching initial data to determine custom max token limit...",
+            style="info",
         )
         initial_data = analyze_usage()
         if initial_data and "blocks" in initial_data:
             token_limit = get_token_limit(args.plan, initial_data["blocks"])
             print_themed(
-                f"Custom max token limit detected: {token_limit:,}", style="info"
+                message=f"Custom max token limit detected: {token_limit:,}",
+                style="info",
             )
         else:
             token_limit = get_token_limit("pro")  # Fallback to pro
             print_themed(
-                f"Failed to fetch data, falling back to Pro limit: {token_limit:,}",
+                message=f"Failed to fetch data, falling back to Pro limit: {token_limit:,}",
                 style="warning",
             )
     else:
@@ -719,7 +721,7 @@ def main():
         restore_terminal(old_terminal_settings)
         from usage_analyzer.i18n.message_keys import UI
 
-        print_themed(f"\n\n{_(UI.MONITORING_STOPPED)}", style="info")
+        print_themed(message=f"\n\n{_(UI.MONITORING_STOPPED)}", style="info")
         sys.exit(0)
     except Exception as e:
         # Restore terminal on any error

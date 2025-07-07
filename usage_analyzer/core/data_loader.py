@@ -43,7 +43,6 @@ class DataLoader:
         processed_hashes = set()
 
         # Track overall statistics
-        total_files = len(jsonl_files)
         total_processed = 0
 
         # Process each file
@@ -72,7 +71,6 @@ class DataLoader:
         entries = []
         total_lines = 0
         skipped_duplicates = 0
-        skipped_synthetic = 0
         skipped_invalid = 0
 
         try:

@@ -5,6 +5,7 @@ This module provides tools to create properly aligned text displays
 that work across different languages with varying text lengths.
 """
 
+import re
 from typing import Dict, List, Tuple
 
 from ..i18n import _
@@ -80,7 +81,6 @@ def _strip_rich_markup(text: str) -> str:
     Returns:
         Clean text without markup
     """
-    import re
 
     # Remove Rich markup tags like [value], [/], [warning], etc.
     clean = re.sub(r"\[/?[a-zA-Z0-9_.]+\]", "", text)

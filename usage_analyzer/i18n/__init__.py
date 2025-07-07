@@ -9,7 +9,9 @@ import gettext
 import locale
 import os
 from pathlib import Path
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional, Tuple, cast
+
+from .message_keys import PLURAL
 
 # Configuration
 APP_DOMAIN = "claude_monitor"
@@ -74,8 +76,8 @@ def init_translations(
 
         # Get translation functions
         gettext_func = translation.gettext
-        # Note: ignore type warning for ngettext - function is compatible
-        ngettext_func = translation.ngettext  # type: ignore
+        # Cast to expected type to maintain type safety
+        ngettext_func = cast(Callable[..., str], translation.ngettext)
 
     except Exception as e:
         # On error, use default (pass-through) functions
@@ -149,7 +151,6 @@ def ngettext_helper(singular_key: str, plural_key: str, n: int) -> str:
 
 def format_tokens_left(n: int) -> str:
     """Formate le nombre de tokens restants avec pluriel français."""
-    from .message_keys import PLURAL
 
     plural_form = ngettext_helper(PLURAL.TOKENS_LEFT, PLURAL.TOKENS_LEFT, n)
     formatted_number = format_number_french(n)
@@ -158,7 +159,6 @@ def format_tokens_left(n: int) -> str:
 
 def format_sessions_active(n: int) -> str:
     """Formate le nombre de sessions actives avec pluriel français."""
-    from .message_keys import PLURAL
 
     plural_form = ngettext_helper(PLURAL.SESSIONS_ACTIVE, PLURAL.SESSIONS_ACTIVE, n)
     return f"{n} {plural_form}"

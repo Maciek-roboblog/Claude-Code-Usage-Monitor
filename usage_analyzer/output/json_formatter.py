@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 
 from usage_analyzer.core.calculator import BurnRateCalculator
 from usage_analyzer.models.data_structures import SessionBlock
-from usage_analyzer.themes import get_themed_console, print_themed
+from usage_analyzer.themes import print_themed
 from usage_analyzer.utils.pricing_fetcher import ClaudePricingFetcher
 
 
@@ -25,8 +25,6 @@ class JSONFormatter:
     def print_summary(self, blocks: List[SessionBlock]) -> None:
         """Print a themed summary of session blocks."""
         from usage_analyzer.i18n.message_keys import REPORT
-
-        console = get_themed_console()
 
         if not blocks:
             print_themed(message_key=REPORT.NO_SESSION_BLOCKS, style="warning")

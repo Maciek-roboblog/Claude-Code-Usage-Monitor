@@ -344,7 +344,7 @@ $env:LANG = "es_ES.UTF-8"  # PowerShell
 python claude_monitor.py --language auto
 ```
 
-### Step 8: Update Update Scripts
+### Step 8: Update Scripts
 
 Modify `scripts/update_translations.ps1` to handle your new language:
 
