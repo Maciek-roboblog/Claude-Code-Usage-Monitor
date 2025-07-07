@@ -327,6 +327,7 @@ claude-monitor --language auto
 | **English** | `en_US` | ✅ Complete | 100% (Default) |
 | **French** | `fr_FR` | ✅ Complete | 100% |
 | **Spanish** | `es_ES` | ✅ Complete | 100% |
+| **German**  | `de_DE` | ✅ Complete | 100% |
 ```
 
 ### Step 7: Compile and Test
@@ -542,7 +543,7 @@ For each new translation:
 ```
 
 **Output example**:
-```
+```text
 ℹ️  Mise à jour des traductions Claude Usage Monitor
 ℹ️  1. Extraction des chaînes traduisibles...
 ✅ Extraction réussie: 45 messages
