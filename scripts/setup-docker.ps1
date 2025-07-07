@@ -31,7 +31,7 @@
     Additional information: This script is intended for use with the Claude-Code-Usage-Monitor project.
 #>
 param(
-    [switch]$Help
+    [switch]$Help,
     [switch]$CleanupOnly,
     [switch]$BuildOnly,
     [switch]$NoStart,
@@ -283,7 +283,7 @@ function Test-Installation {
 
     # Health check test
     try {
-        $testResult = docker run --rm -v "${ClaudeDataPath}:/data:ro" --entrypoint python "${ImageName}:latest" -c "from usage_analyzer.api import analyze_usage; result = analyze_usage(); print(f'✅ Test passed: {len(result.get(\"blocks\", []))} blocks found')"
+        $testResult = docker run --rm -v "${ClaudeDataPath}:/data:ro" --entrypoint python "${ImageName}:latest" -c "from usage_analyzer.api import analyze_usage; result = analyze_usage(); print('✅ Test passed: {} blocks found'.format(len(result.get('blocks', []))))"
         Write-InfoLog $testResult
     } catch {
         Write-WarningLog "Basic test failed, but the image seems functional"
@@ -372,7 +372,7 @@ function Main {
     }
 
     Write-Host "Docker Setup - $ProjectName" -ForegroundColor Cyan
-    Write-Host "==================================================" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
 
     Test-Prerequisites

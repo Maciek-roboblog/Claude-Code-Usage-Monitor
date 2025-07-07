@@ -106,7 +106,7 @@ test_application() {
     log_info "Testing application startup..."
     
     # Optimized startup test with command chaining
-    if python -c "from usage_analyzer.api import analyze_usage; result = analyze_usage(); print(f'✓ Analysis successful: {len(result.get(\"blocks\", []))} blocks found')" 2>/dev/null && \
+    if python -c "from usage_analyzer.api import analyze_usage; result = analyze_usage(); print('✓ Analysis successful: {} blocks found'.format(len(result.get('blocks', []))))" 2>/dev/null && \
        log_success "Application startup test passed"; then
         return 0
     else
@@ -143,18 +143,21 @@ build_args() {
     local args=()
     
     if [[ -n "${CLAUDE_PLAN:-}" ]]; then
-        args+=("--plan" "${CLAUDE_PLAN}")
+        args+=("--plan")
+        args+=("${CLAUDE_PLAN}")
     fi
     
     if [[ -n "${CLAUDE_TIMEZONE:-}" ]]; then
-        args+=("--timezone" "${CLAUDE_TIMEZONE}")
+        args+=("--timezone")
+        args+=("${CLAUDE_TIMEZONE}")
     fi
     
     if [[ -n "${CLAUDE_THEME:-}" ]]; then
-        args+=("--theme" "${CLAUDE_THEME}")
+        args+=("--theme")
+        args+=("${CLAUDE_THEME}")
     fi
     
-    echo "${args[@]}"
+    printf '%s\n' "${args[@]}"
 }
 
 # Main execution
@@ -167,8 +170,7 @@ main() {
         log_info "Starting Claude Code Usage Monitor..."
         
         # Build arguments from environment variables
-        local cmd_args
-        readarray -t cmd_args < <(build_args)
+        mapfile -t cmd_args < <(build_args)
         
         if [[ "${CLAUDE_DEBUG_MODE:-false}" == "true" ]]; then
             log_info "Executing: python claude_monitor.py ${cmd_args[*]}"
