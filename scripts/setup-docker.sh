@@ -1,5 +1,5 @@
-#!/bin/bash
-# 🐳 Claude Monitor - Automated Docker Configuration (Linux/macOS)
+#!/usr/bin/env bash
+# Claude Monitor - Automated Docker Configuration (Linux/macOS)
 # This script automatically configures the Docker environment for Claude Monitor
 
 set -euo pipefail
@@ -65,9 +65,9 @@ check_prerequisites() {
     # Detect and set compose command
     detect_compose_command
     
-    # Check Docker Compose
-    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
-        log_error "Docker Compose is not installed."
+    # Check Docker Compose (v1 or v2) using the previously detected command
+    if ! ${compose_cmd} version &> /dev/null; then
+        log_error "Docker Compose is not installed or not functioning."
         exit 1
     fi
     
@@ -93,7 +93,10 @@ detect_claude_data() {
     )
     
     for path in "${claude_paths[@]}"; do
-        if [ -d "$path" ] && [ "$(ls -A "$path"/*.jsonl 2>/dev/null)" ]; then
+        shopt -s nullglob
+        jsonl_files=("$path"/*.jsonl)
+        shopt -u nullglob
+        if [[ -d "$path" && ${#jsonl_files[@]} -gt 0 ]]; then
             CLAUDE_DATA_PATH="$path"
             log_success "Claude data found: $CLAUDE_DATA_PATH"
             return 0
@@ -170,12 +173,12 @@ setup_compose() {
     if [ ! -f ".env" ]; then
         cat > .env << EOF
 # Docker Compose configuration for Claude Monitor
-CLAUDE_DATA_PATH="$CLAUDE_DATA_PATH"
+CLAUDE_DATA_PATH=$CLAUDE_DATA_PATH
 CLAUDE_PLAN=pro
 CLAUDE_TIMEZONE=UTC
 CLAUDE_THEME=auto
 CLAUDE_DEBUG_MODE=false
-COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT"
+COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT
 EOF
         log_success ".env file created"
     fi
@@ -323,6 +326,11 @@ main() {
                 shift
                 ;;
             --data-path)
+                if [[ $# -lt 2 ]]; then
+                    log_error "--data-path requires a value"
+                    show_help
+                    exit 1
+                fi
                 CLAUDE_DATA_PATH="$2"
                 shift 2
                 ;;

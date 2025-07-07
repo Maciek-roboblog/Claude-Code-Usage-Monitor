@@ -1,6 +1,24 @@
-# 🐳 Claude Monitor - Automated Docker Setup (Windows PowerShell)
-# This script automatically configures the Docker environment for Claude Monitor
+<#
+.SYNOPSIS
+    Automated Docker environment setup for Claude Monitor on Windows PowerShell.
 
+.DESCRIPTION
+    This script configures and prepares the Docker environment required to run Claude Monitor.
+    It automates the setup process, ensuring all necessary Docker components and configurations are in place for smooth operation on Windows systems.
+
+.PARAMETER <ParameterName>
+    Specify the parameters required by the script. (Replace <ParameterName> with the actual parameter names and provide their descriptions.)
+
+.EXAMPLE
+    .\setup-docker.ps1
+    Runs the script to set up the Docker environment for Claude Monitor.
+
+.NOTES
+    Author: GiGiDKR
+    Date: 2025-07-07
+    Version: 1.0.0
+    Additional information: This script is intended for use with the Claude-Code-Usage-Monitor project.
+#>
 param(
     [switch]$Help,
     [switch]$CleanupOnly,
