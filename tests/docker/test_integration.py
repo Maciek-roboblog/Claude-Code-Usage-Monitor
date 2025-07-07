@@ -26,7 +26,7 @@ class TestDockerIntegration:
             "pyproject.toml",
             "uv.lock",
             "README.md",
-            "scripts/health-check.sh",   # renamed from health_check.sh
+            "scripts/health-check.sh",  # renamed from health_check.sh
             "scripts/health_server.py",
         ]
 
@@ -102,7 +102,7 @@ class TestDockerIntegration:
             compose_config = yaml.safe_load(f)
 
         # Read the Dockerfile
-        with open(self.project_root / "Dockerfile", "r") as f:
+        with open(self.project_root / "Dockerfile", "r", encoding="utf-8") as f:
             dockerfile_content = f.read()
 
         service = compose_config["services"]["claude-monitor"]
@@ -130,7 +130,7 @@ class TestDockerIntegration:
             compose_config = yaml.safe_load(f)
 
         # Read the Dockerfile
-        with open(self.project_root / "Dockerfile", "r") as f:
+        with open(self.project_root / "Dockerfile", "r", encoding="utf-8") as f:
             dockerfile_content = f.read()
 
         # Check that both define health checks
@@ -151,7 +151,16 @@ class TestDockerIntegration:
         try:
             # Validate Dockerfile syntax by parsing it with buildkit
             result = subprocess.run(
-                ["docker", "build", "--no-cache", "--target", "builder", "-f", "Dockerfile", "."],
+                [
+                    "docker",
+                    "build",
+                    "--no-cache",
+                    "--target",
+                    "builder",
+                    "-f",
+                    "Dockerfile",
+                    ".",
+                ],
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
@@ -162,6 +171,7 @@ class TestDockerIntegration:
             pytest.skip("Docker validation timeout")
         except FileNotFoundError:
             pytest.skip("Docker CLI not available")
+
     @pytest.mark.skipif(
         not shutil.which("docker-compose") and not shutil.which("docker"),
         reason="Docker Compose not available",
@@ -196,7 +206,30 @@ class TestDockerIntegration:
         """Test that the entrypoint script has valid bash syntax."""
         entrypoint_script = self.project_root / "docker-entrypoint.sh"
 
-        if shutil.which("bash"):
+        # First check that the file exists
+        assert entrypoint_script.exists(), (
+            f"Entrypoint script not found: {entrypoint_script}"
+        )
+
+        # Read the script content to check for basic syntax issues
+        with open(entrypoint_script, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Basic syntax checks
+        assert content.startswith("#!/bin/bash") or content.startswith(
+            "#!/usr/bin/env bash"
+        ), "Script should start with proper bash shebang"
+
+        # Check for basic structural elements
+        assert "function " in content or "() {" in content, (
+            "No functions found in script"
+        )
+        assert "if [[ " in content, "No conditional statements found in script"
+        assert "exit " in content, "No exit statements found in script"
+
+        # Skip actual bash syntax check on Windows due to path compatibility issues
+        if shutil.which("bash") and not hasattr(subprocess, "STARTUPINFO"):
+            # Only run bash syntax check on Unix systems
             try:
                 result = subprocess.run(
                     ["bash", "-n", str(entrypoint_script)],
@@ -205,20 +238,38 @@ class TestDockerIntegration:
                     timeout=5,
                 )
 
-                assert result.returncode == 0, (
-                    f"Bash syntax error: {result.stderr}"
-                )
+                assert result.returncode == 0, f"Bash syntax error: {result.stderr}"
 
             except subprocess.TimeoutExpired:
                 pytest.skip("Bash validation timeout")
         else:
-            pytest.skip("Bash not available")
+            # On Windows, just skip the bash syntax check
+            pytest.skip("Bash syntax check skipped on Windows")
 
     def test_health_check_script_bash_syntax(self):
         """Test that the health check script has valid bash syntax."""
         health_script = self.project_root / "scripts" / "health-check.sh"
 
-        if shutil.which("bash"):
+        # First check that the file exists
+        assert health_script.exists(), f"Health check script not found: {health_script}"
+
+        # Read the script content to check for basic syntax issues
+        with open(health_script, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Basic syntax checks
+        assert content.startswith("#!/bin/bash") or content.startswith(
+            "#!/usr/bin/env bash"
+        ), "Script should start with proper bash shebang"
+
+        # Check for basic structural elements (commands and control structures)
+        assert "curl" in content or "wget" in content or "python" in content, (
+            "No health check commands found"
+        )
+
+        # Skip actual bash syntax check on Windows due to path compatibility issues
+        if shutil.which("bash") and not hasattr(subprocess, "STARTUPINFO"):
+            # Only run bash syntax check on Unix systems
             try:
                 result = subprocess.run(
                     ["bash", "-n", str(health_script)],
@@ -227,14 +278,13 @@ class TestDockerIntegration:
                     timeout=5,
                 )
 
-                assert result.returncode == 0, (
-                    f"Bash syntax error: {result.stderr}"
-                )
+                assert result.returncode == 0, f"Bash syntax error: {result.stderr}"
 
             except subprocess.TimeoutExpired:
                 pytest.skip("Bash validation timeout")
         else:
-            pytest.skip("Bash not available")
+            # On Windows, just skip the bash syntax check
+            pytest.skip("Bash syntax check skipped on Windows")
 
 
 class TestDockerWorkflow:
@@ -271,6 +321,7 @@ class TestDockerWorkflow:
 
         # Load docker-compose.yml to get compose_config
         import yaml
+
         with open(self.project_root / "docker-compose.yml", "r") as f:
             compose_config = yaml.safe_load(f)
 
@@ -292,7 +343,7 @@ class TestDockerWorkflow:
     def test_docker_security_configuration(self):
         """Test Docker security configuration."""
         # Read the Dockerfile
-        with open(self.project_root / "Dockerfile", "r") as f:
+        with open(self.project_root / "Dockerfile", "r", encoding="utf-8") as f:
             dockerfile_content = f.read()
 
         # Security checks
@@ -310,7 +361,6 @@ class TestDockerWorkflow:
 
     def test_docker_volume_security(self):
         """Test Docker volume security."""
-        import yaml
 
         with open(self.project_root / "docker-compose.yml", "r") as f:
             compose_config = yaml.safe_load(f)
@@ -321,16 +371,14 @@ class TestDockerWorkflow:
         # Check that volumes are read-only
         for volume in volumes:
             if isinstance(volume, str) and ":" in volume:
-                # Format: source:target:options
-                parts = volume.split(":")
-                if len(parts) >= 3:
-                    options = parts[2]
-                    assert "ro" in options, f"Volume not read-only: {volume}"
+                # Check if volume contains 'ro' (read-only) flag
+                # This handles various formats like source:target:ro or complex paths
+                assert ":ro" in volume, f"Volume not read-only: {volume}"
 
     def test_docker_environment_isolation(self):
         """Test Docker environment isolation."""
         # Read the Dockerfile
-        with open(self.project_root / "Dockerfile", "r") as f:
+        with open(self.project_root / "Dockerfile", "r", encoding="utf-8") as f:
             dockerfile_content = f.read()
 
         # Check isolation
@@ -355,7 +403,7 @@ class TestDockerPerformance:
 
     def test_dockerfile_layer_optimization(self):
         """Test Docker layer optimization."""
-        with open(self.project_root / "Dockerfile", "r") as f:
+        with open(self.project_root / "Dockerfile", "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         # Count instructions that create layers
@@ -382,7 +430,7 @@ class TestDockerPerformance:
 
     def test_dockerfile_cache_optimization(self):
         """Test Docker cache optimization."""
-        with open(self.project_root / "Dockerfile", "r") as f:
+        with open(self.project_root / "Dockerfile", "r", encoding="utf-8") as f:
             content = f.read()
 
         # Check that dependency files are copied before source code
@@ -396,12 +444,13 @@ class TestDockerPerformance:
 
     def test_dockerfile_build_efficiency(self):
         """Test Docker build efficiency best practices."""
-        with open(self.project_root / "Dockerfile", "r") as f:
+        with open(self.project_root / "Dockerfile", "r", encoding="utf-8") as f:
             content = f.read()
 
         # Check efficiency best practices
         efficiency_checks = {
-            "combined_apt_commands": "apt-get update && apt-get install" in content,
+            "combined_apt_commands": "apt-get update &&" in content
+            and "apt-get install" in content,
             "cache_cleanup": "rm -rf /var/lib/apt/lists/*" in content,
             "no_cache_pip": "--no-cache-dir" in content,
             "minimal_dependencies": "--no-install-recommends" in content,
@@ -438,15 +487,26 @@ class TestDockerPerformance:
     def test_startup_time_optimization(self):
         """Test startup time optimization."""
         # Read the entrypoint script
-        with open(self.project_root / "docker-entrypoint.sh", "r") as f:
-            entrypoint_content = f.read()
+        try:
+            with open(
+                self.project_root / "docker-entrypoint.sh", "r", encoding="utf-8"
+            ) as f:
+                entrypoint_content = f.read()
+        except UnicodeDecodeError:
+            # Fallback for encoding issues
+            with open(
+                self.project_root / "docker-entrypoint.sh",
+                "r",
+                encoding="utf-8",
+                errors="replace",
+            ) as f:
+                entrypoint_content = f.read()
 
         # Check startup optimizations
         startup_checks = {
             "fast_validation": "validate_environment" in entrypoint_content,
             "parallel_checks": "&&" in entrypoint_content,  # Combined commands
-            "early_exit": "exit 1"
-            in entrypoint_content,  # Fast exit on error
+            "early_exit": "exit 1" in entrypoint_content,  # Fast exit on error
             "minimal_logging": "log_info" in entrypoint_content,
         }
 

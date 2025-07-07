@@ -220,6 +220,11 @@ class DockerTestUtils:
             except ValueError:
                 errors.append("CLAUDE_REFRESH_INTERVAL must be a valid integer")
 
+        # Validate CLAUDE_DEBUG_MODE
+        if "CLAUDE_DEBUG_MODE" in env_vars:
+            if env_vars["CLAUDE_DEBUG_MODE"] not in ["true", "false"]:
+                errors.append(f"Invalid CLAUDE_DEBUG_MODE: {env_vars['CLAUDE_DEBUG_MODE']}")
+
         return errors
 
     @staticmethod

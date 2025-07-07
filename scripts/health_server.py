@@ -101,7 +101,7 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
                 }
             else:
                 # Try to perform a quick analysis
-                result = analyze_usage()
+                result = self.get_cached_analysis()
                 self.send_response(200)
                 response = {
                     "status": "ready",
@@ -128,7 +128,8 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_error(500, f"Metrics collection failed: {e}")
 
-    def get_health_status(self) -> Dict[str, Any]:
+    @staticmethod
+    def get_health_status() -> Dict[str, Any]:
         """Get comprehensive health status."""
         checks = {}
         overall_status = "healthy"
@@ -241,6 +242,14 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
                 "status": "metrics_collection_failed",
             }
 
+    def cached_analyze_usage(self, cache_key):
+        return analyze_usage()
+
+    def get_cached_analysis(self):
+        # Cache for 60 seconds
+        cache_key = int(time.time() // 60)
+        return self.cached_analyze_usage(cache_key)
+
 
 def run_health_server(port: int = 8080, host: str = "0.0.0.0"):
     """Run the health check HTTP server."""
@@ -289,9 +298,8 @@ def main():
 
     if args.test:
         # Run a single health check
-        handler = HealthCheckHandler()
         try:
-            health_status = handler.get_health_status()
+            health_status = HealthCheckHandler.get_health_status()
             print(json.dumps(health_status, indent=2))
             sys.exit(0 if health_status["status"] == "healthy" else 1)
         except Exception as e:

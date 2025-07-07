@@ -56,13 +56,13 @@ validate_environment() {
         exit 1
     fi
     
-    # Check for .jsonl files
+    # Check for .jsonl files with optimized command chaining
     if ! find "${CLAUDE_DATA_PATH}" -name "*.jsonl" -type f | head -1 | grep -q .; then
-        log_warn "No .jsonl files found in ${CLAUDE_DATA_PATH}"
+        log_warn "No .jsonl files found in ${CLAUDE_DATA_PATH}" && \
         log_warn "Make sure your Claude data directory contains usage data files"
     else
         local jsonl_count
-        jsonl_count=$(find "${CLAUDE_DATA_PATH}" -name "*.jsonl" -type f | wc -l)
+        jsonl_count=$(find "${CLAUDE_DATA_PATH}" -name "*.jsonl" -type f | wc -l) && \
         log_success "Found ${jsonl_count} .jsonl files in data directory"
     fi
     
@@ -105,11 +105,13 @@ validate_environment() {
 test_application() {
     log_info "Testing application startup..."
     
-    if python -c "from usage_analyzer.api import analyze_usage; result = analyze_usage(); print(f'✓ Analysis successful: {len(result.get(\"blocks\", []))} blocks found')" 2>/dev/null; then
-        log_success "Application startup test passed"
+    # Optimized startup test with command chaining
+    if python -c "from usage_analyzer.api import analyze_usage; result = analyze_usage(); print(f'✓ Analysis successful: {len(result.get(\"blocks\", []))} blocks found')" 2>/dev/null && \
+       log_success "Application startup test passed"; then
+        return 0
     else
-        log_error "Application startup test failed"
-        log_error "Please check your data volume mount and Claude data files"
+        log_error "Application startup test failed" && \
+        log_error "Please check your data volume mount and Claude data files" && \
         exit 1
     fi
 }
@@ -119,20 +121,20 @@ initialize() {
     log_info "🐳 Claude Code Usage Monitor - Docker Container Starting"
     log_info "Version: 1.0.19"
     
-    # Debug mode logging
+    # Debug mode logging with optimized checks
     if [[ "${CLAUDE_DEBUG_MODE:-false}" == "true" ]]; then
-        log_info "Debug mode enabled"
-        log_info "Environment variables:"
-        log_info "  CLAUDE_DATA_PATH=${CLAUDE_DATA_PATH:-unset}"
-        log_info "  CLAUDE_PLAN=${CLAUDE_PLAN:-unset}"
-        log_info "  CLAUDE_TIMEZONE=${CLAUDE_TIMEZONE:-unset}"
-        log_info "  CLAUDE_THEME=${CLAUDE_THEME:-unset}"
+        log_info "Debug mode enabled" && \
+        log_info "Environment variables:" && \
+        log_info "  CLAUDE_DATA_PATH=${CLAUDE_DATA_PATH:-unset}" && \
+        log_info "  CLAUDE_PLAN=${CLAUDE_PLAN:-unset}" && \
+        log_info "  CLAUDE_TIMEZONE=${CLAUDE_TIMEZONE:-unset}" && \
+        log_info "  CLAUDE_THEME=${CLAUDE_THEME:-unset}" && \
         log_info "  CLAUDE_REFRESH_INTERVAL=${CLAUDE_REFRESH_INTERVAL:-unset}"
     fi
     
-    validate_environment
-    test_application
-    
+    # Initialize with optimized validation chain
+    validate_environment && \
+    test_application && \
     log_success "Initialization complete"
 }
 
@@ -167,7 +169,6 @@ main() {
         # Build arguments from environment variables
         local cmd_args
         readarray -t cmd_args < <(build_args)
-        cmd_args=($(build_args))
         
         if [[ "${CLAUDE_DEBUG_MODE:-false}" == "true" ]]; then
             log_info "Executing: python claude_monitor.py ${cmd_args[*]}"

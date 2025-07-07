@@ -127,28 +127,24 @@ class TestHealthSystemIntegration:
     def test_health_check_script_exists(self):
         """Test that the health check script exists."""
         script_path = (
-            Path(__file__).parent.parent.parent / "scripts" / "health_check.sh"
+            Path(__file__).parent.parent.parent / "scripts" / "health-check.sh"
         )
-        assert script_path.exists(), "The health_check.sh script must exist"
+        assert script_path.exists(), "The health-check.sh script must exist"
 
-    @pytest.mark.skipif(
-        os.name == "nt", reason="Bash script not available on Windows"
-    )
+    @pytest.mark.skipif(os.name == "nt", reason="Bash script not available on Windows")
     def test_health_check_script_executable(self):
         """Test that the health check script is executable."""
         script_path = (
-            Path(__file__).parent.parent.parent / "scripts" / "health_check.sh"
+            Path(__file__).parent.parent.parent / "scripts" / "health-check.sh"
         )
         stat_info = script_path.stat()
         assert stat_info.st_mode & 0o111, "The script must be executable"
 
-    @pytest.mark.skipif(
-        os.name == "nt", reason="Bash script not available on Windows"
-    )
+    @pytest.mark.skipif(os.name == "nt", reason="Bash script not available on Windows")
     def test_health_check_script_execution(self):
         """Test execution of the health check script."""
         script_path = (
-            Path(__file__).parent.parent.parent / "scripts" / "health_check.sh"
+            Path(__file__).parent.parent.parent / "scripts" / "health-check.sh"
         )
 
         try:

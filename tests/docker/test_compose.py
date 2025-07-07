@@ -100,7 +100,11 @@ class TestDockerCompose:
 
         # Check the main volume
         main_volume = volumes[0]
-        assert "~/.claude/projects:/data:ro" in main_volume
+        # Should contain the default path pattern (with or without environment variable)
+        assert (
+            "~/.claude/projects:/data:ro" in main_volume
+            or "${CLAUDE_PROJECTS_DIR:-~/.claude/projects}:/data:ro" in main_volume
+        )
 
     def test_docker_compose_resource_limits(self):
         """Test resource limits."""
@@ -316,11 +320,21 @@ class TestDockerComposeValidation:
 
         for volume in volumes:
             if isinstance(volume, str) and ":" in volume:
-                parts = volume.split(":")
-                assert len(parts) >= 2, f"Invalid volume format: {volume}"
+                # Handle environment variable syntax like ${VAR:-default}:/path:mode
+                if volume.startswith("${") and "}:" in volume:
+                    # Find the closing } and split from there
+                    closing_brace = volume.find("}:")
+                    remaining = volume[closing_brace + 2 :]  # Skip "}:"
+                    parts = remaining.split(":")
+                    target_path = parts[0] if parts else ""
+                else:
+                    # Traditional format source:target:mode
+                    parts = volume.split(":")
+                    target_path = parts[1] if len(parts) >= 2 else ""
+
+                assert len(parts) >= 1, f"Invalid volume format: {volume}"
 
                 # Check that the target path is /data
-                target_path = parts[1]
                 assert target_path == "/data", f"Incorrect target path: {target_path}"
 
     def test_validate_healthcheck_command(self):
@@ -366,9 +380,7 @@ class TestDockerComposeValidation:
                         # Memory should be a string with a unit
                         memory_value = resource_section["memory"]
                         assert isinstance(memory_value, str)
-                        assert memory_value[-1] in ["M", "G"], (
-                            "Missing memory unit"
-                        )
+                        assert memory_value[-1] in ["M", "G"], "Missing memory unit"
 
 
 if __name__ == "__main__":

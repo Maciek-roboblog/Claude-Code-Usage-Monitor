@@ -154,7 +154,7 @@ class DockerTestSuite:
             "Dockerfile",
             "docker-compose.yml",
             "docker-entrypoint.sh",
-            "scripts/health_check.sh",
+            "scripts/health-check.sh",
             "scripts/health_server.py",
         ]
 
@@ -171,6 +171,7 @@ class DockerTestSuite:
 
         # Check Python dependencies
         import importlib.util
+
         if importlib.util.find_spec("yaml") is not None:
             print("✅ PyYAML available")
         else:
@@ -214,9 +215,7 @@ def main():
     parser.add_argument(
         "--coverage", action="store_true", help="Run with code coverage"
     )
-    parser.add_argument(
-        "--check", action="store_true", help="Only check compatibility"
-    )
+    parser.add_argument("--check", action="store_true", help="Only check compatibility")
     parser.add_argument(
         "--info", action="store_true", help="Show environment information"
     )

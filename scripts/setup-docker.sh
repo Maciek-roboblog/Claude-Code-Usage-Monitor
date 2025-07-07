@@ -274,7 +274,9 @@ main() {
                 CLAUDE_DATA_PATH="$2"
                 shift 2
                 ;;
-
+            --quiet)
+                quiet=true
+                shift
                 ;;
             *)
                 log_error "Unknown option: $1"

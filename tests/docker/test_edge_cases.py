@@ -6,16 +6,32 @@ import json
 import socket
 import threading
 import time
+from contextlib import contextmanager
+from http.server import HTTPServer
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 import yaml
-from contextlib import contextmanager
 
 
 class TestDockerEdgeCases:
     """Tests for edge cases in the Docker implementation."""
+
+    @contextmanager
+    def _run_test_server(self, handler_class, port):
+        """Context manager for HTTP server setup and teardown."""
+        server = HTTPServer(("localhost", port), handler_class)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        time.sleep(0.2)  # Let the server start
+        try:
+            yield server
+        finally:
+            server.shutdown()
+            thread.join(timeout=2)
+            if thread.is_alive():
+                server.server_close()
 
     def test_empty_data_directory_handling(self, empty_data_dir, docker_utils):
         """Test handling of an empty data directory via a real HTTP server."""
@@ -32,8 +48,6 @@ class TestDockerEdgeCases:
             ) as mock_get_paths:
                 mock_get_paths.return_value = [str(empty_data_dir)]
 
-                from http.server import HTTPServer
-
                 from scripts.health_server import HealthCheckHandler
 
                 # Find a free port
@@ -41,22 +55,7 @@ class TestDockerEdgeCases:
                     s.bind(("localhost", 0))
                     port = s.getsockname()[1]
 
-                server = HTTPServer(("localhost", port), HealthCheckHandler)
-                @contextmanager
-                def run_test_server(handler_class, port):
-                    server = HTTPServer(("localhost", port), handler_class)
-                    thread = threading.Thread(target=server.serve_forever, daemon=True)
-                    thread.start()
-                    time.sleep(0.2)  # Let the server start
-                    try:
-                        yield server
-                    finally:
-                        server.shutdown()
-                        thread.join(timeout=2)
-                        if thread.is_alive():
-                            server.server_close()
-
-                with run_test_server(HealthCheckHandler, port) as server:
+                with self._run_test_server(HealthCheckHandler, port):
                     conn = HTTPConnection("localhost", port)
                     conn.request("GET", "/health")
                     resp = conn.getresponse()
@@ -95,24 +94,13 @@ class TestDockerEdgeCases:
                 mock_get_paths.return_value = [str(temp_data_dir)]
                 mock_analyze.side_effect = Exception("JSON parsing error")
 
-                from http.server import HTTPServer
-
                 from scripts.health_server import HealthCheckHandler
 
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     s.bind(("localhost", 0))
                     port = s.getsockname()[1]
 
-                server = HTTPServer(("localhost", port), HealthCheckHandler)
-
-                def run_server():
-                    server.serve_forever()
-
-                thread = threading.Thread(target=run_server, daemon=True)
-                thread.start()
-                time.sleep(0.2)
-
-                try:
+                with self._run_test_server(HealthCheckHandler, port):
                     conn = HTTPConnection("localhost", port)
                     conn.request("GET", "/health")
                     resp = conn.getresponse()
@@ -122,9 +110,6 @@ class TestDockerEdgeCases:
                     assert health_status["status"] == "unhealthy"
                     assert health_status["checks"]["analysis"]["status"] == "unhealthy"
                     assert "error" in health_status["checks"]["analysis"]
-                finally:
-                    server.shutdown()
-                    thread.join(timeout=1)
 
         finally:
             docker_utils.restore_environment(original_env)
@@ -149,24 +134,13 @@ class TestDockerEdgeCases:
             ) as mock_get_paths:
                 mock_get_paths.side_effect = PermissionError("Permission denied")
 
-                from http.server import HTTPServer
-
                 from scripts.health_server import HealthCheckHandler
 
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     s.bind(("localhost", 0))
                     port = s.getsockname()[1]
 
-                server = HTTPServer(("localhost", port), HealthCheckHandler)
-
-                def run_server():
-                    server.serve_forever()
-
-                thread = threading.Thread(target=run_server, daemon=True)
-                thread.start()
-                time.sleep(0.2)
-
-                try:
+                with self._run_test_server(HealthCheckHandler, port):
                     conn = HTTPConnection("localhost", port)
                     conn.request("GET", "/health")
                     resp = conn.getresponse()
@@ -175,9 +149,6 @@ class TestDockerEdgeCases:
                     health_status = json.loads(data)
                     assert health_status["status"] == "unhealthy"
                     assert "error" in health_status["checks"]["data_access"]
-                finally:
-                    server.shutdown()
-                    thread.join(timeout=1)
 
         finally:
             docker_utils.restore_environment(original_env)
@@ -210,42 +181,13 @@ class TestDockerEdgeCases:
             ) as mock_get_paths:
                 mock_get_paths.return_value = [str(temp_data_dir)]
 
-                from http.server import HTTPServer
-
                 from scripts.health_server import HealthCheckHandler
-                from contextlib import contextmanager
-
-                @contextmanager
-                def run_test_server(handler, port):
-                    server = HTTPServer(("localhost", port), handler)
-
-                    def run_server():
-                        server.serve_forever()
-
-                    thread = threading.Thread(target=run_server, daemon=True)
-                    thread.start()
-                    time.sleep(0.2)
-
-                    try:
-                        yield server
-                    finally:
-                        server.shutdown()
-                        thread.join(timeout=1)
 
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     s.bind(("localhost", 0))
                     port = s.getsockname()[1]
 
-                server = HTTPServer(("localhost", port), HealthCheckHandler)
-
-                def run_server():
-                    server.serve_forever()
-
-                thread = threading.Thread(target=run_server, daemon=True)
-                thread.start()
-                time.sleep(0.2)
-
-                try:
+                with self._run_test_server(HealthCheckHandler, port):
                     conn = HTTPConnection("localhost", port)
                     conn.request("GET", "/health")
                     resp = conn.getresponse()
@@ -254,9 +196,6 @@ class TestDockerEdgeCases:
                     health_status = json.loads(data)
                     assert health_status["status"] in ("healthy", "unhealthy")
                     assert "data_access" in health_status["checks"]
-                finally:
-                    server.shutdown()
-                    thread.join(timeout=1)
 
         finally:
             docker_utils.restore_environment(original_env)
