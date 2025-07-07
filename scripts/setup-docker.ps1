@@ -154,15 +154,7 @@ function Find-ClaudeData {
             Write-ErrorLog "The specified path does not exist: $userPath"
         }
         } while ($true)
-    do {
-        $userPath = Read-Host "Please enter the path to your Claude data"
-        if (Test-Path $userPath) {
-            $script:ClaudeDataPath = $userPath
-            return $true
-        } else {
-            Write-ErrorLog "The specified path does not exist: $userPath"
-        }
-    } while ($true)
+
 }
 
 # Cleanup of existing resources

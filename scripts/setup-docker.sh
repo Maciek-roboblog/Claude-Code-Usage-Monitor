@@ -135,7 +135,7 @@ cleanup_existing() {
     
     # Stop existing containers
     docker stop "$CONTAINER_NAME" 2>/dev/null || true
-    $compose_cmd down 2>/dev/null || true
+    ${compose_cmd} down 2>/dev/null || true
     
     # Remove existing containers
     docker rm "$CONTAINER_NAME" 2>/dev/null || true
@@ -184,7 +184,7 @@ EOF
     fi
     
     # Validate configuration
-    $compose_cmd config > /dev/null || {
+    ${compose_cmd} config > /dev/null || {
         log_error "Invalid Docker Compose configuration"
         exit 1
     }
@@ -230,18 +230,18 @@ start_service() {
     # In quiet mode, default to background mode
     if [[ ${quiet:-false} == true ]]; then
         log_info "Starting in background mode (quiet mode)..."
-        $compose_cmd up -d
+        ${compose_cmd} up -d
         log_success "Service started in background"
-        log_info "Use '$compose_cmd logs -f' to view logs"
-        log_info "Use '$compose_cmd down' to stop"
+        log_info "Use '${compose_cmd} logs -f' to view logs"
+        log_info "Use '${compose_cmd} down' to stop"
         return
     fi
     
     quiet_echo
     quiet_echo "Choose startup mode:"
     quiet_echo "1) Interactive mode (docker run)"
-    quiet_echo "2) Service mode ($compose_cmd)"
-    quiet_echo "3) Background mode ($compose_cmd -d)"
+    quiet_echo "2) Service mode (${compose_cmd})"
+    quiet_echo "3) Background mode (${compose_cmd} -d)"
     quiet_echo
     read -p "Your choice (1-3): " choice
     
@@ -255,14 +255,14 @@ start_service() {
             ;;
         2)
             log_info "Starting with Docker Compose..."
-            $compose_cmd up
+            ${compose_cmd} up
             ;;
         3)
             log_info "Starting in background..."
-            $compose_cmd up -d
+            ${compose_cmd} up -d
             log_success "Service started in background"
-            log_info "Use '$compose_cmd logs -f' to view logs"
-            log_info "Use '$compose_cmd down' to stop"
+            log_info "Use '${compose_cmd} logs -f' to view logs"
+            log_info "Use '${compose_cmd} down' to stop"
             ;;
         *)
             log_warning "Invalid option. Starting in interactive mode by default..."
@@ -382,9 +382,9 @@ main() {
     log_success "Docker configuration completed successfully!"
     quiet_echo
     quiet_echo "Useful commands:"
-    quiet_echo "  $compose_cmd up                 # Start"
-    quiet_echo "  $compose_cmd down               # Stop"
-    quiet_echo "  $compose_cmd logs -f            # View logs"
+    quiet_echo "  ${compose_cmd} up                 # Start"
+    quiet_echo "  ${compose_cmd} down               # Stop"
+    quiet_echo "  ${compose_cmd} logs -f            # View logs"
     quiet_echo "  docker exec -it $CONTAINER_NAME bash  # Enter the container"
     quiet_echo
     quiet_echo "Documentation: docs/docker/README.md"
