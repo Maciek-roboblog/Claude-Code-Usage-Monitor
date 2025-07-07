@@ -170,8 +170,13 @@ def corrupted_data_dir(temp_data_dir):
         f.write('{"test": "data"}\n')
 
     # Make the file unreadable (on Unix)
+    # Make the file unreadable (on Unix)
     if os.name != "nt":  # Not on Windows
         os.chmod(restricted_file, 0o000)
+    else:
+        # On Windows, use file attributes to make it read-only
+        import stat
+        os.chmod(restricted_file, stat.S_IREAD)
 
     # Binary file with .jsonl extension
     binary_file = temp_data_dir / "binary.jsonl"
@@ -228,21 +233,30 @@ class DockerTestUtils:
         return errors
 
     @staticmethod
-    def simulate_docker_environment(env_vars: Dict[str, str]) -> Dict[str, str]:
+    def simulate_docker_environment(env_vars: Dict[str, str], monkeypatch=None) -> Dict[str, str]:
         """Simulates the Docker environment by setting environment variables."""
+        if monkeypatch:
+            for key, value in env_vars.items():
+                monkeypatch.setenv(key, value)
+            return {}
+        # Fallback to direct modification (not recommended for parallel tests)
         original_env = {}
-
-        # Save the original environment
         for key in env_vars:
             original_env[key] = os.environ.get(key)
             os.environ[key] = env_vars[key]
-
         return original_env
 
     @staticmethod
-    def restore_environment(original_env: Dict[str, str]):
+    def restore_environment(original_env: Dict[str, str], monkeypatch=None):
         """Restores the original environment."""
+        if monkeypatch:
+            # monkeypatch will automatically undo changes after the test
+            return
         for key, value in original_env.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
             if value is None:
                 os.environ.pop(key, None)
             else:

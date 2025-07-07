@@ -166,16 +166,34 @@ EOF
 test_installation() {
     log_info "Testing installation..."
     
-    # Health check test
-    docker run --rm \
+test_installation() {
+    log_info "Testing installation..."
+
+    # Health check test with better error handling
+    if docker run --rm \
         -v "$CLAUDE_DATA_PATH:/data:ro" \
         --entrypoint python \
         "$IMAGE_NAME:latest" \
-        -c "from usage_analyzer.api import analyze_usage; result = analyze_usage(); print(f'✅ Test passed: {len(result.get(\"blocks\", []))} blocks found')" || {
-        log_warning "Basic test failed, but the image seems functional"
-    }
-    
-    log_success "Installation tested successfully"
+        -c "
+            import sys
+            try:
+                from usage_analyzer.api import analyze_usage
+                result = analyze_usage()
+                if isinstance(result, dict):
+                    print(f'✅ Test passed: {len(result.get(\"blocks\", []))} blocks found')
+                    sys.exit(0)
+                else:
+                    print('❌ Test failed: Invalid result type')
+                    sys.exit(1)
+            except Exception as e:
+                print(f'❌ Test failed: {e}')
+                sys.exit(1)
+        " 2>&1; then
+        log_success "Installation test passed"
+    else
+        log_error "Installation test failed - image may not be functional"
+        exit 1
+    fi
 }
 
 # Start the service
