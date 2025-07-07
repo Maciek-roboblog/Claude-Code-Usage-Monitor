@@ -34,6 +34,15 @@ log_error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
+# Detect Docker Compose command
+detect_compose_command() {
+    if command -v docker-compose &> /dev/null; then
+        compose_cmd="docker-compose"
+    else
+        compose_cmd="docker compose"
+    fi
+}
+
 # Prerequisite checks
 check_prerequisites() {
     log_info "Checking prerequisites..."
@@ -43,6 +52,9 @@ check_prerequisites() {
         log_error "Docker is not installed. Please install Docker Desktop."
         exit 1
     fi
+    
+    # Detect and set compose command
+    detect_compose_command
     
     # Check Docker Compose
     if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
@@ -56,7 +68,7 @@ check_prerequisites() {
         exit 1
     fi
     
-    log_success "Prerequisites verified"
+    log_success "Prerequisites verified (using: $compose_cmd)"
 }
 
 # Automatic detection of Claude data
@@ -105,7 +117,7 @@ cleanup_existing() {
     
     # Stop existing containers
     docker stop "$CONTAINER_NAME" 2>/dev/null || true
-    docker-compose down 2>/dev/null || true
+    $compose_cmd down 2>/dev/null || true
     
     # Remove existing containers
     docker rm "$CONTAINER_NAME" 2>/dev/null || true
@@ -154,7 +166,7 @@ EOF
     fi
     
     # Validate configuration
-    docker-compose config > /dev/null || {
+    $compose_cmd config > /dev/null || {
         log_error "Invalid Docker Compose configuration"
         exit 1
     }
@@ -163,9 +175,6 @@ EOF
 }
 
 # Installation test
-test_installation() {
-    log_info "Testing installation..."
-    
 test_installation() {
     log_info "Testing installation..."
 
@@ -203,8 +212,8 @@ start_service() {
     echo
     echo "Choose startup mode:"
     echo "1) Interactive mode (docker run)"
-    echo "2) Service mode (docker-compose)"
-    echo "3) Background mode (docker-compose -d)"
+    echo "2) Service mode ($compose_cmd)"
+    echo "3) Background mode ($compose_cmd -d)"
     echo
     read -p "Your choice (1-3): " choice
     
@@ -218,14 +227,14 @@ start_service() {
             ;;
         2)
             log_info "Starting with Docker Compose..."
-            docker-compose up
+            $compose_cmd up
             ;;
         3)
             log_info "Starting in background..."
-            docker-compose up -d
+            $compose_cmd up -d
             log_success "Service started in background"
-            log_info "Use 'docker-compose logs -f' to view logs"
-            log_info "Use 'docker-compose down' to stop"
+            log_info "Use '$compose_cmd logs -f' to view logs"
+            log_info "Use '$compose_cmd down' to stop"
             ;;
         *)
             log_warning "Invalid option. Starting in interactive mode by default..."
@@ -340,9 +349,9 @@ main() {
     log_success "Docker configuration completed successfully!"
     echo
     echo "Useful commands:"
-    echo "  docker-compose up                 # Start"
-    echo "  docker-compose down               # Stop"
-    echo "  docker-compose logs -f            # View logs"
+    echo "  $compose_cmd up                 # Start"
+    echo "  $compose_cmd down               # Stop"
+    echo "  $compose_cmd logs -f            # View logs"
     echo "  docker exec -it $CONTAINER_NAME bash  # Enter the container"
     echo
     echo "Documentation: docs/docker/README.md"

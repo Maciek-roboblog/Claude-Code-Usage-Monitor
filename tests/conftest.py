@@ -176,6 +176,7 @@ def corrupted_data_dir(temp_data_dir):
     else:
         # On Windows, use file attributes to make it read-only
         import stat
+
         os.chmod(restricted_file, stat.S_IREAD)
 
     # Binary file with .jsonl extension
@@ -228,12 +229,16 @@ class DockerTestUtils:
         # Validate CLAUDE_DEBUG_MODE
         if "CLAUDE_DEBUG_MODE" in env_vars:
             if env_vars["CLAUDE_DEBUG_MODE"] not in ["true", "false"]:
-                errors.append(f"Invalid CLAUDE_DEBUG_MODE: {env_vars['CLAUDE_DEBUG_MODE']}")
+                errors.append(
+                    f"Invalid CLAUDE_DEBUG_MODE: {env_vars['CLAUDE_DEBUG_MODE']}"
+                )
 
         return errors
 
     @staticmethod
-    def simulate_docker_environment(env_vars: Dict[str, str], monkeypatch=None) -> Dict[str, str]:
+    def simulate_docker_environment(
+        env_vars: Dict[str, str], monkeypatch=None
+    ) -> Dict[str, str]:
         """Simulates the Docker environment by setting environment variables."""
         if monkeypatch:
             for key, value in env_vars.items():
@@ -253,10 +258,6 @@ class DockerTestUtils:
             # monkeypatch will automatically undo changes after the test
             return
         for key, value in original_env.items():
-            if value is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = value
             if value is None:
                 os.environ.pop(key, None)
             else:
