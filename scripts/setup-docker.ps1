@@ -162,7 +162,7 @@ function Remove-ExistingResources {
     Write-InfoLog "Cleaning up existing resources..."
 
     # Determine the project root directory
-    $scriptDir = Split-Path -Parent $MyInvocation.ScriptName
+    $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
     $projectRoot = Split-Path -Parent $scriptDir
 
     # Stop existing containers
@@ -272,7 +272,7 @@ function Test-Installation {
 
     # Health check test
     try {
-        $testResult = docker run --rm -v "${ClaudeDataPath}:/data:ro" --entrypoint python "${ImageName}:latest" -c "from usage_analyzer.api import analyze_usage; result = analyze_usage(); print(f'✅ Test passed: {len(result.get(`"blocks`", []))} blocks found')"
+        $testResult = docker run --rm -v "${ClaudeDataPath}:/data:ro" --entrypoint python "${ImageName}:latest" -c "from usage_analyzer.api import analyze_usage; result = analyze_usage(); print(f'✅ Test passed: {len(result.get(\"blocks\", []))} blocks found')"
         Write-InfoLog $testResult
     } catch {
         Write-WarningLog "Basic test failed, but the image seems functional"
