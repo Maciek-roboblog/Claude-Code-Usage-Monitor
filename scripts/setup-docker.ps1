@@ -7,7 +7,18 @@
     It automates the setup process, ensuring all necessary Docker components and configurations are in place for smooth operation on Windows systems.
 
 .PARAMETER <ParameterName>
-    Specify the parameters required by the script. (Replace <ParameterName> with the actual parameter names and provide their descriptions.)
+    .PARAMETER Help
+        Display help information and usage examples.
+    .PARAMETER CleanupOnly
+        Only cleanup existing Docker resources without building or starting.
+    .PARAMETER BuildOnly
+        Only build the Docker image without starting the service.
+    .PARAMETER NoStart
+        Build and configure but do not start the service.
+    .PARAMETER DataPath
+        Specify the path to Claude data directory.
+    .PARAMETER Quiet
+        Run in quiet mode with minimal output.
 
 .EXAMPLE
     .\setup-docker.ps1
@@ -20,7 +31,7 @@
     Additional information: This script is intended for use with the Claude-Code-Usage-Monitor project.
 #>
 param(
-    [switch]$Help,
+    [switch]$Help
     [switch]$CleanupOnly,
     [switch]$BuildOnly,
     [switch]$NoStart,
@@ -412,7 +423,7 @@ function Main {
 }
 
 # Global variables
-$ClaudeDataPath = $DataPath
+$script:ClaudeDataPath = $DataPath
 
 # Script execution
 Main
