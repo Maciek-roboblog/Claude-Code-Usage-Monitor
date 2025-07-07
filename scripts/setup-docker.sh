@@ -19,19 +19,28 @@ NC='\033[0m' # No Color
 
 # Utility functions
 log_info() {
+    [[ ${quiet:-false} == true ]] && return
     echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
 log_success() {
+    [[ ${quiet:-false} == true ]] && return
     echo -e "${GREEN}✅ $1${NC}"
 }
 
 log_warning() {
+    [[ ${quiet:-false} == true ]] && return
     echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
 log_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}❌ $1${NC}"   # errors should always show
+}
+
+# Echo function that respects quiet mode
+quiet_echo() {
+    [[ ${quiet:-false} == true ]] && return
+    echo "$@"
 }
 
 # Detect Docker Compose command
@@ -94,7 +103,7 @@ detect_claude_data() {
     # Advanced search
     log_warning "Advanced search for Claude data..."
     local found_path
-    found_path=$(find "$HOME" -name "*.jsonl" -path "*claude*" -print -quit 2>/dev/null | head -1)
+    found_path=$(find "$HOME" -maxdepth 5 -name "*.jsonl" -path "*claude*" -print -quit 2>/dev/null | head -1)
     
     if [ -n "$found_path" ]; then
         CLAUDE_DATA_PATH=$(dirname "$found_path")
@@ -103,6 +112,12 @@ detect_claude_data() {
     fi
     
     log_warning "No Claude data found automatically."
+    
+    if [[ ${quiet:-false} == true ]]; then
+        log_error "Claude data path required in quiet mode. Use --data-path option."
+        exit 1
+    fi
+    
     read -p "Please enter the path to your Claude data: " CLAUDE_DATA_PATH
     
     if [ ! -d "$CLAUDE_DATA_PATH" ]; then
@@ -155,12 +170,12 @@ setup_compose() {
     if [ ! -f ".env" ]; then
         cat > .env << EOF
 # Docker Compose configuration for Claude Monitor
-CLAUDE_DATA_PATH=$CLAUDE_DATA_PATH
+CLAUDE_DATA_PATH="$CLAUDE_DATA_PATH"
 CLAUDE_PLAN=pro
 CLAUDE_TIMEZONE=UTC
 CLAUDE_THEME=auto
 CLAUDE_DEBUG_MODE=false
-COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT
+COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT"
 EOF
         log_success ".env file created"
     fi
@@ -209,12 +224,22 @@ test_installation() {
 start_service() {
     log_info "Starting Claude Monitor service..."
     
-    echo
-    echo "Choose startup mode:"
-    echo "1) Interactive mode (docker run)"
-    echo "2) Service mode ($compose_cmd)"
-    echo "3) Background mode ($compose_cmd -d)"
-    echo
+    # In quiet mode, default to background mode
+    if [[ ${quiet:-false} == true ]]; then
+        log_info "Starting in background mode (quiet mode)..."
+        $compose_cmd up -d
+        log_success "Service started in background"
+        log_info "Use '$compose_cmd logs -f' to view logs"
+        log_info "Use '$compose_cmd down' to stop"
+        return
+    fi
+    
+    quiet_echo
+    quiet_echo "Choose startup mode:"
+    quiet_echo "1) Interactive mode (docker run)"
+    quiet_echo "2) Service mode ($compose_cmd)"
+    quiet_echo "3) Background mode ($compose_cmd -d)"
+    quiet_echo
     read -p "Your choice (1-3): " choice
     
     case $choice in
@@ -313,9 +338,9 @@ main() {
         esac
     done
     
-    echo "Docker Configuration - $PROJECT_NAME"
-    echo "=================================================="
-    echo
+    quiet_echo "Docker Configuration - $PROJECT_NAME"
+    quiet_echo "=================================================="
+    quiet_echo
     
     check_prerequisites
     
@@ -344,17 +369,17 @@ main() {
         start_service
     fi
     
-    echo
-    echo "=================================================="
+    quiet_echo
+    quiet_echo "=================================================="
     log_success "Docker configuration completed successfully!"
-    echo
-    echo "Useful commands:"
-    echo "  $compose_cmd up                 # Start"
-    echo "  $compose_cmd down               # Stop"
-    echo "  $compose_cmd logs -f            # View logs"
-    echo "  docker exec -it $CONTAINER_NAME bash  # Enter the container"
-    echo
-    echo "Documentation: docs/docker/README.md"
+    quiet_echo
+    quiet_echo "Useful commands:"
+    quiet_echo "  $compose_cmd up                 # Start"
+    quiet_echo "  $compose_cmd down               # Stop"
+    quiet_echo "  $compose_cmd logs -f            # View logs"
+    quiet_echo "  docker exec -it $CONTAINER_NAME bash  # Enter the container"
+    quiet_echo
+    quiet_echo "Documentation: docs/docker/README.md"
 }
 
 # Run the script
