@@ -1,25 +1,25 @@
 @echo off
 REM update_translations.bat
-REM Script Windows batch pour mettre à jour toutes les traductions
+REM Windows batch script to update all translations
 
 echo.
-echo ℹ️  Mise à jour des traductions Claude Usage Monitor
-echo ℹ️  Utilisation du script Python générique...
+echo ℹ️  Updating Claude Usage Monitor translations
+echo ℹ️  Using the generic Python script...
 echo.
 
-REM Changer vers le répertoire du script
+REM Change to the script directory
 cd /d "%~dp0"
 
-REM Exécuter le script Python
+REM Run the Python script
 python update_all_translations.py %*
 
-REM Vérifier le code de retour
+REM Check the return code
 if %ERRORLEVEL% EQU 0 (
     echo.
-    echo ✅ Script terminé avec succès!
+    echo ✅ Script completed successfully!
 ) else (
     echo.
-    echo ❌ Le script a échoué avec le code: %ERRORLEVEL%
+    echo ❌ The script failed with code: %ERRORLEVEL%
     exit /b %ERRORLEVEL%
 )
 

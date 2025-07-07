@@ -38,7 +38,7 @@ The Claude Code Usage Monitor uses a modern, key-based internationalization syst
 
 ### Directory Structure
 
-```
+```text
 usage_analyzer/
 ├── i18n/
 │   ├── __init__.py              # Translation system core

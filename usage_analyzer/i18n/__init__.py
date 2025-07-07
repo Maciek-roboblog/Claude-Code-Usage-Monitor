@@ -79,9 +79,11 @@ def init_translations(
         # Cast to expected type to maintain type safety
         ngettext_func = cast(Callable[..., str], translation.ngettext)
 
-    except Exception as e:
+    except (OSError, FileNotFoundError, gettext.GNUTranslations, AttributeError) as e:
         # On error, use default (pass-through) functions
-        print(f"Warning: Failed to load translations for {lang_code}: {e}")
+        import logging
+
+        logging.warning(f"Failed to load translations for {lang_code}: {e}")
 
         # Fallback functions that return the original text
         def gettext_func(message: str) -> str:
@@ -132,66 +134,72 @@ def ngettext(singular: str, plural: str, n: int) -> str:
     return _get_ngettext()(singular, plural, n)
 
 
-# Fonctions d'aide pour les pluriels
+# Plural helper functions
 def ngettext_helper(singular_key: str, plural_key: str, n: int) -> str:
     """
-    Fonction d'aide pour utiliser ngettext avec des clés.
+    Helper function to use ngettext with keys.
 
     Args:
-        singular_key: Clé pour la forme singulière
-        plural_key: Clé pour la forme plurielle (même que singular_key)
-        n: Nombre pour déterminer singulier/pluriel
+        singular_key: Key for singular form
+        plural_key: Key for plural form (same as singular_key)
+        n: Number to determine singular/plural
 
     Returns:
-        Chaîne traduite au singulier ou pluriel selon n
+        Translated string in singular or plural according to n
     """
     ngettext_func = get_translation_functions()[1]
     return ngettext_func(singular_key, plural_key, n)
 
 
 def format_tokens_left(n: int) -> str:
-    """Formate le nombre de tokens restants avec pluriel français."""
+    """Format the number of tokens left with English pluralization."""
 
     plural_form = ngettext_helper(PLURAL.TOKENS_LEFT, PLURAL.TOKENS_LEFT, n)
-    formatted_number = format_number_french(n)
+    formatted_number = format_number_english(n)
     return f"{formatted_number} {plural_form}"
 
 
 def format_sessions_active(n: int) -> str:
-    """Formate le nombre de sessions actives avec pluriel français."""
+    """Format the number of active sessions with English pluralization."""
 
     plural_form = ngettext_helper(PLURAL.SESSIONS_ACTIVE, PLURAL.SESSIONS_ACTIVE, n)
     return f"{n} {plural_form}"
 
 
-def format_number_french(number: int) -> str:
+def format_number_english(number: int) -> str:
     """
-    Formate un nombre selon les conventions françaises (espaces pour milliers).
+    Format a number according to English conventions (commas for thousands).
 
     Args:
-        number: Nombre à formater
+        number: Number to format
 
     Returns:
-        Nombre formaté avec espaces comme séparateurs de milliers
+        Number formatted with commas as thousand separators
     """
-    return f"{number:,}".replace(",", " ")
+    return f"{number:,}"
 
 
-def format_currency_french(amount: float) -> str:
+def format_currency_english(amount: float) -> str:
     """
-    Formate une valeur monétaire selon les conventions françaises.
+    Format a monetary value according to English conventions.
 
     Args:
-        amount: Montant à formater
+        amount: Amount to format
 
     Returns:
-        Montant formaté avec espaces et virgule décimale
+        Amount formatted with commas and period as decimal separator
     """
-    formatted = f"{amount:.4f}".replace(".", ",")
+    # Handle potential floating point precision issues
+    formatted = f"{amount:.4f}".rstrip("0").rstrip(".").replace(".", ",")
     # Ajouter espaces pour les milliers si nécessaire
     if amount >= 1000:
         parts = formatted.split(",")
-        parts[0] = f"{int(parts[0]):,}".replace(",", " ")
+        # Handle empty decimal part
+        if len(parts) > 1 and parts[1]:
+            parts[0] = f"{int(parts[0]):,}".replace(",", " ")
+        else:
+            formatted = f"{int(amount):,}".replace(",", " ")
+            return formatted
         formatted = ",".join(parts)
     return formatted
 

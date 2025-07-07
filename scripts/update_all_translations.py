@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Script générique pour mettre à jour et compiler toutes les traductions.
-Compatible avec toutes les plateformes (Windows, Linux, macOS).
+Generic script to update and compile all translations.
+Compatible with all platforms (Windows, Linux, macOS).
 
 Usage:
     python update_all_translations.py [--extract] [--compile] [--test]
 
 Options:
-    --extract    Extraire les nouvelles chaînes traduisibles
-    --compile    Compiler les fichiers .po en .mo
-    --test       Tester les traductions
-    (par défaut: fait tout)
+    --extract    Extract new translatable strings
+    --compile    Compile .po files to .mo
+    --test       Test translations
+    (default: does everything)
 """
 
 import argparse
@@ -19,36 +19,36 @@ from pathlib import Path
 
 
 def log_info(message):
-    """Affichage d'information."""
+    """Info display."""
     print(f"ℹ️  {message}")
 
 
 def log_success(message):
-    """Affichage de succès."""
+    """Success display."""
     print(f"✅ {message}")
 
 
 def log_warning(message):
-    """Affichage d'avertissement."""
+    """Warning display."""
     print(f"⚠️  {message}")
 
 
 def log_error(message):
-    """Affichage d'erreur."""
+    """Error display."""
     print(f"❌ {message}")
 
 
 def extract_messages(project_root):
-    """Extraire les chaînes traduisibles."""
-    log_info("1. Extraction des chaînes traduisibles...")
+    """Extract translatable strings."""
+    log_info("1. Extracting translatable strings...")
 
     try:
         from babel.messages import frontend
 
-        # Sauvegarder les arguments sys.argv
+        # Save sys.argv arguments
         original_argv = sys.argv[:]
 
-        # Configuration pour l'extraction
+        # Extraction configuration
         sys.argv = [
             "pybabel",
             "extract",
@@ -61,42 +61,42 @@ def extract_messages(project_root):
 
         frontend.main()
 
-        # Restaurer sys.argv
+        # Restore sys.argv
         sys.argv = original_argv
 
-        # Compter les messages
+        # Count messages
         pot_file = project_root / "messages.pot"
         if pot_file.exists():
             with open(pot_file, "r", encoding="utf-8") as f:
                 content = f.read()
                 msg_count = content.count('msgid "')
-            log_success(f"Extraction réussie: {msg_count} messages")
+            log_success(f"Extraction successful: {msg_count} messages")
             return True
         else:
-            log_error("Fichier .pot non créé")
+            log_error(".pot file not created")
             return False
 
     except ImportError:
-        log_error("Babel non installé. Installez avec: pip install babel")
+        log_error("Babel not installed. Install with: pip install babel")
         return False
     except Exception as e:
-        log_error(f"Erreur lors de l'extraction: {e}")
+        log_error(f"Error during extraction: {e}")
         return False
 
 
 def update_translations(project_root, languages):
-    """Mettre à jour les fichiers de traduction."""
-    log_info("2. Mise à jour des traductions...")
+    """Update translation files."""
+    log_info("2. Updating translations...")
 
     pot_file = project_root / "messages.pot"
     if not pot_file.exists():
-        log_warning("Fichier .pot non trouvé, extraction nécessaire")
+        log_warning(".pot file not found, extraction needed")
         return False
 
     updated = []
 
     for lang in languages:
-        log_info(f"   Traitement de la langue: {lang}")
+        log_info(f"   Processing language: {lang}")
 
         po_file = (
             project_root
@@ -104,13 +104,13 @@ def update_translations(project_root, languages):
         )
 
         if po_file.exists():
-            # Créer une sauvegarde
+            # Create a backup
             backup_file = po_file.with_suffix(".po.backup")
             po_file.replace(backup_file)
-            log_info(f"     Sauvegarde créée: {backup_file}")
+            log_info(f"     Backup created: {backup_file}")
 
             try:
-                # Utiliser msgmerge pour mettre à jour
+                # Use msgmerge to update
                 import subprocess
 
                 result = subprocess.run(
@@ -120,11 +120,11 @@ def update_translations(project_root, languages):
                 )
 
                 if result.returncode == 0:
-                    log_success(f"     Mise à jour réussie pour {lang}")
+                    log_success(f"     Update successful for {lang}")
                     updated.append(lang)
                 else:
                     log_warning(
-                        f"     Erreur msgmerge pour {lang}, conservation du backup"
+                        f"     msgmerge error for {lang}, keeping backup"
                     )
                     backup_file.replace(po_file)
 
@@ -139,26 +139,26 @@ def update_translations(project_root, languages):
                 backup_file.replace(po_file)
                 updated.append(lang)
         else:
-            log_warning(f"     Fichier {po_file} non trouvé")
+            log_warning(f"     File {po_file} not found")
 
     return updated
 
 
 def compile_translations(project_root, languages):
-    """Compiler les traductions .po en .mo."""
-    log_info("3. Compilation des traductions...")
+    """Compile .po translations to .mo."""
+    log_info("3. Compiling translations...")
 
     try:
         from babel.messages.mofile import write_mo
         from babel.messages.pofile import read_po
     except ImportError:
-        log_error("Babel non installé. Installez avec: pip install babel")
+        log_error("Babel not installed. Install with: pip install babel")
         return []
 
     compiled = []
 
     for lang in languages:
-        log_info(f"   Compilation de la langue: {lang}")
+        log_info(f"   Compiling language: {lang}")
 
         po_file = (
             project_root
@@ -178,32 +178,32 @@ def compile_translations(project_root, languages):
                     write_mo(f, catalog)
 
                 log_success(
-                    f"     Compilation {lang.upper()} réussie: {len(catalog)} messages"
+                    f"     Compilation {lang.upper()} successful: {len(catalog)} messages"
                 )
                 compiled.append(lang)
 
             except Exception as e:
-                log_error(f"     Erreur compilation {lang.upper()}: {e}")
+                log_error(f"     Compilation error {lang.upper()}: {e}")
         else:
-            log_warning(f"     Fichier {po_file} non trouvé pour {lang.upper()}")
+            log_warning(f"     File {po_file} not found for {lang.upper()}")
 
     return compiled
 
 
 def test_translations(project_root, languages):
-    """Tester les traductions."""
-    log_info("4. Test des traductions...")
+    """Test translations."""
+    log_info("4. Testing translations...")
 
-    # Ajouter le projet au path
+    # Add project to path
     sys.path.insert(0, str(project_root))
 
     try:
         from usage_analyzer.i18n import init_translations
 
-        # Dictionnaire des langues et titres attendus
+        # Language dictionary and expected titles
         expected_titles = {
             "en": "CLAUDE CODE USAGE MONITOR",
-            "fr": "MONITEUR",  # Contient ce mot clé
+            "fr": "MONITEUR",  # Contains this keyword
             "es": "MONITOR DE USO DE CÓDIGO CLAUDE",
             "de": "CLAUDE CODE NUTZUNGS-MONITOR",
         }
@@ -213,7 +213,7 @@ def test_translations(project_root, languages):
         for lang in languages:
             if lang in expected_titles:
                 try:
-                    # Initialiser les traductions pour cette langue
+                    # Initialize translations for this language
                     gettext_func, ngettext_func = init_translations(lang)
                     result = gettext_func("ui.header.title")
 
@@ -226,57 +226,57 @@ def test_translations(project_root, languages):
                             f"   Test {lang.upper()}: Fallback - {result[:40]}..."
                         )
 
-                    # Test des pluriels
+                    # Test plurals
                     singular = ngettext_func(
                         "plural.tokens_left", "plural.tokens_left", 1
                     )
                     plural = ngettext_func(
                         "plural.tokens_left", "plural.tokens_left", 2
                     )
-                    log_info(f"     Pluriels: '{singular}' / '{plural}'")
+                    log_info(f"     Plurals: '{singular}' / '{plural}'")
 
                 except Exception as e:
-                    log_error(f"   Test {lang.upper()}: Erreur - {e}")
+                    log_error(f"   Test {lang.upper()}: Error - {e}")
 
         return tested
 
     except Exception as e:
-        log_error(f"Erreur test général: {e}")
+        log_error(f"General test error: {e}")
         return []
 
 
 def main():
-    """Fonction principale."""
+    """Main function."""
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     parser.add_argument(
         "--extract",
         action="store_true",
-        help="Extraire les nouvelles chaînes traduisibles",
+        help="Extract new translatable strings",
     )
     parser.add_argument(
-        "--compile", action="store_true", help="Compiler les fichiers .po en .mo"
+        "--compile", action="store_true", help="Compile .po files to .mo"
     )
-    parser.add_argument("--test", action="store_true", help="Tester les traductions")
+    parser.add_argument("--test", action="store_true", help="Test translations")
 
     args = parser.parse_args()
 
-    # Si aucune option, faire tout
+    # If no option, do everything
     if not any([args.extract, args.compile, args.test]):
         args.extract = args.compile = args.test = True
 
     # Configuration
-    # Correction : pointer vers la racine du projet même si lancé depuis scripts/
+    # Correction: point to project root even if run from scripts/
     project_root = Path(__file__).resolve().parent.parent
     languages = ["fr", "en", "es", "de"]
 
-    log_info("Mise à jour des traductions Claude Usage Monitor")
-    log_info(f"Répertoire projet: {project_root}")
-    log_info(f"Langues supportées: {', '.join(languages)}")
+    log_info("Updating Claude Usage Monitor translations")
+    log_info(f"Project directory: {project_root}")
+    log_info(f"Supported languages: {', '.join(languages)}")
 
-    # Vérifier que nous sommes dans le bon répertoire
+    # Check we are in the right directory
     if not (project_root / "claude_monitor.py").exists():
         log_error(
-            "Erreur: claude_monitor.py non trouvé. Êtes-vous dans le bon répertoire?"
+            "Error: claude_monitor.py not found. Are you in the right directory?"
         )
         sys.exit(1)
 
@@ -287,43 +287,46 @@ def main():
         if not extract_messages(project_root):
             success = False
 
-        # Mise à jour des fichiers .po
+        # Update .po files
         updated = update_translations(project_root, languages)
         if not updated:
-            log_warning("Aucune traduction mise à jour")
+            log_warning("No translation updated")
 
     # Compilation
     compiled = []
     if args.compile:
         compiled = compile_translations(project_root, languages)
         if not compiled:
-            log_error("Aucune traduction compilée")
+            log_error("No translation compiled")
             success = False
 
     # Test
     if args.test:
         tested = test_translations(project_root, compiled or languages)
         if not tested:
-            log_warning("Aucun test de traduction réussi")
+            log_warning("No translation test succeeded")
 
-    # Nettoyage
+    # Cleanup
     pot_file = project_root / "messages.pot"
     if pot_file.exists():
-        pot_file.unlink()
-        log_info("Fichiers temporaires supprimés")
+        try:
+            pot_file.unlink()
+            log_info("Temporary files deleted")
+        except PermissionError:
+            log_warning(f"Could not delete temporary file: {pot_file}")
 
-    # Résumé
+    # Summary
     print()
     if success:
-        log_success("🎉 Mise à jour des traductions terminée avec succès!")
+        log_success("🎉 Translation update completed successfully!")
         if compiled:
-            log_info(f"Langues compilées: {', '.join(compiled)}")
+            log_info(f"Compiled languages: {', '.join(compiled)}")
             print()
-            log_info("Pour tester les modifications:")
+            log_info("To test the changes:")
             for lang in compiled:
                 log_info(f"  python claude_monitor.py --language {lang}")
     else:
-        log_error("💥 Certaines opérations ont échoué")
+        log_error("💥 Some operations failed")
         sys.exit(1)
 
 
