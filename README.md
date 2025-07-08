@@ -154,7 +154,7 @@ claude-usage-monitor
 
 #### With uv tool installation (Recommended)
 ```bash
-# Default (Pro plan - 7,000 tokens)
+# Default (Pro plan - 44,000 tokens)
 claude-usage-monitor
 
 # Exit the monitor
@@ -169,13 +169,13 @@ If running from source, use `./claude_monitor.py` instead of `claude-usage-monit
 #### Specify Your Plan
 
 ```bash
-# Pro plan (~7,000 tokens) - Default
+# Pro plan (~44,000 tokens) - Default
 claude-monitor --plan pro
 
-# Max5 plan (~35,000 tokens)
+# Max5 plan (~220,000 tokens)
 claude-monitor --plan max5
 
-# Max20 plan (~140,000 tokens)
+# Max20 plan (~880,000 tokens)
 claude-monitor --plan max20
 
 # Auto-detect from highest previous session
@@ -235,9 +235,9 @@ claude-monitor --theme-debug
 
 | Plan | Token Limit | Best For |
 |------|-------------|----------|
-| **pro** | ~7,000 | Light usage, testing (default) |
-| **max5** | ~35,000 | Regular development |
-| **max20** | ~140,000 | Heavy usage, large projects |
+| **pro** | ~44,000 | Light usage, testing (default) |
+| **max5** | ~220,000 | Regular development |
+| **max20** | ~880,000 | Heavy usage, large projects |
 | **custom_max** | Auto-detect | Uses highest from previous sessions |
 
 
@@ -336,9 +336,9 @@ The monitor calculates burn rate using sophisticated analysis:
 
 | Plan | Approximate Limit | Typical Usage |
 |------|------------------|---------------|
-| **Claude Pro** | ~7,000 tokens | Light coding, testing, learning |
-| **Claude Max5** | ~35,000 tokens | Regular development work |
-| **Claude Max20** | ~140,000 tokens | Heavy usage, large projects |
+| **Claude Pro** | ~44,000 tokens | Light coding, testing, learning |
+| **Claude Max5** | ~220,000 tokens | Regular development work |
+| **Claude Max20** | ~880,000 tokens | Heavy usage, large projects |
 
 #### Auto-Detection Plans
 
@@ -352,7 +352,7 @@ The monitor calculates burn rate using sophisticated analysis:
 
 When using the default Pro plan:
 
-1. **Detection**: Monitor notices token usage exceeding 7,000
+1. **Detection**: Monitor notices token usage exceeding 44,000
 2. **Analysis**: Scans previous sessions for actual limits
 3. **Switch**: Automatically changes to custom_max mode
 4. **Notification**: Displays clear message about the change
