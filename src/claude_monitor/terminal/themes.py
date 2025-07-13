@@ -7,7 +7,7 @@ import sys
 import threading
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 try:
     import select
@@ -36,7 +36,7 @@ class ThemeConfig:
 
     name: str
     colors: Dict[str, str]
-    symbols: Dict[str, str]
+    symbols: Dict[str, Union[str, List[str]]]
     rich_theme: Theme
 
     def get_color(self, key: str, default: str = "default") -> str:
@@ -357,7 +357,7 @@ class BackgroundDetector:
 class ThemeManager:
     """Manages themes with auto-detection and thread safety."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._lock = threading.Lock()
         self._current_theme: Optional[ThemeConfig] = None
         self._forced_theme: Optional[str] = None
@@ -395,7 +395,9 @@ class ThemeManager:
 
         return themes
 
-    def _get_symbols_for_theme(self, theme_name: str) -> Dict[str, str]:
+    def _get_symbols_for_theme(
+        self, theme_name: str
+    ) -> Dict[str, Union[str, List[str]]]:
         """Get symbols based on theme."""
         if theme_name == "classic":
             return {
@@ -492,10 +494,10 @@ def get_cost_style(cost: float) -> str:
     return COST_STYLES["low"]
 
 
-def get_velocity_indicator(burn_rate: float) -> Dict[str, str]:
+def get_velocity_indicator(burn_rate: float) -> Dict[str, Union[str, float]]:
     """Get velocity indicator based on burn rate."""
     for key, indicator in VELOCITY_INDICATORS.items():
-        if burn_rate < indicator["threshold"]:
+        if burn_rate < float(indicator["threshold"]):
             return {"emoji": indicator["emoji"], "label": indicator["label"]}
     return VELOCITY_INDICATORS["very_fast"]
 
@@ -504,7 +506,7 @@ def get_velocity_indicator(burn_rate: float) -> Dict[str, str]:
 _theme_manager = ThemeManager()
 
 
-def get_themed_console(force_theme=None) -> Console:
+def get_themed_console(force_theme: Optional[str] = None) -> Console:
     """Get themed console - backward compatibility wrapper."""
     if force_theme and isinstance(force_theme, str):
         return _theme_manager.get_console(force_theme)

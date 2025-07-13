@@ -4,7 +4,7 @@ import logging
 import sys
 import traceback
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from claude_monitor import __version__
 from claude_monitor.cli.bootstrap import (
@@ -34,7 +34,7 @@ def get_standard_claude_paths() -> List[str]:
     return ["~/.claude/projects", "~/.config/claude/projects"]
 
 
-def discover_claude_data_paths(custom_paths: List[str] = None) -> List[Path]:
+def discover_claude_data_paths(custom_paths: Optional[List[str]] = None) -> List[Path]:
     """Discover all available Claude data directories.
 
     Args:
@@ -80,7 +80,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         init_timezone(settings.timezone)
 
-        args = settings.to_namespace()
+        args = settings.to_namespace()  # type: ignore
 
         _run_monitoring(args)
 
@@ -96,14 +96,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 1
 
 
-def _run_monitoring(args):
+def _run_monitoring(args: Any) -> None:
     """Main monitoring implementation without facade."""
     if hasattr(args, "theme") and args.theme:
         console = get_themed_console(force_theme=args.theme.lower())
     else:
         console = get_themed_console()
 
-    old_terminal_settings = setup_terminal()
+    old_terminal_settings = setup_terminal()  # type: ignore
     live_display_active = False
 
     try:
@@ -116,9 +116,9 @@ def _run_monitoring(args):
         logger = logging.getLogger(__name__)
         logger.info(f"Using data path: {data_path}")
 
-        token_limit = _get_initial_token_limit(args, data_path)
+        token_limit = _get_initial_token_limit(args, str(data_path))
 
-        display_controller = DisplayController()
+        display_controller = DisplayController()  # type: ignore
         display_controller.live_manager._console = console
 
         refresh_per_second = getattr(args, "refresh_per_second", 0.75)
@@ -135,7 +135,7 @@ def _run_monitoring(args):
             args.plan, args.timezone
         )
 
-        enter_alternate_screen()
+        enter_alternate_screen()  # type: ignore
 
         live_display_active = False
 
@@ -154,7 +154,7 @@ def _run_monitoring(args):
             orchestrator.set_args(args)
 
             # Setup monitoring callback
-            def on_data_update(monitoring_data):
+            def on_data_update(monitoring_data: Dict[str, Any]) -> None:
                 """Handle data updates from orchestrator."""
                 try:
                     data = monitoring_data.get("data", {})
@@ -189,7 +189,9 @@ def _run_monitoring(args):
             orchestrator.register_update_callback(on_data_update)
 
             # Optional: Register session change callback
-            def on_session_change(event_type, session_id, session_data):
+            def on_session_change(
+                event_type: str, session_id: str, session_data: Any
+            ) -> None:
                 """Handle session changes."""
                 if event_type == "session_start":
                     logger.info(f"New session detected: {session_id}")
@@ -230,7 +232,7 @@ def _run_monitoring(args):
                 live_display.__exit__(None, None, None)
             except Exception:
                 pass
-        handle_cleanup_and_exit(old_terminal_settings)
+        handle_cleanup_and_exit(old_terminal_settings)  # type: ignore
     except Exception as e:
         # Clean exit from live display if it's active
         if "live_display" in locals():
@@ -238,12 +240,12 @@ def _run_monitoring(args):
                 live_display.__exit__(None, None, None)
             except Exception:
                 pass
-        handle_error_and_exit(old_terminal_settings, e)
+        handle_error_and_exit(old_terminal_settings, e)  # type: ignore
     finally:
-        restore_terminal(old_terminal_settings)
+        restore_terminal(old_terminal_settings)  # type: ignore
 
 
-def _get_initial_token_limit(args, data_path: str) -> int:
+def _get_initial_token_limit(args: Any, data_path: str) -> int:
     """Get initial token limit for the plan."""
     logger = logging.getLogger(__name__)
     plan = getattr(args, "plan", PlanType.PRO.value)
@@ -256,7 +258,7 @@ def _get_initial_token_limit(args, data_path: str) -> int:
                 f"Using custom token limit: {args.custom_limit_tokens:,} tokens",
                 style="info",
             )
-            return args.custom_limit_tokens
+            return int(args.custom_limit_tokens)
 
         # Otherwise, analyze usage data to calculate P90
         print_themed("Analyzing usage data to determine cost limits...", style="info")
@@ -285,7 +287,7 @@ def _get_initial_token_limit(args, data_path: str) -> int:
 
         # Fallback to default limit
         print_themed("Using default limit as fallback", style="warning")
-        return Plans.DEFAULT_TOKEN_LIMIT
+        return int(Plans.DEFAULT_TOKEN_LIMIT)
 
     # For standard plans, just get the limit
     return get_token_limit(plan)

@@ -33,7 +33,7 @@ def _get_version_from_pyproject() -> str:
     """
     try:
         # Python 3.11+
-        import tomllib
+        import tomllib  # type: ignore
     except ImportError:
         try:
             # Python < 3.11 fallback
@@ -52,7 +52,7 @@ def _get_version_from_pyproject() -> str:
             if pyproject_path.exists():
                 with open(pyproject_path, "rb") as f:
                     data = tomllib.load(f)
-                    return data.get("project", {}).get("version", "unknown")
+                    return str(data.get("project", {}).get("version", "unknown"))
             current_dir = current_dir.parent
 
         return "unknown"

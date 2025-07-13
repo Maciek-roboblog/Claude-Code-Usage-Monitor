@@ -11,7 +11,7 @@ from typing import List
 class HeaderManager:
     """Manager for header layout and formatting."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize header manager."""
         self.separator_char = "="
         self.separator_length = 60
@@ -43,7 +43,7 @@ class HeaderManager:
 class ScreenManager:
     """Manager for overall screen layout and organization."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize screen manager."""
         self.screen_width = 80
         self.screen_height = 24

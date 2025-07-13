@@ -66,9 +66,9 @@ def test_version_format():
     # Should be semantic version format (X.Y.Z) or include "unknown"
     if __version__ != "unknown":
         parts = __version__.split(".")
-        assert (
-            len(parts) >= 2
-        ), f"Version should have at least 2 parts, got: {__version__}"
+        assert len(parts) >= 2, (
+            f"Version should have at least 2 parts, got: {__version__}"
+        )
 
         # First part should be numeric
         assert parts[0].isdigit(), f"Major version should be numeric, got: {parts[0]}"

@@ -9,10 +9,10 @@ logger = logging.getLogger(__name__)
 class SessionMonitor:
     """Monitors sessions with tracking and validation."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize session monitor."""
         self._current_session_id: Optional[str] = None
-        self._session_callbacks: List[Callable] = []
+        self._session_callbacks: List[Callable[[str, str, Any], None]] = []
         self._session_history: List[Dict[str, Any]] = []
 
     def update(self, data: Dict[str, Any]) -> Tuple[bool, List[str]]:
@@ -157,7 +157,7 @@ class SessionMonitor:
             except Exception as e:
                 logger.error(f"Session callback error: {e}")
 
-    def register_callback(self, callback: Callable) -> None:
+    def register_callback(self, callback: Callable[[str, str, Any], None]) -> None:
         """Register session change callback.
 
         Args:
@@ -166,7 +166,7 @@ class SessionMonitor:
         if callback not in self._session_callbacks:
             self._session_callbacks.append(callback)
 
-    def unregister_callback(self, callback: Callable) -> None:
+    def unregister_callback(self, callback: Callable[[str, str, Any], None]) -> None:
         """Unregister session change callback.
 
         Args:

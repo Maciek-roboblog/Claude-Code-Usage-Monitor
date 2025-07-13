@@ -31,7 +31,7 @@ class MonitoringOrchestrator:
         self._monitoring = False
         self._monitor_thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
-        self._update_callbacks: List[Callable] = []
+        self._update_callbacks: List[Callable[[Dict[str, Any]], None]] = []
         self._last_valid_data: Optional[Dict[str, Any]] = None
         self._args = None
         self._first_data_event = threading.Event()
@@ -75,7 +75,9 @@ class MonitoringOrchestrator:
         """
         self._args = args
 
-    def register_update_callback(self, callback: Callable) -> None:
+    def register_update_callback(
+        self, callback: Callable[[Dict[str, Any]], None]
+    ) -> None:
         """Register callback for data updates.
 
         Args:
@@ -85,7 +87,9 @@ class MonitoringOrchestrator:
             self._update_callbacks.append(callback)
             logger.debug("Registered update callback")
 
-    def register_session_callback(self, callback: Callable) -> None:
+    def register_session_callback(
+        self, callback: Callable[[str, str, Any], None]
+    ) -> None:
         """Register callback for session changes.
 
         Args:
@@ -122,8 +126,7 @@ class MonitoringOrchestrator:
         while self._monitoring:
             # Wait for interval or stop
             if self._stop_event.wait(timeout=self.update_interval):
-                if not self._monitoring:
-                    break
+                break
 
             # Fetch and process
             self._fetch_and_process_data()
