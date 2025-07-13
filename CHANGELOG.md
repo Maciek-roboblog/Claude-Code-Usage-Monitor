@@ -1,5 +1,89 @@
 # Changelog
 
+## [3.0.0] - 2025-01-13
+
+### 🚨 Breaking Changes
+- **Package Name Change**: Renamed from `claude-usage-monitor` to `claude-monitor`
+  - New installation: `pip install claude-monitor` or `uv tool install claude-monitor`
+  - New command aliases: `claude-monitor` and `cmonitor`
+- **Python Requirement**: Minimum Python version raised from 3.8 to 3.9
+- **Architecture Overhaul**: Complete rewrite from single-file to modular package structure
+- **Entry Point Changes**: Module execution now via `claude_monitor.__main__:main`
+
+### 🏗️ Complete Architectural Restructuring
+- **📁 Professional Package Layout**: Migrated to `src/claude_monitor/` structure with proper namespace isolation
+  - Replaced single `claude_monitor.py` file with comprehensive modular architecture
+  - Implemented clean separation of concerns across 8 specialized modules
+- **🔧 Modular Design**: New package organization:
+  - `cli/` - Command-line interface and bootstrap logic
+  - `core/` - Business logic, models, settings, calculations, and pricing
+  - `data/` - Data management, analysis, and reading utilities
+  - `monitoring/` - Real-time session monitoring and orchestration
+  - `ui/` - User interface components, layouts, and display controllers
+  - `terminal/` - Terminal management and theme handling
+  - `utils/` - Formatting, notifications, timezone, and model utilities
+- **⚡ Enhanced Performance**: Optimized data processing with caching, threading, and efficient session management
+
+### 🎨 Rich Terminal UI System
+- **💫 Rich Integration**: Complete UI overhaul using Rich library for professional terminal interface
+  - Advanced progress bars with semantic color coding (🟢🟡🔴)
+  - Responsive layouts with proper terminal width handling (80+ characters required)
+  - Enhanced typography and visual hierarchy
+- **🌈 Improved Theme System**: Enhanced automatic theme detection with better contrast ratios
+- **📊 Advanced Display Components**: New progress visualization with burn rate indicators and time-based metrics
+
+### 🔒 Type Safety and Validation
+- **🛡️ Pydantic Integration**: Complete type safety implementation
+  - Comprehensive settings validation with user-friendly error messages
+  - Type-safe data models (`UsageEntry`, `SessionBlock`, `TokenCounts`)
+  - CLI parameter validation with detailed feedback
+- **⚙️ Smart Configuration**: Pydantic-based settings with last-used parameter persistence
+- **🔍 Enhanced Error Handling**: Centralized error management with optional Sentry integration
+
+### 📈 Advanced Analytics Features
+- **🧮 P90 Percentile Calculations**: Machine learning-inspired usage prediction and limit detection
+- **📊 Smart Plan Detection**: Auto-detection of Claude plan limits with custom plan support
+- **⏱️ Real-time Monitoring**: Enhanced session tracking with threading and callback systems
+- **💡 Intelligent Insights**: Advanced burn rate calculations and velocity indicators
+
+### 🔧 Developer Experience Improvements
+- **🚀 Modern Build System**: Migrated from Hatchling to Setuptools with src layout
+- **🧪 Comprehensive Testing**: Professional test infrastructure with pytest and coverage reporting
+- **📝 Enhanced Documentation**: Updated troubleshooting guide with v3.0.0-specific solutions
+- **🔄 CI/CD Reactivation**: Restored and enhanced GitHub Actions workflows:
+  - Multi-Python version testing (3.9-3.12)
+  - Automated linting with Ruff
+  - Trusted PyPI publishing with OIDC
+  - Automated version bumping and changelog management
+
+### 📦 Dependency and Packaging Updates
+- **🆕 Core Dependencies Added**:
+  - `pydantic>=2.0.0` & `pydantic-settings>=2.0.0` - Type validation and settings
+  - `numpy>=1.21.0` - Advanced calculations
+  - `sentry-sdk>=1.40.0` - Optional error tracking
+  - `pyyaml>=6.0` - Configuration file support
+- **⬆️ Dependency Upgrades**:
+  - `rich`: `>=13.0.0` → `>=13.7.0` - Enhanced UI features
+  - `pytz`: No constraint → `>=2023.3` - Improved timezone handling
+- **🛠️ Development Tools**: Expanded with MyPy, Bandit, testing frameworks, and documentation tools
+
+### 🎯 Enhanced User Features
+- **🎛️ Flexible Configuration**: Support for auto-detection, manual overrides, and persistent settings
+- **🌍 Improved Timezone Handling**: Enhanced timezone detection and validation
+- **⚡ Performance Optimizations**: Faster startup times and reduced memory usage
+- **🔔 Smart Notifications**: Enhanced feedback system with contextual messaging
+
+### 🔧 Installation and Compatibility
+- **📋 Installation Method Updates**: Full support for `uv`, `pipx`, and traditional pip installation
+- **🐧 Platform Compatibility**: Enhanced support for modern Linux distributions with externally-managed environments
+- **🛣️ Migration Path**: Automatic handling of legacy configurations and smooth upgrade experience
+
+### 📚 Technical Implementation Details
+- **🏢 Professional Architecture**: Implementation of SOLID principles with single responsibility modules
+- **🔄 Async-Ready Design**: Threading infrastructure for real-time monitoring capabilities
+- **💾 Efficient Data Handling**: Optimized JSONL parsing with error resilience
+- **🔐 Security Enhancements**: Secure configuration handling and optional telemetry integration
+
 ## [2.0.0] - 2025-06-25
 
 ### Added
@@ -12,7 +96,7 @@
 - **📊 Enhanced Progress Bar Colors**: Improved visual feedback with smart color coding
   - Token usage progress bars with three-tier color system:
     - 🟢 Green (0-49%): Safe usage level
-    - 🟡 Yellow (50-89%): Warning - approaching limit  
+    - 🟡 Yellow (50-89%): Warning - approaching limit
     - 🔴 Red (90-100%): Critical - near or at limit
   - Time progress bars with consistent blue indicators
   - Burn rate velocity indicators with emoji feedback (🐌➡️🚀⚡)
@@ -117,6 +201,7 @@
 - Proper Ctrl+C handling with cursor restoration
 - Terminal settings restoration on exit
 
+[3.0.0]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v3.0.0
 [2.0.0]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v2.0.0
 [1.0.19]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.19
 [1.0.17]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.17

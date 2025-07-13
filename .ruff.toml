@@ -1,6 +1,6 @@
 # Ruff configuration - replaces Black, isort, and basic linting
 line-length = 88
-target-version = "py37"
+target-version = "py39"
 
 [lint]
 # Essential rules only

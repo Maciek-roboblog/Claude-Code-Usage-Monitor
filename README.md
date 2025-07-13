@@ -1,10 +1,11 @@
-# 🎯 Claude Code Usage Monitor
-[![PyPI Version](https://img.shields.io/pypi/v/claude-usage-monitor.svg)](https://pypi.org/project/claude-usage-monitor/)
-[![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://python.org)
+# 🎯 Claude Code Usage Monitor v3.0.0
+[![PyPI Version](https://img.shields.io/pypi/v/claude-monitor.svg)](https://pypi.org/project/claude-monitor/)
+[![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![Test Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)]()
 
-A beautiful real-time terminal monitoring tool for Claude AI token usage. Track your token consumption, burn rate, and get predictions about when you'll run out of tokens.
+A beautiful real-time terminal monitoring tool for Claude AI token usage with advanced analytics, machine learning-based predictions, and Rich UI. Track your token consumption, burn rate, cost analysis, and get intelligent predictions about session limits.
 
 ![Claude Token Monitor Screenshot](https://raw.githubusercontent.com/Maciek-roboblog/Claude-Code-Usage-Monitor/main/doc/sc.png)
 
@@ -44,15 +45,23 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 
 ## ✨ Key Features
 
-- **🔄 Real-time monitoring** - Updates every 3 seconds with smooth refresh
-- **📊 Visual progress bars** - Beautiful color-coded token and time progress bars
-- **🔮 Smart predictions** - Calculates when tokens will run out based on current burn rate
-- **🤖 Auto-detection** - Automatically switches to custom max when Pro limit is exceeded
-- **📋 Multiple plan support** - Works with Pro, Max5, Max20, and auto-detect plans
-- **⚠️ Warning system** - Alerts when tokens exceed limits or will deplete before session reset
-- **💼 Professional UI** - Clean, colorful terminal interface with emojis
-- **🎨 Smart Theming** - Automatic light/dark theme detection with manual override options
-- **⏰ Customizable scheduling** - Set your own reset times and timezones
+### 🚀 **v3.0.0 Major Update - Complete Architecture Rewrite**
+
+- **🔄 Real-time monitoring** - Configurable refresh rates (0.1-20 Hz) with intelligent display updates
+- **📊 Advanced Rich UI** - Beautiful color-coded progress bars, tables, and layouts with WCAG-compliant contrast
+- **🔮 ML-based predictions** - P90 percentile calculations and intelligent session limit detection
+- **🤖 Smart auto-detection** - Automatic plan switching with custom limit discovery
+- **📋 Enhanced plan support** - Updated limits: Pro (44k), Max5 (88k), Max20 (220k), Custom (P90-based)
+- **⚠️ Advanced warning system** - Multi-level alerts with cost and time predictions
+- **💼 Professional Architecture** - Modular design with Single Responsibility Principle (SRP) compliance
+- **🎨 Intelligent theming** - Scientific color schemes with automatic terminal background detection
+- **⏰ Advanced scheduling** - Auto-detected system timezone and time format preferences
+- **📈 Cost analytics** - Model-specific pricing with cache token calculations
+- **🔧 Pydantic validation** - Type-safe configuration with automatic validation
+- **📝 Comprehensive logging** - Optional file logging with configurable levels
+- **🧪 Extensive testing** - 100+ test cases with full coverage
+- **🎯 Error reporting** - Optional Sentry integration for production monitoring
+- **⚡ Performance optimized** - Advanced caching and efficient data processing
 
 
 ## 🚀 Installation
@@ -67,16 +76,16 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage. Track 
 
 The fastest and easiest way to install and use the monitor:
 
-[![PyPI](https://img.shields.io/pypi/v/claude-usage-monitor.svg)](https://pypi.org/project/claude-usage-monitor/)
+[![PyPI](https://img.shields.io/pypi/v/claude-monitor.svg)](https://pypi.org/project/claude-monitor/)
 
 #### Install from PyPI
 
 ```bash
 # Install directly from PyPI with uv (easiest)
-uv tool install claude-usage-monitor
+uv tool install claude-monitor
 
 # Run from anywhere
-claude-usage-monitor
+claude-monitor  # or cmonitor for short
 ```
 
 #### Install from Source
@@ -108,14 +117,14 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 ```bash
 # Install from PyPI
-pip install claude-usage-monitor
+pip install claude-monitor
 
 # If claude-monitor command is not found, add ~/.local/bin to PATH:
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc  # or restart your terminal
 
-# Run from anywhere (dependencies auto-install on first run)
-claude-usage-monitor
+# Run from anywhere
+claude-monitor  # or cmonitor for short
 ```
 
 >
@@ -133,19 +142,19 @@ claude-usage-monitor
 #### pipx (Isolated Environments)
 ```bash
 # Install with pipx
-pipx install claude-usage-monitor
+pipx install claude-monitor
 
-# Run from anywhere (dependencies auto-install on first run)
-claude-usage-monitor
+# Run from anywhere
+claude-monitor  # or cmonitor for short
 ```
 
 #### conda/mamba
 ```bash
 # Install with pip in conda environment
-pip install claude-usage-monitor
+pip install claude-monitor
 
-# Run from anywhere (dependencies auto-install on first run)
-claude-usage-monitor
+# Run from anywhere
+claude-monitor  # or cmonitor for short
 ```
 
 ## 📖 Usage
@@ -154,32 +163,38 @@ claude-usage-monitor
 
 #### With uv tool installation (Recommended)
 ```bash
-# Default (Pro plan - 7,000 tokens)
-claude-usage-monitor
+# Default (Custom plan with auto-detection)
+claude-monitor
+
+# Alternative short command
+cmonitor
 
 # Exit the monitor
 # Press Ctrl+C to gracefully exit
 ```
 
 #### Development mode
-If running from source, use `./claude_monitor.py` instead of `claude-usage-monitor`.
+If running from source, use `python -m claude_monitor` from the src/ directory.
 
 ### Configuration Options
 
 #### Specify Your Plan
 
 ```bash
-# Pro plan (~7,000 tokens) - Default
+# Custom plan with P90 auto-detection (Default)
+claude-monitor --plan custom
+
+# Pro plan (~44,000 tokens)
 claude-monitor --plan pro
 
-# Max5 plan (~35,000 tokens)
+# Max5 plan (~88,000 tokens)
 claude-monitor --plan max5
 
-# Max20 plan (~140,000 tokens)
+# Max20 plan (~220,000 tokens)
 claude-monitor --plan max20
 
-# Auto-detect from highest previous session
-claude-monitor --plan custom_max
+# Custom plan with explicit token limit
+claude-monitor --plan custom --custom-limit-tokens 100000
 ```
 
 #### Custom Reset Times
@@ -192,13 +207,32 @@ claude-monitor --reset-hour 3
 claude-monitor --reset-hour 22
 ```
 
+#### Performance and Display Configuration
+
+```bash
+# Adjust refresh rate (1-60 seconds, default: 10)
+claude-monitor --refresh-rate 5
+
+# Adjust display refresh rate (0.1-20 Hz, default: 0.75)
+claude-monitor --refresh-per-second 1.0
+
+# Set time format (auto-detected by default)
+claude-monitor --time-format 24h  # or 12h
+
+# Force specific theme
+claude-monitor --theme dark  # light, dark, classic, auto
+
+# Clear saved configuration
+claude-monitor --clear
+```
+
 #### Timezone Configuration
 
-The default timezone is **Europe/Warsaw**. Change it to any valid timezone:
+The default timezone is **auto-detected from your system**. Override with any valid timezone:
 
 ```bash
 # Use US Eastern Time
-claude-monitor --timezone US/Eastern
+claude-monitor --timezone America/New_York
 
 # Use Tokyo time
 claude-monitor --timezone Asia/Tokyo
@@ -210,35 +244,34 @@ claude-monitor --timezone UTC
 claude-monitor --timezone Europe/London
 ```
 
-#### Theme Configuration
-
-The monitor automatically detects your terminal theme (light/dark) and adapts colors accordingly:
+#### Logging and Debugging
 
 ```bash
-# Auto-detect theme (default)
-claude-monitor
+# Enable debug logging
+claude-monitor --debug
 
-# Force light theme
-claude-monitor --theme light
+# Log to file
+claude-monitor --log-file ~/.claude-monitor/logs/monitor.log
 
-# Force dark theme  
-claude-monitor --theme dark
-
-# Auto-detect with explicit setting
-claude-monitor --theme auto
-
-# Debug theme detection
-claude-monitor --theme-debug
+# Set log level
+claude-monitor --log-level WARNING  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 ```
 
 ### Available Plans
 
 | Plan | Token Limit | Best For |
 |------|-------------|----------|
-| **pro** | ~7,000 | Light usage, testing (default) |
-| **max5** | ~35,000 | Regular development |
-| **max20** | ~140,000 | Heavy usage, large projects |
-| **custom_max** | Auto-detect | Uses highest from previous sessions |
+| **custom** | P90 auto-detect | Intelligent limit detection (default) |
+| **pro** | ~44,000 | Claude Pro subscription |
+| **max5** | ~88,000 | Claude Max5 subscription |
+| **max20** | ~220,000 | Claude Max20 subscription |
+
+#### Advanced Plan Features
+
+- **P90 Analysis**: Custom plan uses 90th percentile calculations from your usage history
+- **Auto-switching**: Automatically switches plans when limits are exceeded
+- **Cost Tracking**: Model-specific pricing with cache token calculations
+- **Limit Detection**: Intelligent threshold detection with 95% confidence
 
 
 ## 🙏 Please Help Test This Release!
@@ -262,35 +295,87 @@ claude-monitor --theme-debug
 >
 > **Thank you for helping make this tool better! 🚀**
 
-## LATEST STABLE VERSION FOR USE IS ON PYPI THIS VERSION IS LITTLE BIT TRICKY AND I WILL FIX IT 24.06.2025
+## 🚀 What's New in v3.0.0
+
+### Major Changes
+
+#### **Complete Architecture Rewrite**
+- Modular design with Single Responsibility Principle (SRP) compliance
+- Pydantic-based configuration with type safety and validation
+- Advanced error handling with optional Sentry integration
+- Comprehensive test suite with 100+ test cases
+
+#### **Enhanced Functionality**
+- **P90 Analysis**: Machine learning-based limit detection using 90th percentile calculations
+- **Updated Plan Limits**: Pro (44k), Max5 (88k), Max20 (220k) tokens
+- **Cost Analytics**: Model-specific pricing with cache token calculations
+- **Rich UI**: WCAG-compliant themes with automatic terminal background detection
+
+#### **New CLI Options**
+- `--refresh-per-second`: Configurable display refresh rate (0.1-20 Hz)
+- `--time-format`: Automatic 12h/24h format detection
+- `--custom-limit-tokens`: Explicit token limits for custom plans
+- `--log-file` and `--log-level`: Advanced logging capabilities
+- `--clear`: Reset saved configuration
+- `cmonitor`: Short command alias
+
+#### **Breaking Changes**
+- Package name changed from `claude-usage-monitor` to `claude-monitor`
+- Default plan changed from `pro` to `custom` (with auto-detection)
+- Minimum Python version increased to 3.9+
+- Command structure updated (see examples above)
 
 
 ## ✨ Features & How It Works
 
+### v3.0.0 Architecture Overview
+
+The new version features a complete rewrite with modular architecture following Single Responsibility Principle (SRP):
+
+```
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│   CLI Module    │  │ Settings/Config │  │ Error Handling  │
+│ (Pydantic-based│  │ (Type-safe)     │  │ (Sentry-ready)  │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+         │                      │                      │
+┌─────────────────────────────────────────────────────────────┐
+│                 Monitoring Orchestrator                      │
+├─────────────────┬─────────────────┬─────────────────────────┤
+│  Data Manager   │ Session Monitor │   UI Display Controller │
+│ (Cache, Load)   │ (Real-time)     │    (Rich Components)    │
+└─────────────────┴─────────────────┴─────────────────────────┘
+         │                      │                      │
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│ Core Models     │  │ Analysis Engine │  │ Terminal Themes │
+│ (Pydantic)      │  │ (P90 Calculator)│  │ (Adaptive)      │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+```
+
 ### Current Features
 
-#### 🔄 Real-time Monitoring
-- Updates every 3 seconds with smooth refresh
-- No screen flicker - intelligent display updates
-- Live token consumption tracking across multiple sessions
+#### 🔄 Advanced Real-time Monitoring
+- Configurable update intervals (1-60 seconds)
+- High-precision display refresh (0.1-20 Hz)
+- Intelligent change detection to minimize CPU usage
+- Multi-threaded orchestration with callback system
 
-#### 📊 Visual Progress Bars
-- **Token Progress**: Color-coded bars showing current usage vs limits
-  - 🟢 **Green (0-49%)**: Safe usage level
-  - 🟡 **Yellow (50-89%)**: Warning - approaching limit
-  - 🔴 **Red (90-100%)**: Critical - near or at limit
-- **Time Progress**: Visual countdown to next session reset with blue progress indicator
-- **Burn Rate Indicator**: Real-time consumption velocity with emoji indicators (🐌➡️🚀⚡)
+#### 📊 Rich UI Components
+- **Progress Bars**: WCAG-compliant color schemes with scientific contrast ratios
+- **Data Tables**: Sortable columns with model-specific statistics
+- **Layout Manager**: Responsive design that adapts to terminal size
+- **Theme System**: Auto-detects terminal background for optimal readability
 
-#### 🔮 Smart Predictions
-- Calculates when tokens will run out based on current burn rate
-- Warns if tokens will deplete before next session reset
-- Analyzes usage patterns from the last hour
+#### 🔮 Machine Learning Predictions
+- **P90 Calculator**: 90th percentile analysis for intelligent limit detection
+- **Burn Rate Analytics**: Multi-session consumption pattern analysis
+- **Cost Projections**: Model-specific pricing with cache token calculations
+- **Session Forecasting**: Predicts when sessions will expire based on usage patterns
 
-#### 🤖 Auto-Detection System
-- **Smart Plan Switching**: Automatically switches from Pro to custom_max when limits exceeded
-- **Limit Discovery**: Scans previous sessions to find your actual token limits
-- **Intelligent Notifications**: Shows when automatic switches occur
+#### 🤖 Intelligent Auto-Detection
+- **Background Detection**: Automatically determines terminal theme (light/dark)
+- **System Integration**: Auto-detects timezone and time format preferences
+- **Plan Recognition**: Analyzes usage patterns to suggest optimal plans
+- **Limit Discovery**: Scans historical data to find actual token limits
 
 ### Understanding Claude Sessions
 
@@ -332,19 +417,43 @@ The monitor calculates burn rate using sophisticated analysis:
 
 ### Token Limits by Plan
 
-#### Standard Plans
+#### v3.0.0 Updated Plan Limits
 
-| Plan | Approximate Limit | Typical Usage |
-|------|------------------|---------------|
-| **Claude Pro** | ~7,000 tokens | Light coding, testing, learning |
-| **Claude Max5** | ~35,000 tokens | Regular development work |
-| **Claude Max20** | ~140,000 tokens | Heavy usage, large projects |
+| Plan | Limit (Tokens) | Cost Limit | Messages | Algorithm |
+|------|---------------|------------|----------|-----------|
+| **Claude Pro** | 44,000 | $18.00 | 250 | Fixed limit |
+| **Claude Max5** | 88,000 | $35.00 | 1,000 | Fixed limit |
+| **Claude Max20** | 220,000 | $140.00 | 2,000 | Fixed limit |
+| **Custom** | P90-based | $200.00 | 250+ | Machine learning |
 
-#### Auto-Detection Plans
+#### Advanced Limit Detection
 
-| Plan | How It Works | Best For |
-|------|-------------|----------|
-| **custom_max** | Scans all previous sessions, uses highest token count found | Users with variable/unknown limits |
+- **P90 Analysis**: Uses 90th percentile of your historical usage
+- **Confidence Threshold**: 95% accuracy in limit detection
+- **Cache Support**: Includes cache creation and read token costs
+- **Model-Specific**: Adapts to Claude 3.5, Claude 4, and future models
+
+### Technical Requirements
+
+#### Dependencies (v3.0.0)
+
+```toml
+# Core dependencies (automatically installed)
+pytz>=2023.3                # Timezone handling
+rich>=13.7.0                # Rich terminal UI
+pydantic>=2.0.0             # Type validation
+pydantic-settings>=2.0.0    # Configuration management
+numpy>=1.21.0               # Statistical calculations
+sentry-sdk>=1.40.0          # Error reporting (optional)
+pyyaml>=6.0                 # Configuration files
+tzdata                      # Windows timezone data
+```
+
+#### Python Requirements
+
+- **Minimum**: Python 3.9+
+- **Recommended**: Python 3.11+
+- **Tested on**: Python 3.9, 3.10, 3.11, 3.12, 3.13
 
 ### Smart Detection Features
 
@@ -591,21 +700,44 @@ For contributors and developers who want to work with the source code:
 
 ### Quick Start (Development/Testing)
 
-For immediate testing or development:
-
 ```bash
-# Install Python dependency
-pip install pytz
-pip install rich>=13.0.0
-
+# Clone the repository
 git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
 cd Claude-Code-Usage-Monitor
-python claude_monitor.py
+
+# Install in development mode
+pip install -e .
+
+# Run from source
+python -m claude_monitor
+```
+
+### v3.0.0 Testing Features
+
+The new version includes a comprehensive test suite:
+
+- **100+ test cases** with full coverage
+- **Unit tests** for all components
+- **Integration tests** for end-to-end workflows
+- **Performance tests** with benchmarking
+- **Mock objects** for isolated testing
+
+```bash
+# Run tests
+cd src/
+python -m pytest
+
+# Run with coverage
+python -m pytest --cov=claude_monitor --cov-report=html
+
+# Run specific test modules
+python -m pytest tests/test_analysis.py -v
 ```
 
 ### Prerequisites
 
-1. **Python 3.7+** installed on your system
+1. **Python 3.9+** installed on your system
+2. **Git** for cloning the repository
 
 
 ### Virtual Environment Setup

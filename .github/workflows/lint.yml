@@ -1,62 +1,65 @@
-# name: Lint
+ name: Lint
 
-# on:
-#   push:
-#     branches: [main]
-#   pull_request:
-#     branches: [main]
+ on:
+   push:
+     branches: [main]
+   pull_request:
+     branches: [main]
 
-# jobs:
-#   ruff:
-#     runs-on: ubuntu-latest
-#     name: Lint with Ruff
-#     strategy:
-#       matrix:
-#         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-#     steps:
-#       - uses: actions/checkout@v4
+ jobs:
+   ruff:
+     runs-on: ubuntu-latest
+     name: Lint with Ruff
+     strategy:
+       matrix:
+         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+     steps:
+       - uses: actions/checkout@v4
 
-#       - name: Install uv
-#         uses: astral-sh/setup-uv@v4
-#         with:
-#           version: "latest"
+       - name: Install uv
+         uses: astral-sh/setup-uv@v4
+         with:
+           version: "latest"
 
-#       - name: Set up Python ${{ matrix.python-version }}
-#         run: uv python install ${{ matrix.python-version }}
+       - name: Set up Python ${{ matrix.python-version }}
+         run: uv python install ${{ matrix.python-version }}
 
-#       - name: Install dependencies
-#         run: uv sync --extra dev
+       - name: Install dependencies
+         run: uv sync --extra dev
 
-#       - name: Run Ruff linter
-#         run: uv run ruff check --output-format=github .
+       - name: Run Ruff linter
+         run: uv run ruff check --output-format=github .
 
-#       - name: Run Ruff formatter
-#         run: uv run ruff format --check .
+       - name: Run Ruff formatter
+         run: uv run ruff format --check .
 
-#   pre-commit:
-#     runs-on: ubuntu-latest
-#     name: Pre-commit hooks
-#     strategy:
-#       matrix:
-#         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-#     steps:
-#       - uses: actions/checkout@v4
+       - name: Run MyPy type checking
+         run: uv run mypy src/claude_monitor --config-file pyproject.toml
 
-#       - name: Install uv
-#         uses: astral-sh/setup-uv@v4
-#         with:
-#           version: "latest"
+   pre-commit:
+     runs-on: ubuntu-latest
+     name: Pre-commit hooks
+     strategy:
+       matrix:
+         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+     steps:
+       - uses: actions/checkout@v4
 
-#       - name: Set up Python ${{ matrix.python-version }}
-#         run: uv python install ${{ matrix.python-version }}
+       - name: Install uv
+         uses: astral-sh/setup-uv@v4
+         with:
+           version: "latest"
 
-#       - name: Install pre-commit
-#         run: uv tool install pre-commit --with pre-commit-uv
+       - name: Set up Python ${{ matrix.python-version }}
+         run: uv python install ${{ matrix.python-version }}
 
-#       - name: Run pre-commit
-#         run: |
-#           # Run pre-commit and check if any files would be modified
-#           uv tool run pre-commit run --all-files --show-diff-on-failure || (
-#             echo "Pre-commit hooks would modify files. Please run 'pre-commit run --all-files' locally and commit the changes."
-#             exit 1
-#           )
+       - name: Install pre-commit
+         run: uv tool install pre-commit --with pre-commit-uv
+
+       - name: Run pre-commit
+         run: |
+           # Run pre-commit and check if any files would be modified
+           uv tool run pre-commit run --all-files --show-diff-on-failure || (
+             echo "Pre-commit hooks would modify files. Please run 'pre-commit run --all-files' locally and commit the changes."
+             exit 1
+           )

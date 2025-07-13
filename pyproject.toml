@@ -1,74 +1,478 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "claude-monitor"
-version = "1.0.19"
-description = "A real-time terminal monitoring tool for Claude AI token usage"
+version = "3.0.0"
+description = "A real-time terminal monitoring tool for Claude AI token usage with advanced analytics and Rich UI"
 readme = "README.md"
-license = {text = "MIT"}
-requires-python = ">=3.8"
+license = { text = "MIT" }
+requires-python = ">=3.9"
 authors = [
-    { name = "Maciek", email = "maciek@roboblog.eu" },
+  { name = "Maciek", email = "maciek@roboblog.eu" },
 ]
 maintainers = [
-    { name = "Maciek", email = "maciek@roboblog.eu" },
+  { name = "Maciek", email = "maciek@roboblog.eu" },
 ]
-keywords = ["claude", "ai", "token", "monitoring", "usage", "terminal"]
+keywords = [
+  "claude", "ai", "token", "monitoring", "usage", "terminal", "analytics",
+  "pydantic", "rich", "real-time", "dashboard", "developer-tools"
+]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Environment :: Console",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Software Development",
-    "Topic :: System :: Monitoring",
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Environment :: Console :: Curses",
+  "Intended Audience :: Developers",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development",
+  "Topic :: Software Development :: Debuggers",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: System :: Monitoring",
+  "Topic :: System :: Systems Administration",
+  "Topic :: Terminals",
+  "Topic :: Utilities",
+  "Typing :: Typed",
 ]
 dependencies = [
-    "pytz",
-    "rich>=13.0.0",
+  "pytz>=2023.3",
+  "rich>=13.7.0",
+  "tzdata; sys_platform == 'win32'",
+  "pyyaml>=6.0",
+  "pydantic>=2.0.0",
+  "pydantic-settings>=2.0.0",
+  "numpy>=1.21.0",
+  "sentry-sdk>=1.40.0",
+  "tomli>=1.2.0; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.8.0",
-    "pre-commit>=2.20.0; python_version<'3.8'",
-    "pre-commit>=3.0.0; python_version>='3.8'",
+  # Code formatting
+  "black>=24.0.0",
+  "isort>=5.13.0",
+  "ruff>=0.12.0",
+
+  # Type checking
+  "mypy>=1.13.0",
+  "types-PyYAML>=6.0.0",
+  "types-pytz>=2023.3.0",
+
+  # Testing
+  "pytest>=8.0.0",
+  "pytest-cov>=6.0.0",
+  "pytest-mock>=3.14.0",
+  "pytest-asyncio>=0.24.0",
+  "pytest-benchmark>=4.0.0",
+  "pytest-xdist>=3.6.0",
+
+  # Security and quality
+  "bandit>=1.7.10",
+  "safety>=3.2.0",
+  "pre-commit>=4.0.0",
+
+  # Documentation
+  "sphinx>=5.0.0",
+  "sphinx-rtd-theme>=1.2.0",
+
+  # Performance monitoring
+  "memory-profiler>=0.60.0",
+  "py-spy>=0.3.14",
+
+  # Build tools
+  "build>=0.10.0",
+  "twine>=4.0.0",
+
+  "python-dateutil",
+  "babel"
+]
+
+test = [
+  "pytest>=8.0.0",
+  "pytest-cov>=6.0.0",
+  "pytest-mock>=3.14.0",
+  "pytest-asyncio>=0.24.0",
+  "pytest-benchmark>=4.0.0",
+]
+
+security = [
+  "bandit>=1.7.10",
+  "safety>=3.2.0",
+]
+
+performance = [
+  "memory-profiler>=0.60.0",
+  "py-spy>=0.3.14",
+  "pytest-benchmark>=4.0.0",
+]
+
+docs = [
+  "sphinx>=5.0.0",
+  "sphinx-rtd-theme>=1.2.0",
+  "myst-parser>=0.18.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor"
-Repository = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git"
-Issues = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues"
-Documentation = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor#readme"
-Changelog = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/blob/main/CHANGELOG.md"
+homepage = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor"
+repository = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git"
+issues = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues"
+documentation = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor#readme"
+changelog = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/blob/main/CHANGELOG.md"
 "Source Code" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor"
 "Bug Tracker" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues"
 "Release Notes" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases"
+"Discussions" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/discussions"
 
 [project.scripts]
-claude-monitor = "claude_monitor:main"
+claude-monitor = "claude_monitor.__main__:main"
+cmonitor = "claude_monitor.__main__:main"
+ccm = "claude_monitor.__main__:main"
 
-[tool.hatch.build.targets.wheel]
-packages = ["."]
-include = ["claude_monitor.py"]
+# Setuptools Configuration
 
-[tool.hatch.build.targets.sdist]
-include = [
-    "claude_monitor.py",
-    "README.md",
-    "LICENSE",
-    "CHANGELOG.md",
-    "CLAUDE.md",
-    "DEVELOPMENT.md",
-    "CONTRIBUTING.md",
-    "TROUBLESHOOTING.md",
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["claude_monitor*"]
+exclude = ["tests*", "src/tests*"]
+
+[tool.setuptools.package-data]
+claude_monitor = ["py.typed"]
+
+# Code Formatting
+
+[tool.black]
+line-length = 88
+target-version = ["py38", "py39", "py310", "py311", "py312"]
+skip-string-normalization = false
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["claude_monitor"]
+force_single_line = true
+atomic = true
+include_trailing_comma = true
+lines_after_imports = 2
+lines_between_types = 1
+use_parentheses = true
+src_paths = ["src"]
+skip_glob = ["*/migrations/*", "*/venv/*", "*/build/*", "*/dist/*"]
+
+# Linting with Ruff
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+target-version = "py39"
+src = ["src"]
+exclude = [
+  ".bzr",
+  ".direnv",
+  ".eggs",
+  ".git",
+  ".git-rewrite",
+  ".hg",
+  ".ipynb_checkpoints",
+  ".mypy_cache",
+  ".nox",
+  ".pants.d",
+  ".pyenv",
+  ".pytest_cache",
+  ".pytype",
+  ".ruff_cache",
+  ".svn",
+  ".tox",
+  ".venv",
+  ".vscode",
+  "__pypackages__",
+  "_build",
+  "buck-out",
+  "build",
+  "dist",
+  "node_modules",
+  "site-packages",
+  "venv",
 ]
+
+[tool.ruff.lint]
+# Enable comprehensive rule sets for 2025 best practices
+select = [
+  "E",    # pycodestyle errors
+  "W",    # pycodestyle warnings
+  "F",    # pyflakes
+  "I",    # isort
+  "B",    # flake8-bugbear
+  "C4",   # flake8-comprehensions
+  "UP",   # pyupgrade
+  "RUF",  # Ruff-specific rules
+  "SIM",  # flake8-simplify
+  "PTH",  # flake8-use-pathlib
+  "PERF", # perflint
+  "FURB", # refurb
+  "RET",  # flake8-return
+  "PIE",  # flake8-pie
+  "T20",  # flake8-print
+  "PYI",  # flake8-pyi
+  "PT",   # flake8-pytest-style
+  "TRY",  # tryceratops
+  "FLY",  # flynt
+  "NPY",  # NumPy-specific rules
+  "A",    # flake8-builtins
+  "ARG",  # flake8-unused-arguments
+  "BLE",  # flake8-blind-except
+  "C90",  # mccabe
+  "DTZ",  # flake8-datetimez
+  "EM",   # flake8-errmsg
+  "ERA",  # eradicate
+  "FBT",  # flake8-boolean-trap
+  "G",    # flake8-logging-format
+  "ICN",  # flake8-import-conventions
+  "INP",  # flake8-no-pep420
+  "ISC",  # flake8-implicit-str-concat
+  "LOG",  # flake8-logging
+  "N",    # pep8-naming
+  "PD",   # pandas-vet
+  "PGH",  # pygrep-hooks
+  "PL",   # pylint
+  "Q",    # flake8-quotes
+  "RSE",  # flake8-raise
+  "S",    # flake8-bandit
+  "SLF",  # flake8-self
+  "SLOT", # flake8-slots
+  "T10",  # flake8-debugger
+  "TCH",  # flake8-type-checking
+  "TID",  # flake8-tidy-imports
+  "YTT",  # flake8-2020
+]
+
+ignore = [
+  # Documentation - allow missing docstrings for now
+  "D100", "D101", "D102", "D103", "D104", "D105", "D107",
+  "D203", "D213",
+
+  # Boolean traps - can be useful in some contexts
+  "FBT001", "FBT002",
+
+  # Assertions and security - allow for test/dev code
+  "S101",   # Use of assert detected
+  "S608",   # Possible SQL injection vector
+
+  # Complexity - allow reasonable flexibility
+  "PLR0913", # Too many arguments
+  "PLR2004", # Magic value used in comparison
+  "C901",    # Complex function
+
+  # Type annotations - allow gradual adoption
+  "RUF012",  # Mutable class attributes should use ClassVar
+  "ANN",     # Type annotations (disabled for gradual adoption)
+
+  # Print statements - useful for debugging/CLI tools
+  "T201",    # Print found
+
+  # Error messages - allow flexibility
+  "EM101", "EM102",
+
+  # Exception handling - allow broad except in some cases
+  "BLE001",
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+"src/tests/**/*.py" = [
+  "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107",
+  "S101", # Use of assert detected
+  "PLR2004", # Magic value used in comparison
+  "ARG001", # Unused function argument
+  "ARG002", # Unused method argument
+  "FBT001", # Boolean positional arg in function definition
+  "FBT002", # Boolean default value in function definition
+]
+
+
+[tool.ruff.lint.isort]
+known-first-party = ["claude_monitor"]
+force-single-line = true
+lines-after-imports = 2
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pylint]
+max-args = 10
+max-branches = 12
+max-returns = 6
+max-statements = 50
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+# Type Checking with MyPy
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_optional = true
+show_error_codes = true
+show_error_context = true
+pretty = true
+color_output = true
+error_summary = true
+
+# Strict mode options
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+no_implicit_reexport = true
+strict_equality = true
+
+# Per-module options
+[[tool.mypy.overrides]]
+module = [
+  "src.tests.*",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+  "sentry_sdk.*",
+  "rich.*",
+  "numpy.*",
+]
+ignore_missing_imports = true
+
+# Testing with Pytest
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["src/tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+  "--strict-markers",
+  "--strict-config",
+  "--color=yes",
+  "--tb=short",
+  "--cov=claude_monitor",
+  "--cov-report=term-missing",
+  "--cov-report=html",
+  "--cov-report=xml",
+  "--cov-fail-under=80",
+  "--no-cov-on-fail",
+  "-ra",
+  "-q",
+]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "integration: marks tests as integration tests",
+  "unit: marks tests as unit tests",
+  "benchmark: marks tests as benchmarks",
+  "network: marks tests as requiring network access",
+  "subprocess: marks tests as requiring subprocess",
+]
+filterwarnings = [
+  "error",
+  "ignore::UserWarning",
+  "ignore::DeprecationWarning",
+  "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/claude_monitor"]
+omit = [
+  "*/tests/*",
+  "*/test_*",
+  "*/__main__.py",
+  "*/conftest.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "if self.debug:",
+  "if settings.DEBUG",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if 0:",
+  "if __name__ == .__main__.:",
+  "class .*\\bProtocol\\):",
+  "@(abc\\.)?abstractmethod",
+]
+show_missing = true
+skip_covered = false
+skip_empty = false
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+# Security with Bandit
+
+[tool.bandit]
+exclude_dirs = ["src/tests"]
+tests = ["B201", "B301", "B401", "B501", "B601", "B602", "B603", "B604", "B605", "B606", "B607", "B608", "B609", "B610", "B611", "B701", "B702", "B703"]
+skips = ["B101", "B601"]
+
+[tool.bandit.assert_used]
+skips = ["*_test.py", "test_*.py"]
+
+# Documentation with Sphinx
+
+[tool.sphinx.autodoc]
+typehints = "description"
+typehints_document_rtype = true
+typehints_defaults = "comma"

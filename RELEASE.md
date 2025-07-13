@@ -129,6 +129,10 @@ uv tool run twine upload dist/* --username __token__ --password <your-pypi-token
    # In a new environment
    uv tool install claude-monitor
    claude-monitor --version
+
+   # Test all command aliases
+   cmonitor --version
+   ccm --version
    ```
 
 ## Version Numbering
