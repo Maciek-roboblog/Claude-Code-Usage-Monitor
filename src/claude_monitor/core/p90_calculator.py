@@ -2,7 +2,7 @@ import time
 from dataclasses import dataclass
 from functools import lru_cache
 from statistics import quantiles
-from typing import Any, Callable, Dict, List, Optional, Sequence
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 
 @dataclass(frozen=True)
@@ -66,7 +66,9 @@ class P90Calculator:
         self._cfg = config
 
     @lru_cache(maxsize=1)
-    def _cached_calc(self, key: int, blocks_tuple: tuple) -> int:
+    def _cached_calc(
+        self, key: int, blocks_tuple: Tuple[Tuple[bool, bool, int], ...]
+    ) -> int:
         blocks = [
             {"isGap": g, "isActive": a, "totalTokens": t} for g, a, t in blocks_tuple
         ]

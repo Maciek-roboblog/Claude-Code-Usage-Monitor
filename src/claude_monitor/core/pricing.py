@@ -194,7 +194,7 @@ class PricingCalculator:
         if mode.value == "cached":
             cost_value = entry_data.get("costUSD") or entry_data.get("cost_usd")
             if cost_value is not None:
-                return cost_value
+                return float(cost_value)
 
         # Otherwise calculate from tokens
         model = entry_data.get("model") or entry_data.get("Model")

@@ -5,7 +5,7 @@ Contains the main analyze_usage function and related analysis components.
 
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from claude_monitor.core.calculations import BurnRateCalculator
 from claude_monitor.core.models import CostMode
@@ -100,7 +100,7 @@ def analyze_usage(
     return result
 
 
-def _process_burn_rates(blocks: list, calculator: BurnRateCalculator) -> None:
+def _process_burn_rates(blocks: List[Any], calculator: BurnRateCalculator) -> None:
     """Process burn rate data for active blocks."""
     for block in blocks:
         if block.is_active:
@@ -116,7 +116,9 @@ def _process_burn_rates(blocks: list, calculator: BurnRateCalculator) -> None:
                     }
 
 
-def _create_result(blocks: list, entries: list, metadata: dict) -> dict:
+def _create_result(
+    blocks: List[Any], entries: List[Any], metadata: Dict[str, Any]
+) -> Dict[str, Any]:
     """Create the final result dictionary."""
     blocks_data = _convert_blocks_to_dict_format(blocks)
 
@@ -132,7 +134,7 @@ def _create_result(blocks: list, entries: list, metadata: dict) -> dict:
     }
 
 
-def _is_limit_in_block_timerange(limit_info, block):
+def _is_limit_in_block_timerange(limit_info: Any, block: Any) -> bool:
     """Check if limit timestamp falls within block's time range."""
     limit_timestamp = limit_info["timestamp"]
 
@@ -142,7 +144,7 @@ def _is_limit_in_block_timerange(limit_info, block):
     return block.start_time <= limit_timestamp <= block.end_time
 
 
-def _format_limit_info(limit_info):
+def _format_limit_info(limit_info: Any) -> Dict[str, Any]:
     """Format limit info for block assignment."""
     return {
         "type": limit_info["type"],
@@ -156,7 +158,7 @@ def _format_limit_info(limit_info):
     }
 
 
-def _convert_blocks_to_dict_format(blocks):
+def _convert_blocks_to_dict_format(blocks: List[Any]) -> List[Dict[str, Any]]:
     """Convert blocks to dictionary format for JSON output."""
     blocks_data = []
 
@@ -168,7 +170,7 @@ def _convert_blocks_to_dict_format(blocks):
     return blocks_data
 
 
-def _create_base_block_dict(block):
+def _create_base_block_dict(block: Any) -> Dict[str, Any]:
     """Create base block dictionary with required fields."""
     return {
         "id": block.id,
@@ -197,7 +199,7 @@ def _create_base_block_dict(block):
     }
 
 
-def _format_block_entries(entries):
+def _format_block_entries(entries: List[Any]) -> List[Dict[str, Any]]:
     """Format block entries for JSON output."""
     return [
         {
@@ -215,7 +217,7 @@ def _format_block_entries(entries):
     ]
 
 
-def _add_optional_block_data(block, block_dict):
+def _add_optional_block_data(block: Any, block_dict: Dict[str, Any]) -> None:
     """Add optional burn rate, projection, and limit data to block dict."""
     if hasattr(block, "burn_rate_snapshot") and block.burn_rate_snapshot:
         block_dict["burnRate"] = {

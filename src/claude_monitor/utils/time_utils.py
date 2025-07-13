@@ -7,7 +7,7 @@ import platform
 import re
 import subprocess
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 import pytz
 
@@ -51,7 +51,7 @@ class TimeFormatDetector:
     }
 
     @classmethod
-    def detect_from_cli(cls, args) -> Optional[bool]:
+    def detect_from_cli(cls, args: Any) -> Optional[bool]:
         """Detect from CLI arguments.
 
         Returns:
@@ -160,7 +160,9 @@ class TimeFormatDetector:
         return "12h" if cls.detect_from_locale() else "24h"
 
     @classmethod
-    def get_preference(cls, args=None, timezone_name=None) -> bool:
+    def get_preference(
+        cls, args: Optional[Any] = None, timezone_name: Optional[str] = None
+    ) -> bool:
         """Main entry point - returns True for 12h, False for 24h."""
         cli_pref = cls.detect_from_cli(args)
         if cli_pref is not None:
@@ -246,7 +248,7 @@ class TimezoneHandler:
         """Initialize with a default timezone."""
         self.default_tz = self._validate_and_get_tz(default_tz)
 
-    def _validate_and_get_tz(self, tz_name: str):
+    def _validate_and_get_tz(self, tz_name: str) -> pytz.tzinfo.BaseTzInfo:
         """Validate and return pytz timezone object."""
         try:
             return pytz.timezone(tz_name)

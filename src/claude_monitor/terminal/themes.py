@@ -477,7 +477,7 @@ COST_THRESHOLDS: List[Tuple[float, str]] = [
 ]
 
 # Velocity/burn rate emojis and labels
-VELOCITY_INDICATORS = {
+VELOCITY_INDICATORS: Dict[str, Dict[str, Union[str, float]]] = {
     "slow": {"emoji": "🐌", "label": "Slow", "threshold": 50},
     "normal": {"emoji": "➡️", "label": "Normal", "threshold": 150},
     "fast": {"emoji": "🚀", "label": "Fast", "threshold": 300},

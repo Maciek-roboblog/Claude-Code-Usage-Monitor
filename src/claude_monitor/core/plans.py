@@ -6,7 +6,7 @@ Shared constants (defaults, common limits, threshold) are exposed on the Plans c
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 
 class PlanType(Enum):
@@ -81,7 +81,7 @@ _DEFAULTS = {
 class Plans:
     """Registry and shared constants for all plan configurations."""
 
-    DEFAULT_TOKEN_LIMIT = _DEFAULTS["token_limit"]
+    DEFAULT_TOKEN_LIMIT: int = int(_DEFAULTS["token_limit"])
     DEFAULT_COST_LIMIT = _DEFAULTS["cost_limit"]
     DEFAULT_MESSAGE_LIMIT = _DEFAULTS["message_limit"]
     COMMON_TOKEN_LIMITS = [44_000, 88_000, 220_000, 880_000]
@@ -119,7 +119,7 @@ class Plans:
             return None
 
     @classmethod
-    def get_token_limit(cls, plan: str, blocks=None) -> int:
+    def get_token_limit(cls, plan: str, blocks: Optional[List[Any]] = None) -> int:
         """
         Get the token limit for a plan.
 
@@ -176,7 +176,7 @@ COST_LIMITS: Dict[str, float] = {
 DEFAULT_COST_LIMIT: float = Plans.DEFAULT_COST_LIMIT
 
 
-def get_token_limit(plan: str, blocks=None) -> int:
+def get_token_limit(plan: str, blocks: Optional[List[Any]] = None) -> int:
     """Get token limit for a plan, using P90 for custom plans.
 
     Args:

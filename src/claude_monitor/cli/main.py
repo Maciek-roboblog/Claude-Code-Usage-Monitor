@@ -146,9 +146,9 @@ def _run_monitoring(args: Any) -> None:
             live_display.update(loading_display)
 
             orchestrator = MonitoringOrchestrator(
-                update_interval=args.refresh_rate
-                if hasattr(args, "refresh_rate")
-                else 10,
+                update_interval=(
+                    args.refresh_rate if hasattr(args, "refresh_rate") else 10
+                ),
                 data_path=str(data_path),
             )
             orchestrator.set_args(args)

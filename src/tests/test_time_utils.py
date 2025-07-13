@@ -98,8 +98,8 @@ class TestTimeFormatDetector:
     @patch("locale.nl_langinfo")
     def test_detect_from_locale_12h_ampm(self, mock_langinfo, mock_setlocale):
         """Test locale detection for 12h format with AM/PM."""
-        mock_langinfo.side_effect = (
-            lambda x: "%I:%M:%S %p" if x == locale.T_FMT_AMPM else ""
+        mock_langinfo.side_effect = lambda x: (
+            "%I:%M:%S %p" if x == locale.T_FMT_AMPM else ""
         )
 
         result = TimeFormatDetector.detect_from_locale()
@@ -109,8 +109,8 @@ class TestTimeFormatDetector:
     @patch("locale.nl_langinfo")
     def test_detect_from_locale_12h_dt_fmt(self, mock_langinfo, mock_setlocale):
         """Test locale detection for 12h format with %p in D_T_FMT."""
-        mock_langinfo.side_effect = (
-            lambda x: "%m/%d/%Y %I:%M:%S %p" if x == locale.D_T_FMT else ""
+        mock_langinfo.side_effect = lambda x: (
+            "%m/%d/%Y %I:%M:%S %p" if x == locale.D_T_FMT else ""
         )
 
         result = TimeFormatDetector.detect_from_locale()
