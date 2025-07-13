@@ -3,14 +3,20 @@
 import logging
 import os
 import re
-import select
 import sys
-import termios
 import threading
-import tty
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
+
+try:
+    import select
+    import termios
+    import tty
+
+    HAS_TERMIOS = True
+except ImportError:
+    HAS_TERMIOS = False
 
 from rich.console import Console
 from rich.theme import Theme
@@ -286,7 +292,7 @@ class BackgroundDetector:
     @staticmethod
     def _query_background_color() -> BackgroundType:
         """Query terminal background color using OSC 11."""
-        if not sys.stdin.isatty() or not sys.stdout.isatty():
+        if not HAS_TERMIOS or not sys.stdin.isatty() or not sys.stdout.isatty():
             return BackgroundType.UNKNOWN
 
         try:
@@ -330,11 +336,15 @@ class BackgroundDetector:
             # Restore terminal settings
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
 
-        except (OSError, termios.error, AttributeError):
+        except (OSError, termios.error if HAS_TERMIOS else Exception, AttributeError):
             # Restore terminal settings on any error
             try:
                 termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-            except (OSError, termios.error, AttributeError) as e:
+            except (
+                OSError,
+                termios.error if HAS_TERMIOS else Exception,
+                AttributeError,
+            ) as e:
                 # Terminal settings restoration failed - log but continue
                 # This is non-critical as the terminal will be cleaned up on process exit
                 logging.getLogger(__name__).warning(
