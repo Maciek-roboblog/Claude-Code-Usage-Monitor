@@ -31,8 +31,12 @@ version = "3.0.0"
             with patch(
                 "builtins.open", mock_open(read_data=mock_toml_content.encode())
             ):
-                with patch("tomllib.load") as mock_load:
-                    mock_load.return_value = {"project": {"version": "3.0.0"}}
+                # Mock the tomllib module import and load function
+                from unittest.mock import MagicMock
+
+                mock_tomllib = MagicMock()
+                mock_tomllib.load.return_value = {"project": {"version": "3.0.0"}}
+                with patch.dict("sys.modules", {"tomllib": mock_tomllib}):
                     version = _get_version_from_pyproject()
                     assert version == "3.0.0"
 
@@ -84,7 +88,15 @@ def test_version_matches_pyproject():
     """Integration test: verify version matches pyproject.toml."""
     from pathlib import Path
 
-    import tomllib
+    try:
+        # Python 3.11+
+        import tomllib
+    except ImportError:
+        try:
+            # Python < 3.11 fallback
+            import tomli as tomllib  # type: ignore
+        except ImportError:
+            pytest.skip("No TOML library available")
 
     # Read version from pyproject.toml
     pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
