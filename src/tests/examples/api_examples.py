@@ -15,7 +15,18 @@ from claude_monitor.utils.formatting import format_currency, format_time
 def analyze_usage_with_metadata(
     hours_back=96, use_cache=True, quick_start=False, data_path=None
 ):
-    """Enhanced analyze_usage with comprehensive metadata."""
+    """
+    Analyze Claude usage data and return detailed results with comprehensive metadata.
+    
+    Parameters:
+        hours_back (int, optional): Number of hours to look back for usage data. Defaults to 96.
+        use_cache (bool, optional): Whether to use cached data if available. Defaults to True.
+        quick_start (bool, optional): If True, performs a faster, less detailed analysis. Defaults to False.
+        data_path (str, optional): Path to a custom data file. If None, uses the default data source.
+    
+    Returns:
+        dict: Analysis results including session blocks and additional metadata such as load time, entries processed, and blocks created.
+    """
     return analyze_usage(
         hours_back=hours_back,
         use_cache=use_cache,
@@ -25,7 +36,18 @@ def analyze_usage_with_metadata(
 
 
 def analyze_usage_json(hours_back=96, use_cache=True, data_path=None, indent=2):
-    """Analyze usage and return JSON string."""
+    """
+    Analyze Claude usage data and return the results as a JSON-formatted string.
+    
+    Parameters:
+        hours_back (int): Number of hours to look back for usage data.
+        use_cache (bool): Whether to use cached data if available.
+        data_path (str, optional): Path to a custom data file. If None, uses the default data source.
+        indent (int): Number of spaces for JSON indentation.
+    
+    Returns:
+        str: JSON-formatted string containing usage analysis results.
+    """
     result = analyze_usage(
         hours_back=hours_back, use_cache=use_cache, data_path=data_path
     )
@@ -33,7 +55,17 @@ def analyze_usage_json(hours_back=96, use_cache=True, data_path=None, indent=2):
 
 
 def get_usage_summary(hours_back=96, use_cache=True, data_path=None):
-    """Get high-level usage summary statistics."""
+    """
+    Return high-level summary statistics for Claude usage over a specified time window.
+    
+    Parameters:
+        hours_back (int, optional): Number of hours to look back for usage data. Defaults to 96.
+        use_cache (bool, optional): Whether to use cached data if available. Defaults to True.
+        data_path (str, optional): Path to a custom data file. Defaults to None.
+    
+    Returns:
+        dict: Summary statistics including total sessions, cost, tokens, average session cost, active sessions, and total duration in minutes.
+    """
     result = analyze_usage(
         hours_back=hours_back, use_cache=use_cache, data_path=data_path
     )
@@ -42,7 +74,14 @@ def get_usage_summary(hours_back=96, use_cache=True, data_path=None):
 
 
 def print_usage_json(hours_back=96, use_cache=True, data_path=None):
-    """Print usage analysis as JSON to stdout."""
+    """
+    Prints Claude usage analysis as a JSON-formatted string to standard output for the specified time window.
+    
+    Parameters:
+        hours_back (int, optional): Number of hours of usage data to analyze. Defaults to 96.
+        use_cache (bool, optional): Whether to use cached data if available. Defaults to True.
+        data_path (str, optional): Path to a custom data file. Defaults to None.
+    """
     json_result = analyze_usage_json(
         hours_back=hours_back, use_cache=use_cache, data_path=data_path
     )
@@ -50,7 +89,14 @@ def print_usage_json(hours_back=96, use_cache=True, data_path=None):
 
 
 def print_usage_summary(hours_back=96, use_cache=True, data_path=None):
-    """Print human-readable usage summary."""
+    """
+    Prints a human-readable summary of Claude usage statistics for a specified time window.
+    
+    Parameters:
+        hours_back (int, optional): Number of hours to look back for usage data. Defaults to 96.
+        use_cache (bool, optional): Whether to use cached data if available. Defaults to True.
+        data_path (str, optional): Path to a custom data file. If None, uses the default data source.
+    """
     summary = get_usage_summary(
         hours_back=hours_back, use_cache=use_cache, data_path=data_path
     )
@@ -76,7 +122,15 @@ def print_usage_summary(hours_back=96, use_cache=True, data_path=None):
 
 
 def _create_summary_stats(blocks):
-    """Create summary statistics from session blocks."""
+    """
+    Compute summary statistics from a list of session blocks.
+    
+    Parameters:
+        blocks (list): List of session block dictionaries containing usage data.
+    
+    Returns:
+        dict: A dictionary with total sessions, total cost, total tokens, average session cost, active session count, and total duration in minutes.
+    """
     if not blocks:
         return {
             "total_sessions": 0,
@@ -110,10 +164,10 @@ analyze_usage_direct = analyze_usage
 
 
 def example_basic_usage():
-    """Example 1: Basic usage (backward compatibility with original API)
-
-    This example shows how to use the API in the same way as the original
-    usage_analyzer.api.analyze_usage() function.
+    """
+    Demonstrates basic usage of the Claude Monitor API wrapper for backward compatibility.
+    
+    Calls the analysis function as in the original API, prints the number of session blocks found, and iterates through each block to display token count, cost, active status, burn rate, and projections if available. Handles and prints any exceptions encountered.
     """
     print("=== Example 1: Basic Usage ===")
 
@@ -150,10 +204,10 @@ def example_basic_usage():
 
 
 def example_advanced_usage():
-    """Example 2: Advanced usage with metadata and time filtering
-
-    This example shows how to use the enhanced features of the new API
-    while maintaining backward compatibility.
+    """
+    Demonstrates advanced usage of the Claude Monitor API wrapper with metadata and time filtering.
+    
+    This example retrieves usage data for the past 24 hours using enhanced API features, displays analysis metadata, counts active session blocks, and calculates total token and cost usage. Errors are caught and printed.
     """
     print("\n=== Example 2: Advanced Usage ===")
 
@@ -186,9 +240,10 @@ def example_advanced_usage():
 
 
 def example_json_output():
-    """Example 3: JSON output (same as original API when used as script)
-
-    This example shows how to get JSON output exactly like the original API.
+    """
+    Demonstrates retrieving and verifying usage analysis data as JSON output, matching the original API format.
+    
+    Prints the number of session blocks in the JSON output and displays a formatted sample block. Handles and reports any errors encountered during processing.
     """
     print("\n=== Example 3: JSON Output ===")
 
@@ -211,9 +266,8 @@ def example_json_output():
 
 
 def example_usage_summary():
-    """Example 4: Usage summary and statistics
-
-    This example shows how to get high-level statistics about usage.
+    """
+    Demonstrates how to retrieve and display high-level usage statistics, including total cost, tokens, session blocks, active blocks, model usage breakdown, and performance metrics for the past week.
     """
     print("\n=== Example 4: Usage Summary ===")
 
@@ -240,9 +294,10 @@ def example_usage_summary():
 
 
 def example_custom_data_path():
-    """Example 5: Using custom data path
-
-    This example shows how to analyze data from a custom location.
+    """
+    Demonstrates analyzing Claude usage data from a custom file path.
+    
+    This example specifies a custom data path for usage analysis and prints the number of analyzed session blocks. If the path does not exist, an error message is printed.
     """
     print("\n=== Example 5: Custom Data Path ===")
 
@@ -264,9 +319,10 @@ def example_custom_data_path():
 
 
 def example_direct_import():
-    """Example 6: Direct import from main module
-
-    This example shows how to import the function directly from the main module.
+    """
+    Demonstrates direct usage of the `analyze_usage_direct` function to retrieve and display the number of usage blocks found.
+    
+    This example verifies that the direct import alias for the main analysis function works as expected, printing the result or any encountered error.
     """
     print("\n=== Example 6: Direct Import ===")
 
@@ -281,9 +337,10 @@ def example_direct_import():
 
 
 def example_error_handling():
-    """Example 7: Error handling patterns
-
-    This example shows how the API handles errors gracefully.
+    """
+    Demonstrates error handling when analyzing usage data from a non-existent path.
+    
+    Attempts to analyze usage data from an invalid file path, catching and printing any exceptions to illustrate graceful error handling by the API.
     """
     print("\n=== Example 7: Error Handling ===")
 
@@ -302,9 +359,8 @@ def example_error_handling():
 
 
 def example_print_functions():
-    """Example 8: Print functions for direct output
-
-    This example shows the convenience print functions.
+    """
+    Demonstrates the use of convenience functions to print usage analysis results directly as JSON and as a human-readable summary.
     """
     print("\n=== Example 8: Print Functions ===")
 
@@ -321,9 +377,10 @@ def example_print_functions():
 
 
 def example_compatibility_check():
-    """Example 9: Compatibility check with original API
-
-    This example shows how to verify the output is compatible with the original.
+    """
+    Checks whether the output of `analyze_usage` is compatible with the original API by verifying the presence of required fields and reporting any enhanced fields in the data structure.
+    
+    Prints the results of the compatibility check, including missing required fields and any additional enhanced fields found.
     """
     print("\n=== Example 9: Compatibility Check ===")
 
@@ -365,7 +422,11 @@ def example_compatibility_check():
 
 
 def run_all_examples():
-    """Run all examples to demonstrate the API functionality."""
+    """
+    Execute all example functions sequentially to demonstrate the Claude Monitor API wrapper's capabilities.
+    
+    Each example is run in order, with exceptions caught and reported for individual examples. Prints progress and completion messages to standard output.
+    """
     print("Claude Monitor API Examples")
     print("=" * 50)
 

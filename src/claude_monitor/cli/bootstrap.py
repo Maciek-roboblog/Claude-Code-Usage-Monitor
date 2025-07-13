@@ -12,12 +12,13 @@ from claude_monitor.utils.time_utils import TimezoneHandler
 def setup_logging(
     level: str = "INFO", log_file: Optional[Path] = None, disable_console: bool = False
 ) -> None:
-    """Configure logging for the application.
-
-    Args:
-        level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        log_file: Optional file path for logging
-        disable_console: If True, disable console logging (useful for monitor mode)
+    """
+    Configures the application's logging system with the specified log level, optional file output, and optional console output.
+    
+    Parameters:
+    	level (str): Logging level as a string (e.g., "DEBUG", "INFO").
+    	log_file (Optional[Path]): Path to a file for logging output, if provided.
+    	disable_console (bool): If True, disables logging to the console.
     """
     log_level = getattr(logging, level.upper(), logging.INFO)
 
@@ -38,7 +39,11 @@ def setup_logging(
 
 
 def setup_environment() -> None:
-    """Initialize environment variables and system settings."""
+    """
+    Initializes environment variables and ensures system output uses UTF-8 encoding.
+    
+    Sets default values for `CLAUDE_MONITOR_CONFIG` and `CLAUDE_MONITOR_CACHE_DIR` environment variables if they are not already set, and reconfigures standard output to UTF-8 encoding if necessary.
+    """
     if sys.stdout.encoding != "utf-8":
         sys.stdout.reconfigure(encoding="utf-8")
 
@@ -51,13 +56,14 @@ def setup_environment() -> None:
 
 
 def init_timezone(timezone: str = "Europe/Warsaw") -> TimezoneHandler:
-    """Initialize timezone handler.
-
-    Args:
-        timezone: Timezone string (e.g. "Europe/Warsaw", "UTC")
-
+    """
+    Create and return a TimezoneHandler configured for the specified timezone.
+    
+    Parameters:
+    	timezone (str): The timezone identifier to use (e.g., "Europe/Warsaw", "UTC"). Defaults to "Europe/Warsaw".
+    
     Returns:
-        Configured TimezoneHandler instance
+    	TimezoneHandler: An instance configured for the given timezone.
     """
     tz_handler = TimezoneHandler()
     if timezone != "Europe/Warsaw":
@@ -66,7 +72,9 @@ def init_timezone(timezone: str = "Europe/Warsaw") -> TimezoneHandler:
 
 
 def ensure_directories() -> None:
-    """Ensure required directories exist."""
+    """
+    Create the necessary `.claude-monitor` directories and subdirectories in the user's home directory if they do not already exist.
+    """
     dirs = [
         Path.home() / ".claude-monitor",
         Path.home() / ".claude-monitor" / "cache",

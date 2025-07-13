@@ -11,12 +11,16 @@ class TestErrorLevel:
     """Test cases for ErrorLevel enum."""
 
     def test_error_level_values(self):
-        """Test that ErrorLevel has correct values."""
+        """
+        Test that the ErrorLevel enum members have the expected string values.
+        """
         assert ErrorLevel.INFO == "info"
         assert ErrorLevel.ERROR == "error"
 
     def test_error_level_string_conversion(self):
-        """Test ErrorLevel string conversion."""
+        """
+        Test that the string values of ErrorLevel enum members are correct.
+        """
         assert ErrorLevel.INFO.value == "info"
         assert ErrorLevel.ERROR.value == "error"
 
@@ -26,7 +30,12 @@ class TestReportError:
 
     @pytest.fixture
     def sample_exception(self):
-        """Create a sample exception for testing."""
+        """
+        Creates and returns a sample ValueError exception instance for use in tests.
+        
+        Returns:
+            ValueError: An exception instance with a test error message.
+        """
         try:
             raise ValueError("Test error message")
         except ValueError as e:
@@ -34,7 +43,12 @@ class TestReportError:
 
     @pytest.fixture
     def sample_context_data(self):
-        """Sample context data for testing."""
+        """
+        Return a sample context dictionary for use in error reporting tests.
+        
+        Returns:
+            dict: A dictionary containing user ID, action, and timestamp keys.
+        """
         return {
             "user_id": "12345",
             "action": "process_data",
@@ -43,13 +57,20 @@ class TestReportError:
 
     @pytest.fixture
     def sample_tags(self):
-        """Sample tags for testing."""
+        """
+        Provides a sample dictionary of tags for use in testing error reporting.
+        
+        Returns:
+            dict: A dictionary containing example environment and version tags.
+        """
         return {"environment": "test", "version": "1.0.0"}
 
     @patch("claude_monitor.error_handling.SENTRY_AVAILABLE", True)
     @patch("claude_monitor.error_handling.sentry_sdk")
     def test_report_error_with_sentry_basic(self, mock_sentry, sample_exception):
-        """Test basic error reporting when Sentry is available."""
+        """
+        Tests that `report_error` correctly reports a basic exception to Sentry, setting the component tag and capturing the exception when Sentry is available.
+        """
         mock_scope = Mock()
         mock_sentry.configure_scope.return_value.__enter__ = Mock(
             return_value=mock_scope
@@ -68,7 +89,11 @@ class TestReportError:
     def test_report_error_with_sentry_full_context(
         self, mock_sentry, sample_exception, sample_context_data, sample_tags
     ):
-        """Test error reporting with full context when Sentry is available."""
+        """
+        Test that `report_error` correctly reports an error with full context and tags when Sentry is available.
+        
+        Verifies that the Sentry scope is configured with the component tag, additional tags, context data, and error level, and that the exception is captured as expected.
+        """
         mock_scope = Mock()
         mock_sentry.configure_scope.return_value.__enter__ = Mock(
             return_value=mock_scope
@@ -132,7 +157,9 @@ class TestReportError:
     @patch("claude_monitor.error_handling.SENTRY_AVAILABLE", False)
     @patch("claude_monitor.error_handling.logging.getLogger")
     def test_report_error_without_sentry(self, mock_get_logger, sample_exception):
-        """Test error reporting when Sentry is not available."""
+        """
+        Tests that errors are logged using the component-specific logger when Sentry is unavailable.
+        """
         mock_logger = Mock()
         mock_get_logger.return_value = mock_logger
 
@@ -149,7 +176,11 @@ class TestReportError:
     def test_report_error_without_sentry_with_context(
         self, mock_get_logger, sample_exception, sample_context_data
     ):
-        """Test error reporting without Sentry but with context data."""
+        """
+        Test that `report_error` logs an error with context data when Sentry is unavailable.
+        
+        Verifies that the logger for the specified component is used and that the error is logged even when context data is provided.
+        """
         mock_logger = Mock()
         mock_get_logger.return_value = mock_logger
 
@@ -169,7 +200,9 @@ class TestReportError:
     def test_report_error_sentry_exception_handling(
         self, mock_sentry, sample_exception
     ):
-        """Test that Sentry exceptions are handled gracefully."""
+        """
+        Verify that `report_error` handles exceptions raised by Sentry gracefully and falls back to logging without propagating the error.
+        """
         # Make Sentry raise an exception
         mock_sentry.configure_scope.side_effect = Exception("Sentry failed")
 
@@ -186,7 +219,9 @@ class TestReportError:
             mock_logger.error.assert_called()
 
     def test_report_error_none_exception(self):
-        """Test error reporting with None exception."""
+        """
+        Test that report_error handles a None exception without crashing and logs an error message.
+        """
         # Should handle gracefully without crashing
         with patch(
             "claude_monitor.error_handling.logging.getLogger"
@@ -200,7 +235,9 @@ class TestReportError:
             mock_logger.error.assert_called()
 
     def test_report_error_empty_component(self, sample_exception):
-        """Test error reporting with empty component name."""
+        """
+        Test that report_error logs an error correctly when the component name is an empty string.
+        """
         with patch(
             "claude_monitor.error_handling.logging.getLogger"
         ) as mock_get_logger:
@@ -230,7 +267,9 @@ class TestReportError:
     @patch("claude_monitor.error_handling.SENTRY_AVAILABLE", True)
     @patch("claude_monitor.error_handling.sentry_sdk")
     def test_report_error_no_context(self, mock_sentry, sample_exception):
-        """Test error reporting with no context data."""
+        """
+        Test that `report_error` does not set context when `context_data` is None.
+        """
         mock_scope = Mock()
         mock_sentry.configure_scope.return_value.__enter__ = Mock(
             return_value=mock_scope
@@ -250,7 +289,9 @@ class TestReportError:
     @patch("claude_monitor.error_handling.SENTRY_AVAILABLE", True)
     @patch("claude_monitor.error_handling.sentry_sdk")
     def test_report_error_complex_exception(self, mock_sentry):
-        """Test error reporting with complex exception."""
+        """
+        Tests that the error reporting function correctly handles and reports exceptions with nested causes using Sentry.
+        """
         mock_scope = Mock()
         mock_sentry.configure_scope.return_value.__enter__ = Mock(
             return_value=mock_scope
@@ -270,13 +311,17 @@ class TestReportError:
         mock_sentry.capture_exception.assert_called_once()
 
     def test_sentry_availability_flag(self):
-        """Test that SENTRY_AVAILABLE is a boolean."""
+        """
+        Verify that the SENTRY_AVAILABLE flag is of type bool.
+        """
         assert isinstance(SENTRY_AVAILABLE, bool)
 
     @patch("claude_monitor.error_handling.SENTRY_AVAILABLE", True)
     @patch("claude_monitor.error_handling.sentry_sdk")
     def test_report_error_empty_tags_dict(self, mock_sentry, sample_exception):
-        """Test error reporting with empty tags dictionary."""
+        """
+        Test that `report_error` sets only the component tag when provided with an empty tags dictionary.
+        """
         mock_scope = Mock()
         mock_sentry.configure_scope.return_value.__enter__ = Mock(
             return_value=mock_scope
@@ -297,7 +342,9 @@ class TestReportError:
     def test_report_error_special_characters_in_component(
         self, mock_sentry, sample_exception
     ):
-        """Test error reporting with special characters in component name."""
+        """
+        Tests that `report_error` correctly handles component names containing special characters when reporting errors, ensuring tags are set and exceptions are captured.
+        """
         mock_scope = Mock()
         mock_sentry.configure_scope.return_value.__enter__ = Mock(
             return_value=mock_scope
@@ -317,13 +364,17 @@ class TestErrorHandlingEdgeCases:
     """Test edge cases for error handling module."""
 
     def test_error_level_equality(self):
-        """Test ErrorLevel equality comparisons."""
+        """
+        Verify that the ErrorLevel enum members compare correctly to their string values and to each other.
+        """
         assert ErrorLevel.INFO == "info"
         assert ErrorLevel.ERROR == "error"
         assert ErrorLevel.INFO != ErrorLevel.ERROR
 
     def test_error_level_in_list(self):
-        """Test ErrorLevel can be used in lists and comparisons."""
+        """
+        Verify that `ErrorLevel` enum members and their string values can be used interchangeably in lists and comparisons.
+        """
         levels = [ErrorLevel.INFO, ErrorLevel.ERROR]
         assert ErrorLevel.INFO in levels
         # Note: Since ErrorLevel(str, Enum), string values are equal to enum values
@@ -332,7 +383,9 @@ class TestErrorHandlingEdgeCases:
     @patch("claude_monitor.error_handling.SENTRY_AVAILABLE", True)
     @patch("claude_monitor.error_handling.sentry_sdk")
     def test_report_error_with_unicode_data(self, mock_sentry):
-        """Test error reporting with unicode data."""
+        """
+        Tests that the report_error function correctly handles and reports exceptions and context data containing unicode characters.
+        """
         mock_scope = Mock()
         mock_sentry.configure_scope.return_value.__enter__ = Mock(
             return_value=mock_scope

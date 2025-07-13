@@ -42,7 +42,12 @@ class TokenCounts:
 
     @property
     def total_tokens(self) -> int:
-        """Get total tokens across all types."""
+        """
+        Returns the sum of input, output, cache creation, and cache read tokens.
+        
+        Returns:
+            int: The total number of tokens aggregated from all token types.
+        """
         return (
             self.input_tokens
             + self.output_tokens
@@ -91,17 +96,25 @@ class SessionBlock:
 
     @property
     def total_tokens(self) -> int:
-        """Get total tokens from token_counts."""
+        """
+        Returns the total number of tokens used in the session block, as aggregated from the token counts.
+        """
         return self.token_counts.total_tokens
 
     @property
     def total_cost(self) -> float:
-        """Get total cost - alias for cost_usd."""
+        """
+        Return the total cost for the session block.
+        
+        This property is an alias for the `cost_usd` attribute.
+        """
         return self.cost_usd
 
     @property
     def duration_minutes(self) -> float:
-        """Get duration in minutes."""
+        """
+        Returns the session duration in minutes, using the actual end time if available, otherwise the scheduled end time. Ensures a minimum duration of 1 minute.
+        """
         if self.actual_end_time:
             duration = (self.actual_end_time - self.start_time).total_seconds() / 60
         else:
@@ -110,22 +123,16 @@ class SessionBlock:
 
 
 def normalize_model_name(model: str) -> str:
-    """Normalize model name for consistent usage across the application.
-
-    Handles various model name formats and maps them to standard keys.
-    (Moved from utils/model_utils.py)
-
-    Args:
-        model: Raw model name from usage data
-
+    """
+    Standardizes raw model names to consistent keys for uniform usage tracking.
+    
+    Converts various Claude model name formats to normalized identifiers (e.g., "claude-3-opus", "claude-3-5-sonnet"). Returns an empty string for empty input, and leaves unrecognized names unchanged.
+    
+    Parameters:
+        model (str): Raw model name from usage data.
+    
     Returns:
-        Normalized model key
-
-    Examples:
-        >>> normalize_model_name("claude-3-opus-20240229")
-        'claude-3-opus'
-        >>> normalize_model_name("Claude 3.5 Sonnet")
-        'claude-3-5-sonnet'
+        str: Normalized model key.
     """
     if not model:
         return ""

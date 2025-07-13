@@ -18,12 +18,20 @@ class TestDisplayController:
 
     @pytest.fixture
     def controller(self):
+        """
+        Creates a DisplayController instance with the NotificationManager patched for testing purposes.
+        
+        Returns:
+            DisplayController: An instance of DisplayController with NotificationManager mocked.
+        """
         with patch("claude_monitor.ui.display_controller.NotificationManager"):
             return DisplayController()
 
     @pytest.fixture
     def sample_active_block(self):
-        """Sample active block data."""
+        """
+        Return a sample dictionary representing an active session block with token usage, cost, message count, per-model statistics, entries, and timestamps.
+        """
         return {
             "isActive": True,
             "totalTokens": 15000,
@@ -43,7 +51,12 @@ class TestDisplayController:
 
     @pytest.fixture
     def sample_args(self):
-        """Sample CLI arguments."""
+        """
+        Provides a mock object representing sample CLI arguments for testing.
+        
+        Returns:
+            args (Mock): A mock object with attributes for plan, timezone, time format, and custom token limit.
+        """
         args = Mock()
         args.plan = "pro"
         args.timezone = "UTC"
@@ -52,7 +65,9 @@ class TestDisplayController:
         return args
 
     def test_init(self, controller):
-        """Test DisplayController initialization."""
+        """
+        Verify that the DisplayController initializes all required components.
+        """
         assert controller.session_display is not None
         assert controller.loading_screen is not None
         assert controller.error_display is not None
@@ -61,7 +76,11 @@ class TestDisplayController:
         assert controller.notification_manager is not None
 
     def test_extract_session_data(self, controller, sample_active_block):
-        """Test session data extraction."""
+        """
+        Test that the DisplayController correctly extracts session data fields from an active session block.
+        
+        Verifies that tokens used, session cost, sent messages, entries count, and start time string are accurately parsed from the provided session data.
+        """
         result = controller._extract_session_data(sample_active_block)
 
         assert result["tokens_used"] == 15000
@@ -71,7 +90,11 @@ class TestDisplayController:
         assert result["start_time_str"] == "2024-01-01T11:00:00Z"
 
     def test_calculate_token_limits_standard_plan(self, controller, sample_args):
-        """Test token limit calculation for standard plans."""
+        """
+        Test that token limit calculation returns the default limits for standard plans.
+        
+        Verifies that the `_calculate_token_limits` method returns the provided token limit as both the maximum and remaining limits when using standard plan arguments.
+        """
         token_limit = 200000
 
         result = controller._calculate_token_limits(sample_args, token_limit)
@@ -79,7 +102,11 @@ class TestDisplayController:
         assert result == (200000, 200000)
 
     def test_calculate_token_limits_custom_plan(self, controller, sample_args):
-        """Test token limit calculation for custom plans with explicit limit."""
+        """
+        Test that token limit calculation returns the explicit custom limit for custom plans.
+        
+        Verifies that when a custom plan and custom token limit are specified, the controller returns the custom limit for both the plan and session.
+        """
         sample_args.plan = "custom"
         sample_args.custom_limit_tokens = 500000
         token_limit = 200000
@@ -89,7 +116,9 @@ class TestDisplayController:
         assert result == (500000, 500000)
 
     def test_calculate_token_limits_custom_plan_no_limit(self, controller, sample_args):
-        """Test token limit calculation for custom plans without explicit limit."""
+        """
+        Test that token limit calculation for a custom plan without a specified custom limit falls back to the provided default token limit.
+        """
         sample_args.plan = "custom"
         sample_args.custom_limit_tokens = None
         token_limit = 200000
@@ -100,7 +129,9 @@ class TestDisplayController:
 
     @patch("claude_monitor.ui.display_controller.calculate_hourly_burn_rate")
     def test_calculate_time_data(self, mock_burn_rate, controller):
-        """Test time data calculation."""
+        """
+        Test that the controller's time data calculation method returns the expected elapsed and total session minutes and reset time using mocked session calculator output.
+        """
         session_data = {
             "start_time_str": "2024-01-01T11:00:00Z",
             "end_time_str": "2024-01-01T13:00:00Z",
@@ -126,7 +157,9 @@ class TestDisplayController:
     def test_calculate_cost_predictions_valid_plan(
         self, mock_is_valid, controller, sample_args
     ):
-        """Test cost predictions for valid plans."""
+        """
+        Verify that cost predictions are correctly calculated for valid plans using the provided session data, time data, and cost limit.
+        """
         mock_is_valid.return_value = True
         session_data = {"session_cost": 0.45}
         time_data = {"elapsed_session_minutes": 90}
@@ -148,7 +181,9 @@ class TestDisplayController:
             mock_calc.assert_called_once_with(session_data, time_data, 5.0)
 
     def test_calculate_cost_predictions_invalid_plan(self, controller, sample_args):
-        """Test cost predictions for invalid plans."""
+        """
+        Verify that cost prediction calculation for an invalid plan uses the default cost limit and calls the calculator with correct arguments.
+        """
         sample_args.plan = "invalid"
         session_data = {"session_cost": 0.45}
         time_data = {"elapsed_session_minutes": 90}
@@ -168,7 +203,11 @@ class TestDisplayController:
             mock_calc.assert_called_once_with(session_data, time_data, 100.0)
 
     def test_check_notifications_switch_to_custom(self, controller):
-        """Test notification checking for switch to custom."""
+        """
+        Test that the notification logic correctly triggers and marks the "switch_to_custom" notification when appropriate conditions are met.
+        
+        Verifies that the notification manager's methods are called as expected and that the result indicates the switch notification should be shown.
+        """
         with patch.object(
             controller.notification_manager, "should_notify"
         ) as mock_should:
@@ -180,6 +219,12 @@ class TestDisplayController:
                 ) as mock_active:
                     # Configure should_notify to return True only for switch_to_custom
                     def should_notify_side_effect(notification_type):
+                        """
+                        Determine if a notification should be triggered for the given notification type.
+                        
+                        Returns:
+                            bool: True if the notification type is "switch_to_custom", otherwise False.
+                        """
                         return notification_type == "switch_to_custom"
 
                     mock_should.side_effect = should_notify_side_effect
@@ -204,7 +249,11 @@ class TestDisplayController:
                     mock_mark.assert_called_with("switch_to_custom")
 
     def test_check_notifications_exceed_limit(self, controller):
-        """Test notification checking for exceeding limit."""
+        """
+        Test that the notification logic correctly triggers and marks the "exceed_max_limit" notification when the session cost exceeds the cost limit.
+        
+        This test mocks the notification manager's methods to simulate the notification state and verifies that the exceed notification is shown and marked as notified when appropriate.
+        """
         with patch.object(
             controller.notification_manager, "should_notify"
         ) as mock_should:
@@ -216,6 +265,12 @@ class TestDisplayController:
                 ) as mock_active:
                     # Configure should_notify to return True only for exceed_max_limit
                     def should_notify_side_effect(notification_type):
+                        """
+                        Determine if a notification should be triggered based on the notification type.
+                        
+                        Returns:
+                            bool: True if the notification type is "exceed_max_limit", otherwise False.
+                        """
                         return notification_type == "exceed_max_limit"
 
                     mock_should.side_effect = should_notify_side_effect
@@ -240,7 +295,11 @@ class TestDisplayController:
                     mock_mark.assert_called_with("exceed_max_limit")
 
     def test_check_notifications_cost_will_exceed(self, controller):
-        """Test notification checking for cost will exceed."""
+        """
+        Test that the notification for "cost will exceed" is triggered when the predicted end time is before the reset time.
+        
+        Verifies that the notification manager's `should_notify` and `mark_notified` methods are called appropriately and that the result indicates the notification should be shown.
+        """
         with patch.object(
             controller.notification_manager, "should_notify"
         ) as mock_should:
@@ -277,7 +336,9 @@ class TestDisplayController:
         controller,
         sample_args,
     ):
-        """Test display time formatting."""
+        """
+        Tests that the display time formatting method returns correctly formatted time strings for current, predicted end, and reset times.
+        """
         mock_tz_handler = Mock()
         mock_tz_handler.validate_timezone.return_value = True
         mock_tz_handler.convert_to_timezone.return_value = datetime.now(timezone.utc)
@@ -299,13 +360,17 @@ class TestDisplayController:
         assert "current_time_str" in result
 
     def test_calculate_model_distribution_empty_stats(self, controller):
-        """Test model distribution calculation with empty stats."""
+        """
+        Test that model distribution calculation returns an empty dictionary when given empty statistics.
+        """
         result = controller._calculate_model_distribution({})
         assert result == {}
 
     @patch("claude_monitor.ui.display_controller.normalize_model_name")
     def test_calculate_model_distribution_valid_stats(self, mock_normalize, controller):
-        """Test model distribution calculation with valid stats."""
+        """
+        Verify that the model distribution calculation correctly computes percentage usage for each model given valid token statistics and normalization.
+        """
         mock_normalize.side_effect = lambda x: {
             "claude-3-opus": "claude-3-opus",
             "claude-3-5-sonnet": "claude-3.5-sonnet",
@@ -326,14 +391,20 @@ class TestDisplayController:
         assert abs(result["claude-3.5-sonnet"] - expected_sonnet_pct) < 0.1
 
     def test_create_data_display_no_data(self, controller, sample_args):
-        """Test create_data_display with no data."""
+        """
+        Test that `create_data_display` returns an error screen renderable when called with no data.
+        """
         result = controller.create_data_display({}, sample_args, 200000)
 
         assert result is not None
         # Should return error screen renderable
 
     def test_create_data_display_no_active_block(self, controller, sample_args):
-        """Test create_data_display with no active blocks."""
+        """
+        Test that create_data_display returns the appropriate screen when there are no active session blocks.
+        
+        Verifies that when the input data contains only inactive blocks, the method returns a non-null renderable indicating no active session.
+        """
         data = {"blocks": [{"isActive": False, "totalTokens": 1000}]}
 
         result = controller.create_data_display(data, sample_args, 200000)
@@ -353,7 +424,11 @@ class TestDisplayController:
         sample_args,
         sample_active_block,
     ):
-        """Test create_data_display with active block."""
+        """
+        Test that `create_data_display` correctly processes and renders an active session when valid session data is present.
+        
+        This test mocks plan validation, cost and message limit retrieval, and session data processing to ensure the display controller produces a non-null renderable output for an active session block.
+        """
         mock_is_valid.return_value = True
         mock_cost_limit.return_value = 5.0
         mock_msg_limit.return_value = 1000
@@ -399,25 +474,35 @@ class TestDisplayController:
                 mock_format.assert_called_once()
 
     def test_create_loading_display(self, controller):
-        """Test creating loading display."""
+        """
+        Test that the loading display is created successfully for the given plan, timezone, and message.
+        """
         result = controller.create_loading_display("pro", "UTC", "Loading...")
 
         assert result is not None
 
     def test_create_error_display(self, controller):
-        """Test creating error display."""
+        """
+        Test that the error display is created successfully for a given plan and timezone.
+        
+        Asserts that the returned error display renderable is not None.
+        """
         result = controller.create_error_display("pro", "UTC")
 
         assert result is not None
 
     def test_create_live_context(self, controller):
-        """Test creating live context."""
+        """
+        Test that the `create_live_context` method of the controller returns a non-null live context object.
+        """
         result = controller.create_live_context()
 
         assert result is not None
 
     def test_set_screen_dimensions(self, controller):
-        """Test setting screen dimensions."""
+        """
+        Verify that setting screen dimensions on the controller does not raise any exceptions.
+        """
         controller.set_screen_dimensions(120, 40)
 
         # Should not raise exception
@@ -427,7 +512,9 @@ class TestLiveDisplayManager:
     """Test cases for LiveDisplayManager class."""
 
     def test_init_default(self):
-        """Test LiveDisplayManager initialization with defaults."""
+        """
+        Test that LiveDisplayManager initializes with default values for console, live context, and current renderable.
+        """
         manager = LiveDisplayManager()
 
         assert manager._console is None
@@ -435,7 +522,9 @@ class TestLiveDisplayManager:
         assert manager._current_renderable is None
 
     def test_init_with_console(self):
-        """Test LiveDisplayManager initialization with console."""
+        """
+        Test that LiveDisplayManager initializes with a provided console object.
+        """
         mock_console = Mock()
         manager = LiveDisplayManager(console=mock_console)
 
@@ -443,7 +532,9 @@ class TestLiveDisplayManager:
 
     @patch("claude_monitor.ui.display_controller.Live")
     def test_create_live_display_default(self, mock_live_class):
-        """Test creating live display with defaults."""
+        """
+        Test that `LiveDisplayManager.create_live_display` creates a live display with default parameters and returns the expected object.
+        """
         mock_live = Mock()
         mock_live_class.return_value = mock_live
 
@@ -460,7 +551,9 @@ class TestLiveDisplayManager:
 
     @patch("claude_monitor.ui.display_controller.Live")
     def test_create_live_display_custom(self, mock_live_class):
-        """Test creating live display with custom parameters."""
+        """
+        Test that LiveDisplayManager creates a live display with custom console, refresh rate, and auto-refresh settings.
+        """
         mock_live = Mock()
         mock_live_class.return_value = mock_live
         mock_console = Mock()
@@ -483,7 +576,9 @@ class TestScreenBufferManager:
     """Test cases for ScreenBufferManager class."""
 
     def test_init(self):
-        """Test ScreenBufferManager initialization."""
+        """
+        Test that the ScreenBufferManager initializes with the console attribute set to None.
+        """
         manager = ScreenBufferManager()
 
         assert manager.console is None
@@ -492,7 +587,11 @@ class TestScreenBufferManager:
     @patch("claude_monitor.ui.display_controller.Text")
     @patch("claude_monitor.ui.display_controller.Group")
     def test_create_screen_renderable(self, mock_group, mock_text, mock_get_console):
-        """Test creating screen renderable from buffer."""
+        """
+        Test that ScreenBufferManager creates a screen renderable from a list of string lines.
+        
+        Verifies that each line is converted to a markup text object and that the resulting group object is returned.
+        """
         mock_console = Mock()
         mock_get_console.return_value = mock_console
 
@@ -514,7 +613,11 @@ class TestScreenBufferManager:
     @patch("claude_monitor.terminal.themes.get_themed_console")
     @patch("claude_monitor.ui.display_controller.Group")
     def test_create_screen_renderable_with_objects(self, mock_group, mock_get_console):
-        """Test creating screen renderable with mixed string and object content."""
+        """
+        Test that ScreenBufferManager creates a screen renderable from a buffer containing both strings and objects.
+        
+        Verifies that the renderable is constructed using the Group class and that mixed content is handled correctly.
+        """
         mock_console = Mock()
         mock_get_console.return_value = mock_console
 
@@ -536,13 +639,23 @@ class TestDisplayControllerEdgeCases:
 
     @pytest.fixture
     def controller(self):
-        """Create a DisplayController instance."""
+        """
+        Creates and returns a new DisplayController instance with NotificationManager patched for testing purposes.
+        
+        Returns:
+            DisplayController: A new instance of DisplayController with NotificationManager mocked.
+        """
         with patch("claude_monitor.ui.display_controller.NotificationManager"):
             return DisplayController()
 
     @pytest.fixture
     def sample_args(self):
-        """Sample CLI arguments."""
+        """
+        Provides a mock object representing sample CLI arguments for testing.
+        
+        Returns:
+            args (Mock): A mock object with attributes for plan, timezone, time format, and custom token limit.
+        """
         args = Mock()
         args.plan = "pro"
         args.timezone = "UTC"
@@ -553,7 +666,9 @@ class TestDisplayControllerEdgeCases:
     def test_process_active_session_data_exception_handling(
         self, controller, sample_args
     ):
-        """Test exception handling in _process_active_session_data."""
+        """
+        Tests that `create_data_display` handles exceptions raised during active session data extraction and returns an error screen renderable instead of crashing.
+        """
         sample_active_block = {"isActive": True, "totalTokens": 15000, "costUSD": 0.45}
 
         data = {"blocks": [sample_active_block]}
@@ -568,7 +683,9 @@ class TestDisplayControllerEdgeCases:
             assert result is not None
 
     def test_format_display_times_invalid_timezone(self, controller, sample_args):
-        """Test format_display_times with invalid timezone."""
+        """
+        Test that _format_display_times handles an invalid timezone string gracefully and returns formatted time strings for predicted end, reset, and current time.
+        """
         sample_args.timezone = "Invalid/Timezone"
 
         current_time = datetime.now(timezone.utc)
@@ -585,7 +702,11 @@ class TestDisplayControllerEdgeCases:
         assert "current_time_str" in result
 
     def test_calculate_model_distribution_invalid_stats(self, controller):
-        """Test model distribution with invalid stats format."""
+        """
+        Test that model distribution calculation handles invalid stats formats gracefully.
+        
+        Verifies that the `_calculate_model_distribution` method returns a dictionary and does not raise exceptions when provided with malformed or non-numeric model statistics.
+        """
         invalid_stats = {
             "invalid-model": "not-a-dict",
             "another-model": {"inputTokens": "not-a-number"},
@@ -603,13 +724,23 @@ class TestDisplayControllerAdvanced:
 
     @pytest.fixture
     def controller(self):
-        """Create a DisplayController instance."""
+        """
+        Creates and returns a new DisplayController instance with NotificationManager patched for testing purposes.
+        
+        Returns:
+            DisplayController: A new instance of DisplayController with NotificationManager mocked.
+        """
         with patch("claude_monitor.ui.display_controller.NotificationManager"):
             return DisplayController()
 
     @pytest.fixture
     def sample_args_custom(self):
-        """Sample CLI arguments for custom plan."""
+        """
+        Return a mock CLI arguments object configured for a custom plan.
+        
+        Returns:
+            args (Mock): Mock object with custom plan, UTC timezone, 24-hour time format, and no custom token limit.
+        """
         args = Mock()
         args.plan = "custom"
         args.timezone = "UTC"
@@ -628,7 +759,9 @@ class TestDisplayControllerAdvanced:
         controller,
         sample_args_custom,
     ):
-        """Test create_data_display with custom plan."""
+        """
+        Test that `create_data_display` correctly handles a custom plan by integrating advanced display logic, collecting session data, calculating percentiles, and rendering the appropriate screen output.
+        """
         # Mock advanced display
         mock_temp_display = Mock()
         mock_advanced_display.return_value = mock_temp_display
@@ -684,7 +817,9 @@ class TestDisplayControllerAdvanced:
                     )
 
     def test_create_data_display_exception_handling(self, controller):
-        """Test create_data_display exception handling."""
+        """
+        Test that create_data_display returns an error screen renderable when an exception occurs during active session data processing.
+        """
         args = Mock()
         args.plan = "pro"
         args.timezone = "UTC"
@@ -709,7 +844,9 @@ class TestDisplayControllerAdvanced:
                     mock_error.assert_called_once_with("pro", "UTC")
 
     def test_create_data_display_format_session_exception(self, controller):
-        """Test create_data_display with format_active_session_screen exception."""
+        """
+        Test that create_data_display returns an error screen renderable when format_active_session_screen raises an exception.
+        """
         args = Mock()
         args.plan = "pro"
         args.timezone = "UTC"
@@ -758,7 +895,9 @@ class TestDisplayControllerAdvanced:
                         mock_error.assert_called_once_with("pro", "UTC")
 
     def test_process_active_session_data_comprehensive(self, controller):
-        """Test _process_active_session_data with comprehensive data."""
+        """
+        Tests that `_process_active_session_data` correctly aggregates and returns comprehensive session data, including tokens used, token limits, session cost, burn rate, model distribution, and notification flags, when provided with a fully populated active session block and mocked dependencies.
+        """
         active_block = {
             "totalTokens": 15000,
             "costUSD": 0.45,
@@ -842,15 +981,21 @@ class TestSessionCalculator:
 
     @pytest.fixture
     def calculator(self):
-        """Create a SessionCalculator instance."""
+        """
+        Create and return a new SessionCalculator instance.
+        """
         return SessionCalculator()
 
     def test_init(self, calculator):
-        """Test SessionCalculator initialization."""
+        """
+        Verify that the SessionCalculator initializes with a non-null timezone handler.
+        """
         assert calculator.tz_handler is not None
 
     def test_calculate_time_data_with_start_end(self, calculator):
-        """Test calculate_time_data with start and end times."""
+        """
+        Tests that `calculate_time_data` correctly computes start time, reset time, total session minutes, and elapsed session minutes when both start and end times are provided in the session data.
+        """
         session_data = {
             "start_time_str": "2024-01-01T11:00:00Z",
             "end_time_str": "2024-01-01T13:00:00Z",
@@ -873,7 +1018,9 @@ class TestSessionCalculator:
                 assert result["elapsed_session_minutes"] == 90  # 1.5 hours
 
     def test_calculate_time_data_no_end_time(self, calculator):
-        """Test calculate_time_data without end time."""
+        """
+        Test that calculate_time_data correctly computes reset time as five hours after the start time when no end time is provided in the session data.
+        """
         session_data = {"start_time_str": "2024-01-01T11:00:00Z"}
         current_time = datetime(2024, 1, 1, 12, 30, tzinfo=timezone.utc)
 
@@ -892,7 +1039,9 @@ class TestSessionCalculator:
                 assert result["reset_time"] == expected_reset
 
     def test_calculate_time_data_no_start_time(self, calculator):
-        """Test calculate_time_data without start time."""
+        """
+        Verify that calculate_time_data correctly handles missing start time by using the current time as the base and applying default session duration and reset logic.
+        """
         session_data = {}
         current_time = datetime(2024, 1, 1, 12, 30, tzinfo=timezone.utc)
 
@@ -906,7 +1055,9 @@ class TestSessionCalculator:
         assert result["elapsed_session_minutes"] >= 0
 
     def test_calculate_cost_predictions_with_cost(self, calculator):
-        """Test calculate_cost_predictions with existing cost."""
+        """
+        Test that calculate_cost_predictions computes cost per minute, remaining cost, and predicted end time when session cost is provided.
+        """
         session_data = {"session_cost": 2.5}
         time_data = {"elapsed_session_minutes": 60}
         cost_limit = 10.0
@@ -926,7 +1077,11 @@ class TestSessionCalculator:
             assert "predicted_end_time" in result
 
     def test_calculate_cost_predictions_no_cost_limit(self, calculator):
-        """Test calculate_cost_predictions without cost limit."""
+        """
+        Test that calculate_cost_predictions uses the default cost limit when none is provided.
+        
+        Verifies that the method returns a default cost limit, calculates the remaining cost, and includes a predicted end time in the result.
+        """
         session_data = {"session_cost": 1.0}
         time_data = {
             "elapsed_session_minutes": 30,
@@ -947,7 +1102,9 @@ class TestSessionCalculator:
             assert "predicted_end_time" in result
 
     def test_calculate_cost_predictions_zero_cost_rate(self, calculator):
-        """Test calculate_cost_predictions with zero cost rate."""
+        """
+        Test that calculate_cost_predictions returns a zero cost rate and sets predicted end time to the reset time when session cost is zero.
+        """
         session_data = {"session_cost": 0.0}
         time_data = {
             "elapsed_session_minutes": 60,
@@ -971,7 +1128,9 @@ class TestSessionCalculator:
 # Test the legacy function
 @patch("claude_monitor.ui.display_controller.ScreenBufferManager")
 def test_create_screen_renderable_legacy(mock_manager_class):
-    """Test the legacy create_screen_renderable function."""
+    """
+    Test that the legacy create_screen_renderable function delegates to ScreenBufferManager and returns the expected rendered output.
+    """
     mock_manager = Mock()
     mock_manager_class.return_value = mock_manager
     mock_manager.create_screen_renderable.return_value = "rendered"

@@ -7,7 +7,11 @@ from pathlib import Path
 
 
 def run_tests():
-    """Run all tests with pytest."""
+    """
+    Run the Claude Monitor test suite using pytest with coverage reporting.
+    
+    Sets up the environment to ensure correct module resolution, executes all tests in the test directory with verbose output and coverage measurement for the `claude_monitor/data` directory, and generates both terminal and HTML coverage reports. Returns the pytest exit code or 1 if pytest is not installed.
+    """
     test_dir = Path(__file__).parent
     src_dir = test_dir.parent.parent.parent
     import os

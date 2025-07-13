@@ -10,7 +10,12 @@ from claude_monitor.core.models import CostMode, UsageEntry
 
 @pytest.fixture
 def mock_pricing_calculator():
-    """Mock PricingCalculator for testing."""
+    """
+    Provides a mock PricingCalculator with a fixed cost calculation for testing purposes.
+    
+    Returns:
+        Mock: A mock object with `calculate_cost_for_entry` always returning 0.001.
+    """
     mock = Mock()
     mock.calculate_cost_for_entry.return_value = 0.001
     return mock
@@ -18,7 +23,12 @@ def mock_pricing_calculator():
 
 @pytest.fixture
 def mock_timezone_handler():
-    """Mock TimezoneHandler for testing."""
+    """
+    Provides a mock TimezoneHandler with fixed UTC datetime responses for testing purposes.
+    
+    Returns:
+        Mock: A mock object with `parse_timestamp` and `ensure_utc` methods returning a preset UTC datetime.
+    """
     mock = Mock()
     mock.parse_timestamp.return_value = datetime(
         2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc
@@ -29,7 +39,9 @@ def mock_timezone_handler():
 
 @pytest.fixture
 def sample_usage_entry():
-    """Sample UsageEntry for testing."""
+    """
+    Return a UsageEntry instance with preset values for timestamp, token counts, cost, model, message ID, and request ID for use in tests.
+    """
     return UsageEntry(
         timestamp=datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         input_tokens=100,
@@ -45,7 +57,11 @@ def sample_usage_entry():
 
 @pytest.fixture
 def sample_valid_data():
-    """Sample valid data structure for testing."""
+    """
+    Return a dictionary representing a valid structured usage data entry for testing.
+    
+    The returned data includes a timestamp, message details with model and token usage, a request ID, and type "assistant".
+    """
     return {
         "timestamp": "2024-01-01T12:00:00Z",
         "message": {
@@ -65,7 +81,11 @@ def sample_valid_data():
 
 @pytest.fixture
 def sample_assistant_data():
-    """Sample assistant-type data for testing."""
+    """
+    Return a dictionary representing a sample assistant-type usage data entry for testing purposes.
+    
+    The returned data includes a timestamp, type "assistant", message details with model and token usage, and a request ID.
+    """
     return {
         "timestamp": "2024-01-01T12:00:00Z",
         "type": "assistant",
@@ -85,7 +105,11 @@ def sample_assistant_data():
 
 @pytest.fixture
 def sample_user_data():
-    """Sample user-type data for testing."""
+    """
+    Return a sample dictionary representing user-type usage data for testing purposes.
+    
+    The returned data includes a timestamp, type "user", usage token counts, model name, message ID, and request ID.
+    """
     return {
         "timestamp": "2024-01-01T12:00:00Z",
         "type": "user",
@@ -103,7 +127,11 @@ def sample_user_data():
 
 @pytest.fixture
 def sample_malformed_data():
-    """Sample malformed data for testing error handling."""
+    """
+    Return a dictionary containing intentionally malformed usage data for testing error handling scenarios.
+    
+    The returned data includes an invalid timestamp string, a non-dictionary message field, and usage tokens with incorrect types.
+    """
     return {
         "timestamp": "invalid_timestamp",
         "message": "not_a_dict",
@@ -113,7 +141,9 @@ def sample_malformed_data():
 
 @pytest.fixture
 def sample_minimal_data():
-    """Sample minimal valid data for testing."""
+    """
+    Return a minimal valid usage data dictionary for testing, containing only timestamp, usage tokens, and request ID.
+    """
     return {
         "timestamp": "2024-01-01T12:00:00Z",
         "usage": {"input_tokens": 100, "output_tokens": 50},
@@ -123,7 +153,11 @@ def sample_minimal_data():
 
 @pytest.fixture
 def sample_empty_tokens_data():
-    """Sample data with empty/zero tokens for testing."""
+    """
+    Return a sample usage data dictionary where all token counts are set to zero.
+    
+    This fixture is useful for testing scenarios involving empty or zero token usage.
+    """
     return {
         "timestamp": "2024-01-01T12:00:00Z",
         "usage": {
@@ -138,7 +172,12 @@ def sample_empty_tokens_data():
 
 @pytest.fixture
 def sample_duplicate_data():
-    """Sample data for testing duplicate detection."""
+    """
+    Return a list of usage entry dictionaries containing duplicate message and request IDs for testing deduplication logic.
+    
+    Returns:
+        List[dict]: Usage entries with intentional duplicates to simulate repeated data scenarios.
+    """
     return [
         {
             "timestamp": "2024-01-01T12:00:00Z",
@@ -163,25 +202,39 @@ def sample_duplicate_data():
 
 @pytest.fixture
 def all_cost_modes():
-    """All available cost modes for testing."""
+    """
+    Return a list of all available cost modes for testing purposes.
+    
+    Returns:
+        List of CostMode values included in the test environment.
+    """
     return [CostMode.AUTO]
 
 
 @pytest.fixture
 def sample_cutoff_time():
-    """Sample cutoff time for testing."""
+    """
+    Provides a fixed UTC datetime representing a sample cutoff time for testing purposes.
+    
+    Returns:
+        datetime: The cutoff time set to 2024-01-01 10:00:00 UTC.
+    """
     return datetime(2024, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
 
 
 @pytest.fixture
 def sample_processed_hashes():
-    """Sample processed hashes set for testing."""
+    """
+    Return a set of sample processed message-request ID hashes for deduplication testing.
+    """
     return {"msg_existing:req_existing", "msg_old:req_old"}
 
 
 @pytest.fixture
 def mock_file_reader():
-    """Mock JsonlFileReader for testing."""
+    """
+    Provides a mock JsonlFileReader with preset return values for file reading and discovery methods, used for testing file processing logic.
+    """
     mock = Mock()
     mock.read_jsonl_file.return_value = [
         {
@@ -204,7 +257,11 @@ def mock_file_reader():
 
 @pytest.fixture
 def mock_data_filter():
-    """Mock DataFilter for testing."""
+    """
+    Return a mock DataFilter object with preset behaviors for testing.
+    
+    The mock provides fixed return values for `calculate_cutoff_time`, `should_process_entry`, and `update_processed_hashes` methods to facilitate predictable test scenarios.
+    """
     mock = Mock()
     mock.calculate_cutoff_time.return_value = datetime(
         2024, 1, 1, 10, 0, 0, tzinfo=timezone.utc
@@ -216,7 +273,11 @@ def mock_data_filter():
 
 @pytest.fixture
 def mock_usage_entry_mapper():
-    """Mock UsageEntryMapper for testing."""
+    """
+    Provides a mock UsageEntryMapper with a preset map method for testing.
+    
+    The returned mock's `map` method always returns a UsageEntry instance with fixed values, enabling predictable behavior in tests that require usage entry mapping.
+    """
     mock = Mock()
     mock.map.return_value = UsageEntry(
         timestamp=datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
@@ -234,7 +295,9 @@ def mock_usage_entry_mapper():
 
 @pytest.fixture
 def mock_data_processor():
-    """Mock DataProcessor for testing."""
+    """
+    Provides a mock DataProcessor with preset return values for process_files and load_all_raw_entries methods, used for testing.
+    """
     mock = Mock()
     mock.process_files.return_value = (
         [
@@ -261,7 +324,12 @@ def mock_data_processor():
 
 @pytest.fixture
 def mock_data_manager():
-    """Mock DataManager for monitoring tests."""
+    """
+    Provides a mock DataManager instance with preset monitoring data for use in tests.
+    
+    Returns:
+        Mock: A mock object simulating DataManager behavior, including a sample session block and attributes for cache age, last error, and last successful fetch time.
+    """
     mock = Mock()
     mock.get_data.return_value = {
         "blocks": [
@@ -282,7 +350,12 @@ def mock_data_manager():
 
 @pytest.fixture
 def mock_session_monitor():
-    """Mock SessionMonitor for monitoring tests."""
+    """
+    Provides a mock SessionMonitor object with preset session data and update behavior for use in monitoring-related tests.
+    
+    Returns:
+        Mock: A mock SessionMonitor with predefined session ID, session count, session history, and update method.
+    """
     mock = Mock()
     mock.update.return_value = (True, [])
     mock.current_session_id = "session_1"
@@ -300,7 +373,12 @@ def mock_session_monitor():
 
 @pytest.fixture
 def sample_monitoring_data():
-    """Sample monitoring data structure for testing."""
+    """
+    Return a sample monitoring data dictionary with two session blocks for testing purposes.
+    
+    Returns:
+        dict: Monitoring data containing two session records with session ID, activity status, token count, cost, and start time.
+    """
     return {
         "blocks": [
             {
@@ -323,7 +401,9 @@ def sample_monitoring_data():
 
 @pytest.fixture
 def sample_session_data():
-    """Sample session data for testing."""
+    """
+    Return a dictionary representing a single active session with preset tokens, cost, and start time for testing purposes.
+    """
     return {
         "id": "session_1",
         "isActive": True,
@@ -335,7 +415,9 @@ def sample_session_data():
 
 @pytest.fixture
 def sample_invalid_monitoring_data():
-    """Sample invalid monitoring data for testing."""
+    """
+    Return a dictionary representing monitoring data with intentionally invalid field types for testing error handling scenarios.
+    """
     return {
         "blocks": [
             {
@@ -350,7 +432,11 @@ def sample_invalid_monitoring_data():
 
 @pytest.fixture
 def mock_orchestrator_args():
-    """Mock command line arguments for orchestrator testing."""
+    """
+    Return a mock object simulating command-line arguments for orchestrator tests.
+    
+    The mock includes attributes for plan, timezone, refresh rate, and custom token limit.
+    """
     args = Mock()
     args.plan = "pro"
     args.timezone = "UTC"

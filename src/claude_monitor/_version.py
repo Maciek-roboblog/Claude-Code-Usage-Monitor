@@ -8,13 +8,13 @@ import importlib.metadata
 
 
 def get_version() -> str:
-    """Get version from package metadata.
-
-    This reads the version from the installed package metadata,
-    which is set from pyproject.toml during build/installation.
-
+    """
+    Retrieve the current package version as a string.
+    
+    Attempts to obtain the version from the installed package metadata. If the package is not installed, falls back to reading the version from `pyproject.toml`. Returns "unknown" if the version cannot be determined.
+    
     Returns:
-        Version string (e.g., "3.0.0")
+        str: The version string of the package, or "unknown" if unavailable.
     """
     try:
         return importlib.metadata.version("claude-monitor")
@@ -24,12 +24,11 @@ def get_version() -> str:
 
 
 def _get_version_from_pyproject() -> str:
-    """Fallback: read version directly from pyproject.toml.
-
-    This is used when the package isn't installed (e.g., development mode).
-
+    """
+    Attempts to read the package version from a `pyproject.toml` file located up to five directory levels above the current file.
+    
     Returns:
-        Version string or "unknown" if cannot be determined
+        str: The version string if found, otherwise "unknown".
     """
     try:
         # Python 3.11+

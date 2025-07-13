@@ -17,11 +17,12 @@ class MonitoringOrchestrator:
     """Orchestrates monitoring components following SRP."""
 
     def __init__(self, update_interval: int = 10, data_path: Optional[str] = None):
-        """Initialize orchestrator with components.
-
-        Args:
-            update_interval: Seconds between updates
-            data_path: Optional path to Claude data directory
+        """
+        Initialize the MonitoringOrchestrator with data management and session monitoring components.
+        
+        Parameters:
+            update_interval (int): Interval in seconds between monitoring updates.
+            data_path (Optional[str]): Path to the Claude data directory, if specified.
         """
         self.update_interval = update_interval
 
@@ -37,7 +38,11 @@ class MonitoringOrchestrator:
         self._first_data_event = threading.Event()
 
     def start(self) -> None:
-        """Start monitoring."""
+        """
+        Starts the monitoring process in a background thread if it is not already running.
+        
+        If monitoring is already active, this method does nothing.
+        """
         if self._monitoring:
             logger.warning("Monitoring already running")
             return
@@ -53,7 +58,9 @@ class MonitoringOrchestrator:
         self._monitor_thread.start()
 
     def stop(self) -> None:
-        """Stop monitoring."""
+        """
+        Stops the monitoring process and terminates the background monitoring thread if running.
+        """
         if not self._monitoring:
             return
 
@@ -68,52 +75,54 @@ class MonitoringOrchestrator:
         self._first_data_event.clear()
 
     def set_args(self, args: Any) -> None:
-        """Set command line arguments for token limit calculation.
-
-        Args:
-            args: Command line arguments
+        """
+        Store command-line arguments for use in token limit calculations.
         """
         self._args = args
 
     def register_update_callback(self, callback: Callable) -> None:
-        """Register callback for data updates.
-
-        Args:
-            callback: Function to call with monitoring data
+        """
+        Registers a callback function to be invoked whenever monitoring data is updated.
+        
+        The callback will receive the latest monitoring data as its argument. Duplicate callbacks are ignored.
         """
         if callback not in self._update_callbacks:
             self._update_callbacks.append(callback)
             logger.debug("Registered update callback")
 
     def register_session_callback(self, callback: Callable) -> None:
-        """Register callback for session changes.
-
-        Args:
-            callback: Function(event_type, session_id, session_data)
+        """
+        Register a callback function to be invoked when session changes occur.
+        
+        The callback should accept three arguments: event type, session ID, and session data.
         """
         self.session_monitor.register_callback(callback)
 
     def force_refresh(self) -> Optional[Dict[str, Any]]:
-        """Force immediate data refresh.
-
+        """
+        Immediately fetches and processes the latest monitoring data, bypassing any cached results.
+        
         Returns:
-            Fresh data or None if fetch fails
+            dict or None: The most recent monitoring data if successful, or None if the fetch or processing fails.
         """
         return self._fetch_and_process_data(force_refresh=True)
 
     def wait_for_initial_data(self, timeout: float = 10.0) -> bool:
-        """Wait for initial data to be fetched.
-
-        Args:
-            timeout: Maximum time to wait in seconds
-
+        """
+        Block execution until the initial monitoring data is available or a timeout occurs.
+        
+        Parameters:
+            timeout (float): Maximum number of seconds to wait for the initial data.
+        
         Returns:
-            True if data was received, False if timeout
+            bool: True if initial data was received within the timeout period, False otherwise.
         """
         return self._first_data_event.wait(timeout=timeout)
 
     def _monitoring_loop(self) -> None:
-        """Main monitoring loop."""
+        """
+        Runs the background monitoring loop, periodically fetching and processing monitoring data until stopped.
+        """
         logger.info("Monitoring loop started")
 
         # Initial fetch
@@ -133,13 +142,14 @@ class MonitoringOrchestrator:
     def _fetch_and_process_data(
         self, force_refresh: bool = False
     ) -> Optional[Dict[str, Any]]:
-        """Fetch data and notify callbacks.
-
-        Args:
-            force_refresh: Force cache refresh
-
+        """
+        Fetches monitoring data, validates it, calculates token limits, and notifies registered update callbacks.
+        
+        Parameters:
+            force_refresh (bool): If True, bypasses the cache and forces fresh data retrieval.
+        
         Returns:
-            Processed data or None if failed
+            dict or None: The processed monitoring data dictionary if successful, or None if data fetching or validation fails.
         """
         try:
             # Fetch data
@@ -200,13 +210,16 @@ class MonitoringOrchestrator:
             return None
 
     def _calculate_token_limit(self, data: Dict[str, Any]) -> int:
-        """Calculate token limit based on plan and data.
-
-        Args:
-            data: Monitoring data
-
+        """
+        Determine the token limit based on the current plan and monitoring data.
+        
+        If no arguments are set, returns the default token limit. For a "custom" plan, calculates the token limit using the provided data blocks; otherwise, uses the plan name. Returns the default token limit if an error occurs during calculation.
+        
+        Parameters:
+            data (dict): The current monitoring data used for token limit calculation.
+        
         Returns:
-            Token limit
+            int: The calculated token limit.
         """
         if not self._args:
             return DEFAULT_TOKEN_LIMIT

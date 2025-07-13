@@ -34,6 +34,9 @@ class TestLoadUsageEntries:
     @patch("claude_monitor.data.reader._find_jsonl_files")
     @patch("claude_monitor.data.reader._process_single_file")
     def test_load_usage_entries_basic(self, mock_process_file, mock_find_files):
+        """
+        Tests that `load_usage_entries` loads and aggregates usage entries and raw data from multiple files, correctly invoking file discovery and processing, and returns the expected results.
+        """
         mock_find_files.return_value = [
             Path("/test/file1.jsonl"),
             Path("/test/file2.jsonl"),
@@ -68,6 +71,11 @@ class TestLoadUsageEntries:
 
     @patch("claude_monitor.data.reader._find_jsonl_files")
     def test_load_usage_entries_no_files(self, mock_find_files):
+        """
+        Test that `load_usage_entries` returns empty results when no files are found.
+        
+        Verifies that when the file discovery function returns an empty list, `load_usage_entries` returns an empty list of entries and `None` for raw data.
+        """
         mock_find_files.return_value = []
 
         entries, raw_data = load_usage_entries(include_raw=True)
@@ -78,6 +86,9 @@ class TestLoadUsageEntries:
     @patch("claude_monitor.data.reader._find_jsonl_files")
     @patch("claude_monitor.data.reader._process_single_file")
     def test_load_usage_entries_without_raw(self, mock_process_file, mock_find_files):
+        """
+        Test that `load_usage_entries` returns usage entries without raw data when `include_raw` is False.
+        """
         mock_find_files.return_value = [Path("/test/file1.jsonl")]
 
         sample_entry = UsageEntry(
@@ -97,7 +108,9 @@ class TestLoadUsageEntries:
     @patch("claude_monitor.data.reader._find_jsonl_files")
     @patch("claude_monitor.data.reader._process_single_file")
     def test_load_usage_entries_sorting(self, mock_process_file, mock_find_files):
-        """Test that entries are sorted by timestamp."""
+        """
+        Verifies that the `load_usage_entries` function returns usage entries sorted in ascending order by timestamp.
+        """
         mock_find_files.return_value = [Path("/test/file1.jsonl")]
 
         entry1 = UsageEntry(
@@ -125,6 +138,11 @@ class TestLoadUsageEntries:
     def test_load_usage_entries_with_cutoff_time(
         self, mock_process_file, mock_find_files
     ):
+        """
+        Test that `load_usage_entries` calculates and applies the correct cutoff time based on the `hours_back` parameter.
+        
+        Verifies that the cutoff time passed to the file processing function is exactly the specified number of hours before the current UTC time.
+        """
         mock_find_files.return_value = [Path("/test/file1.jsonl")]
         mock_process_file.return_value = ([], None)
 
@@ -140,6 +158,9 @@ class TestLoadUsageEntries:
             assert call_args[2] == expected_cutoff
 
     def test_load_usage_entries_default_path(self):
+        """
+        Test that `load_usage_entries` uses the default data path when no path is specified.
+        """
         with patch("claude_monitor.data.reader._find_jsonl_files") as mock_find:
             mock_find.return_value = []
 
@@ -155,6 +176,9 @@ class TestLoadAllRawEntries:
 
     @patch("claude_monitor.data.reader._find_jsonl_files")
     def test_load_all_raw_entries_basic(self, mock_find_files):
+        """
+        Tests that `load_all_raw_entries` correctly loads and parses all JSONL entries from a file, returning the expected list of raw data dictionaries.
+        """
         test_file = Path("/test/file.jsonl")
         mock_find_files.return_value = [test_file]
 
@@ -173,6 +197,9 @@ class TestLoadAllRawEntries:
 
     @patch("claude_monitor.data.reader._find_jsonl_files")
     def test_load_all_raw_entries_with_empty_lines(self, mock_find_files):
+        """
+        Test that `load_all_raw_entries` correctly skips empty or whitespace-only lines when reading JSONL files, returning only valid JSON objects.
+        """
         test_file = Path("/test/file.jsonl")
         mock_find_files.return_value = [test_file]
 
@@ -187,6 +214,11 @@ class TestLoadAllRawEntries:
 
     @patch("claude_monitor.data.reader._find_jsonl_files")
     def test_load_all_raw_entries_with_invalid_json(self, mock_find_files):
+        """
+        Test that `load_all_raw_entries` skips invalid JSON lines and returns only valid entries.
+        
+        Verifies that when a file contains both valid and invalid JSON lines, only the valid lines are parsed and included in the result.
+        """
         test_file = Path("/test/file.jsonl")
         mock_find_files.return_value = [test_file]
 
@@ -201,6 +233,9 @@ class TestLoadAllRawEntries:
 
     @patch("claude_monitor.data.reader._find_jsonl_files")
     def test_load_all_raw_entries_file_error(self, mock_find_files):
+        """
+        Test that `load_all_raw_entries` returns an empty list and logs an error when a file read error occurs.
+        """
         test_file = Path("/test/file.jsonl")
         mock_find_files.return_value = [test_file]
 
@@ -212,6 +247,9 @@ class TestLoadAllRawEntries:
         mock_logger.error.assert_called()
 
     def test_load_all_raw_entries_default_path(self):
+        """
+        Test that `load_all_raw_entries` uses the default data path when no path is provided.
+        """
         with patch("claude_monitor.data.reader._find_jsonl_files") as mock_find:
             mock_find.return_value = []
 
@@ -226,6 +264,9 @@ class TestFindJsonlFiles:
     """Test the _find_jsonl_files function."""
 
     def test_find_jsonl_files_nonexistent_path(self):
+        """
+        Test that `_find_jsonl_files` returns an empty list and logs a warning when the specified path does not exist.
+        """
         with patch("claude_monitor.data.reader.logger") as mock_logger:
             result = _find_jsonl_files(Path("/nonexistent/path"))
 
@@ -233,6 +274,9 @@ class TestFindJsonlFiles:
         mock_logger.warning.assert_called()
 
     def test_find_jsonl_files_existing_path(self):
+        """
+        Test that `_find_jsonl_files` returns all `.jsonl` files in a directory and its subdirectories, excluding non-JSONL files.
+        """
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
 
@@ -259,11 +303,20 @@ class TestProcessSingleFile:
 
     @pytest.fixture
     def mock_components(self):
+        """
+        Create and return mock instances of TimezoneHandler and PricingCalculator for use in tests.
+        
+        Returns:
+            tuple: A tuple containing mock TimezoneHandler and PricingCalculator instances.
+        """
         timezone_handler = Mock(spec=TimezoneHandler)
         pricing_calculator = Mock(spec=PricingCalculator)
         return timezone_handler, pricing_calculator
 
     def test_process_single_file_valid_data(self, mock_components):
+        """
+        Test that `_process_single_file` correctly processes a file with valid JSONL data, returning the expected usage entries and raw data.
+        """
         timezone_handler, pricing_calculator = mock_components
 
         sample_data = [
@@ -311,6 +364,11 @@ class TestProcessSingleFile:
         assert raw_data[0] == sample_data[0]
 
     def test_process_single_file_without_raw(self, mock_components):
+        """
+        Test that `_process_single_file` returns usage entries and no raw data when `include_raw` is False.
+        
+        Verifies that a single valid JSONL entry is processed and mapped to a `UsageEntry` object, and that raw data is not returned when not requested.
+        """
         timezone_handler, pricing_calculator = mock_components
 
         sample_data = [{"timestamp": "2024-01-01T12:00:00Z", "input_tokens": 100}]
@@ -347,6 +405,9 @@ class TestProcessSingleFile:
         assert raw_data is None
 
     def test_process_single_file_filtered_entries(self, mock_components):
+        """
+        Test that `_process_single_file` returns no entries or raw data when all entries are filtered out by `_should_process_entry`.
+        """
         timezone_handler, pricing_calculator = mock_components
 
         sample_data = [{"timestamp": "2024-01-01T12:00:00Z", "input_tokens": 100}]
@@ -371,6 +432,11 @@ class TestProcessSingleFile:
         assert len(raw_data) == 0
 
     def test_process_single_file_invalid_json(self, mock_components):
+        """
+        Test that _process_single_file skips invalid JSON lines and collects valid raw data when mapping fails.
+        
+        Verifies that when a file contains both invalid and valid JSON lines, the function ignores the invalid line, attempts to map the valid line, and includes it in the raw data if mapping returns None.
+        """
         timezone_handler, pricing_calculator = mock_components
 
         jsonl_content = 'invalid json\n{"valid": "data"}'
@@ -397,6 +463,9 @@ class TestProcessSingleFile:
         assert len(raw_data) == 1
 
     def test_process_single_file_read_error(self, mock_components):
+        """
+        Test that `_process_single_file` handles file read errors by reporting the error and returning empty results.
+        """
         timezone_handler, pricing_calculator = mock_components
         test_file = Path("/test/nonexistent.jsonl")
 
@@ -417,6 +486,11 @@ class TestProcessSingleFile:
         mock_report.assert_called_once()
 
     def test_process_single_file_mapping_failure(self, mock_components):
+        """
+        Test that _process_single_file returns no usage entries but includes raw data when mapping fails.
+        
+        Verifies that when _map_to_usage_entry returns None for a valid entry, the function yields an empty entries list but still collects the raw data if requested.
+        """
         timezone_handler, pricing_calculator = mock_components
 
         sample_data = [{"timestamp": "2024-01-01T12:00:00Z", "input_tokens": 100}]
@@ -449,9 +523,15 @@ class TestShouldProcessEntry:
 
     @pytest.fixture
     def timezone_handler(self):
+        """
+        Return a mock instance of the TimezoneHandler for use in tests.
+        """
         return Mock(spec=TimezoneHandler)
 
     def test_should_process_entry_no_cutoff_no_hash(self, timezone_handler):
+        """
+        Test that `_should_process_entry` returns True when no cutoff time is provided and the processed hashes set is empty.
+        """
         data = {"timestamp": "2024-01-01T12:00:00Z", "message_id": "msg_1"}
 
         with patch(
@@ -462,6 +542,9 @@ class TestShouldProcessEntry:
         assert result is True
 
     def test_should_process_entry_with_time_filter_pass(self, timezone_handler):
+        """
+        Test that _should_process_entry returns True when the entry timestamp is after the cutoff time and the entry is not a duplicate.
+        """
         data = {"timestamp": "2024-01-01T12:00:00Z"}
         cutoff_time = datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)
 
@@ -484,6 +567,11 @@ class TestShouldProcessEntry:
         assert result is True
 
     def test_should_process_entry_with_time_filter_fail(self, timezone_handler):
+        """
+        Test that `_should_process_entry` returns False when the entry's timestamp is before the cutoff time.
+        
+        Verifies that entries with timestamps earlier than the specified cutoff are correctly filtered out.
+        """
         data = {"timestamp": "2024-01-01T08:00:00Z"}
         cutoff_time = datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)
 
@@ -501,6 +589,9 @@ class TestShouldProcessEntry:
         assert result is False
 
     def test_should_process_entry_with_duplicate_hash(self, timezone_handler):
+        """
+        Test that `_should_process_entry` returns False when the entry's unique hash is already in the set of processed hashes.
+        """
         data = {"message_id": "msg_1", "request_id": "req_1"}
         processed_hashes = {"msg_1:req_1"}
 
@@ -514,6 +605,11 @@ class TestShouldProcessEntry:
         assert result is False
 
     def test_should_process_entry_no_timestamp(self, timezone_handler):
+        """
+        Test that an entry without a timestamp is processed when a cutoff time is provided.
+        
+        Verifies that `_should_process_entry` returns True if the data lacks a timestamp, regardless of the cutoff time.
+        """
         data = {"message_id": "msg_1"}
         cutoff_time = datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)
 
@@ -525,6 +621,9 @@ class TestShouldProcessEntry:
         assert result is True
 
     def test_should_process_entry_invalid_timestamp(self, timezone_handler):
+        """
+        Test that _should_process_entry returns True when the entry's timestamp is invalid or cannot be parsed.
+        """
         data = {"timestamp": "invalid", "message_id": "msg_1"}
         cutoff_time = datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)
 
@@ -549,36 +648,54 @@ class TestCreateUniqueHash:
     """Test the _create_unique_hash function."""
 
     def test_create_unique_hash_with_message_id_and_request_id(self):
+        """
+        Test that `_create_unique_hash` returns the correct hash when both `message_id` and `request_id` are present in the data.
+        """
         data = {"message_id": "msg_123", "request_id": "req_456"}
 
         result = _create_unique_hash(data)
         assert result == "msg_123:req_456"
 
     def test_create_unique_hash_with_nested_message_id(self):
+        """
+        Tests that `_create_unique_hash` correctly generates a unique hash when `message_id` is nested within a 'message' dictionary.
+        """
         data = {"message": {"id": "msg_123"}, "requestId": "req_456"}
 
         result = _create_unique_hash(data)
         assert result == "msg_123:req_456"
 
     def test_create_unique_hash_missing_message_id(self):
+        """
+        Test that `_create_unique_hash` returns None when the `message_id` field is missing from the input data.
+        """
         data = {"request_id": "req_456"}
 
         result = _create_unique_hash(data)
         assert result is None
 
     def test_create_unique_hash_missing_request_id(self):
+        """
+        Test that `_create_unique_hash` returns None when the `request_id` field is missing from the input data.
+        """
         data = {"message_id": "msg_123"}
 
         result = _create_unique_hash(data)
         assert result is None
 
     def test_create_unique_hash_invalid_message_structure(self):
+        """
+        Test that _create_unique_hash returns None when the 'message' field is not a dictionary.
+        """
         data = {"message": "not_a_dict", "request_id": "req_456"}
 
         result = _create_unique_hash(data)
         assert result is None
 
     def test_create_unique_hash_empty_data(self):
+        """
+        Test that _create_unique_hash returns None when given an empty data dictionary.
+        """
         data = {}
 
         result = _create_unique_hash(data)
@@ -589,6 +706,9 @@ class TestUpdateProcessedHashes:
     """Test the _update_processed_hashes function."""
 
     def test_update_processed_hashes_valid_hash(self):
+        """
+        Test that a valid unique hash is added to the processed_hashes set when updating with valid data.
+        """
         data = {"message_id": "msg_123", "request_id": "req_456"}
         processed_hashes = set()
 
@@ -601,6 +721,9 @@ class TestUpdateProcessedHashes:
         assert "msg_123:req_456" in processed_hashes
 
     def test_update_processed_hashes_no_hash(self):
+        """
+        Test that `_update_processed_hashes` does not modify the set when no unique hash is generated from the data.
+        """
         data = {"some": "data"}
         processed_hashes = set()
 
@@ -615,11 +738,22 @@ class TestMapToUsageEntry:
 
     @pytest.fixture
     def mock_components(self):
+        """
+        Create and return mock instances of TimezoneHandler and PricingCalculator for use in tests.
+        
+        Returns:
+            tuple: A tuple containing mock TimezoneHandler and PricingCalculator instances.
+        """
         timezone_handler = Mock(spec=TimezoneHandler)
         pricing_calculator = Mock(spec=PricingCalculator)
         return timezone_handler, pricing_calculator
 
     def test_map_to_usage_entry_valid_data(self, mock_components):
+        """
+        Test that `_map_to_usage_entry` correctly maps valid raw data to a `UsageEntry` object.
+        
+        Verifies that all expected fields are extracted and mapped, including timestamp, token counts, cost, model, message ID, and request ID, when provided with valid input data and mocked dependencies.
+        """
         timezone_handler, pricing_calculator = mock_components
 
         data = {
@@ -683,6 +817,9 @@ class TestMapToUsageEntry:
         assert result.request_id == "req_456"
 
     def test_map_to_usage_entry_no_timestamp(self, mock_components):
+        """
+        Test that `_map_to_usage_entry` returns None when the input data lacks a valid timestamp.
+        """
         timezone_handler, pricing_calculator = mock_components
 
         data = {"input_tokens": 100, "output_tokens": 50}
@@ -701,6 +838,9 @@ class TestMapToUsageEntry:
         assert result is None
 
     def test_map_to_usage_entry_no_tokens(self, mock_components):
+        """
+        Test that `_map_to_usage_entry` returns None when all token counts are zero in the input data.
+        """
         timezone_handler, pricing_calculator = mock_components
 
         data = {"timestamp": "2024-01-01T12:00:00Z"}
@@ -732,7 +872,9 @@ class TestMapToUsageEntry:
         assert result is None
 
     def test_map_to_usage_entry_exception_handling(self, mock_components):
-        """Test _map_to_usage_entry with exception during processing."""
+        """
+        Test that `_map_to_usage_entry` returns None when an exception occurs during timestamp processing.
+        """
         timezone_handler, pricing_calculator = mock_components
 
         data = {"timestamp": "2024-01-01T12:00:00Z"}
@@ -748,7 +890,11 @@ class TestMapToUsageEntry:
         assert result is None
 
     def test_map_to_usage_entry_minimal_data(self, mock_components):
-        """Test _map_to_usage_entry with minimal valid data."""
+        """
+        Test that `_map_to_usage_entry` correctly maps minimal valid data to a `UsageEntry` object.
+        
+        Verifies that the function handles minimal input fields, uses default values for missing fields, and integrates with mocked data processors and pricing calculator.
+        """
         timezone_handler, pricing_calculator = mock_components
 
         data = {
@@ -798,7 +944,9 @@ class TestIntegration:
     """Integration tests for data reader functionality."""
 
     def test_full_workflow_integration(self):
-        """Test full workflow from file loading to entry creation."""
+        """
+        Integration test that verifies the complete workflow from loading JSONL files to creating usage entry objects, including data parsing, processor mocking, and result validation.
+        """
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
 
@@ -898,7 +1046,11 @@ class TestIntegration:
             assert entries[1].message_id == "msg_2"
 
     def test_error_handling_integration(self):
-        """Test error handling in full workflow."""
+        """
+        Tests the full data loading workflow's ability to handle files containing both valid and invalid JSON lines.
+        
+        Verifies that valid entries are processed and mapped correctly, while invalid JSON lines are skipped without causing errors. Ensures that the resulting entries and raw data only include successfully parsed records.
+        """
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
 
@@ -973,7 +1125,11 @@ class TestPerformanceAndEdgeCases:
     """Test performance scenarios and edge cases."""
 
     def test_large_file_processing(self):
-        """Test processing of large files."""
+        """
+        Tests processing of a large JSONL file with 1000 entries to verify all entries are loaded, processed, and sorted correctly.
+        
+        Creates a temporary file with 1000 usage entries, mocks all data processors and pricing calculator, and asserts that all entries are processed and sorted by input tokens.
+        """
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             test_file = temp_path / "large.jsonl"
@@ -1035,7 +1191,9 @@ class TestPerformanceAndEdgeCases:
             assert entries[0].input_tokens <= entries[-1].input_tokens
 
     def test_empty_directory(self):
-        """Test behavior with empty directory."""
+        """
+        Test that loading usage entries from an empty directory returns no entries and no raw data.
+        """
         with tempfile.TemporaryDirectory() as temp_dir:
             entries, raw_data = load_usage_entries(data_path=temp_dir, include_raw=True)
 
@@ -1043,7 +1201,9 @@ class TestPerformanceAndEdgeCases:
             assert raw_data is None
 
     def test_memory_efficiency(self):
-        """Test that raw data is not loaded unnecessarily."""
+        """
+        Verify that raw data is not loaded when `include_raw` is set to False in the usage entry loading process.
+        """
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             test_file = temp_path / "test.jsonl"
@@ -1077,7 +1237,12 @@ class TestUsageEntryMapper:
 
     @pytest.fixture
     def mapper_components(self):
-        """Setup mapper components."""
+        """
+        Create and return a UsageEntryMapper instance along with its mocked dependencies.
+        
+        Returns:
+            tuple: A tuple containing the UsageEntryMapper, a mocked TimezoneHandler, and a mocked PricingCalculator.
+        """
         timezone_handler = Mock(spec=TimezoneHandler)
         pricing_calculator = Mock(spec=PricingCalculator)
 
@@ -1096,7 +1261,9 @@ class TestUsageEntryMapper:
         assert mapper.timezone_handler == timezone_handler
 
     def test_usage_entry_mapper_map_success(self, mapper_components):
-        """Test UsageEntryMapper.map with valid data."""
+        """
+        Test that UsageEntryMapper.map returns a mapped UsageEntry object when provided with valid input data.
+        """
         mapper, timezone_handler, pricing_calculator = mapper_components
 
         data = {
@@ -1125,7 +1292,11 @@ class TestUsageEntryMapper:
             )
 
     def test_usage_entry_mapper_map_failure(self, mapper_components):
-        """Test UsageEntryMapper.map with invalid data."""
+        """
+        Test that UsageEntryMapper.map returns None when mapping invalid data.
+        
+        Verifies that the map method handles mapping failures gracefully by returning None when the underlying mapping function fails.
+        """
         mapper, timezone_handler, pricing_calculator = mapper_components
 
         data = {"invalid": "data"}
@@ -1136,7 +1307,9 @@ class TestUsageEntryMapper:
             assert result is None
 
     def test_usage_entry_mapper_has_valid_tokens(self, mapper_components):
-        """Test UsageEntryMapper._has_valid_tokens method."""
+        """
+        Tests that UsageEntryMapper._has_valid_tokens correctly identifies valid and invalid token counts in entry data.
+        """
         mapper, _, _ = mapper_components
 
         # Valid tokens
@@ -1149,7 +1322,11 @@ class TestUsageEntryMapper:
         assert not mapper._has_valid_tokens({})
 
     def test_usage_entry_mapper_extract_timestamp(self, mapper_components):
-        """Test UsageEntryMapper._extract_timestamp method."""
+        """
+        Tests the _extract_timestamp method of UsageEntryMapper for correct timestamp extraction and parsing.
+        
+        Verifies that the method returns the expected datetime object when a valid timestamp is present and returns None when the timestamp is missing.
+        """
         mapper, timezone_handler, _ = mapper_components
 
         with patch(
@@ -1169,7 +1346,9 @@ class TestUsageEntryMapper:
             assert result is None
 
     def test_usage_entry_mapper_extract_model(self, mapper_components):
-        """Test UsageEntryMapper._extract_model method."""
+        """
+        Tests that the UsageEntryMapper's _extract_model method correctly extracts the model name from input data using the DataConverter, and that the default value is used when appropriate.
+        """
         mapper, _, _ = mapper_components
 
         with patch(
@@ -1186,7 +1365,9 @@ class TestUsageEntryMapper:
             )
 
     def test_usage_entry_mapper_extract_metadata(self, mapper_components):
-        """Test UsageEntryMapper._extract_metadata method."""
+        """
+        Tests the UsageEntryMapper._extract_metadata method to ensure it correctly extracts 'message_id' and 'request_id' from the input data.
+        """
         mapper, _, _ = mapper_components
 
         # Test with message_id and request_id
@@ -1197,7 +1378,9 @@ class TestUsageEntryMapper:
         assert result == expected
 
     def test_usage_entry_mapper_extract_metadata_nested(self, mapper_components):
-        """Test UsageEntryMapper._extract_metadata with nested message data."""
+        """
+        Tests that UsageEntryMapper._extract_metadata correctly extracts message and request IDs from nested message data.
+        """
         mapper, _, _ = mapper_components
 
         # Test with nested message.id
@@ -1208,7 +1391,9 @@ class TestUsageEntryMapper:
         assert result == expected
 
     def test_usage_entry_mapper_extract_metadata_defaults(self, mapper_components):
-        """Test UsageEntryMapper._extract_metadata with missing data."""
+        """
+        Test that UsageEntryMapper._extract_metadata returns default metadata values when input data is missing required fields.
+        """
         mapper, _, _ = mapper_components
 
         # Test with missing data
@@ -1223,7 +1408,9 @@ class TestAdditionalEdgeCases:
     """Test additional edge cases and error scenarios."""
 
     def test_create_unique_hash_edge_cases(self):
-        """Test _create_unique_hash with various edge cases."""
+        """
+        Test that _create_unique_hash returns None when message_id or request_id are None or empty strings.
+        """
         # Test with None values
         data = {"message_id": None, "request_id": "req_1"}
         result = _create_unique_hash(data)
@@ -1240,7 +1427,11 @@ class TestAdditionalEdgeCases:
         assert result is None
 
     def test_should_process_entry_edge_cases(self):
-        """Test _should_process_entry with edge cases."""
+        """
+        Test that `_should_process_entry` returns True for entries with no cutoff time or when the unique hash is missing or not in the processed set.
+        
+        Covers edge cases where cutoff time is None and processed hashes are empty or the entry lacks a valid unique hash.
+        """
         timezone_handler = Mock(spec=TimezoneHandler)
 
         # Test with None cutoff_time and no hash
@@ -1258,7 +1449,9 @@ class TestAdditionalEdgeCases:
         assert result is True
 
     def test_map_to_usage_entry_error_scenarios(self):
-        """Test _map_to_usage_entry with various error scenarios."""
+        """
+        Test that `_map_to_usage_entry` returns None when encountering errors such as missing imports or exceptions from the pricing calculator.
+        """
         timezone_handler = Mock(spec=TimezoneHandler)
         pricing_calculator = Mock(spec=PricingCalculator)
 
@@ -1316,7 +1509,11 @@ class TestAdditionalEdgeCases:
                     assert result is None
 
     def test_load_usage_entries_timezone_handling(self):
-        """Test load_usage_entries with timezone-aware timestamps."""
+        """
+        Test that `load_usage_entries` correctly parses and normalizes timezone-aware timestamps.
+        
+        Verifies that entries with different timezone formats are loaded and their timestamps are converted to UTC.
+        """
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             test_file = temp_path / "test.jsonl"
@@ -1389,7 +1586,9 @@ class TestAdditionalEdgeCases:
                 assert entry.timestamp.tzinfo == timezone.utc
 
     def test_process_single_file_empty_file(self):
-        """Test _process_single_file with empty file."""
+        """
+        Test that processing an empty JSONL file returns empty entries and raw data lists.
+        """
         timezone_handler = Mock(spec=TimezoneHandler)
         pricing_calculator = Mock(spec=PricingCalculator)
 
@@ -1412,7 +1611,11 @@ class TestAdditionalEdgeCases:
             assert raw_data == []
 
     def test_load_usage_entries_cost_modes(self):
-        """Test load_usage_entries with different cost modes."""
+        """
+        Test that `load_usage_entries` correctly processes entries with different cost modes.
+        
+        Verifies that usage entries are loaded and processed as expected when using AUTO, CALCULATED, and CACHED cost modes, ensuring the pricing calculator is invoked for each mode.
+        """
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             test_file = temp_path / "test.jsonl"
@@ -1479,7 +1682,9 @@ class TestDataProcessors:
     """Test the data processor classes."""
 
     def test_timestamp_processor_init(self):
-        """Test TimestampProcessor initialization."""
+        """
+        Test that the TimestampProcessor initializes with a default or custom timezone handler.
+        """
         from claude_monitor.core.data_processors import TimestampProcessor
 
         # Test with default timezone handler
@@ -1492,7 +1697,9 @@ class TestDataProcessors:
         assert processor.timezone_handler == custom_handler
 
     def test_timestamp_processor_parse_datetime(self):
-        """Test parsing datetime objects."""
+        """
+        Test that TimestampProcessor correctly parses a datetime object and applies timezone normalization.
+        """
         from claude_monitor.core.data_processors import TimestampProcessor
 
         processor = TimestampProcessor()
@@ -1506,7 +1713,9 @@ class TestDataProcessors:
             mock_ensure.assert_called_once_with(dt)
 
     def test_timestamp_processor_parse_string_iso(self):
-        """Test parsing ISO format strings."""
+        """
+        Test that TimestampProcessor correctly parses ISO 8601 datetime strings with 'Z' suffix and explicit UTC offset, ensuring timezone normalization.
+        """
         from claude_monitor.core.data_processors import TimestampProcessor
 
         processor = TimestampProcessor()
@@ -1524,7 +1733,9 @@ class TestDataProcessors:
             assert result == mock_dt
 
     def test_timestamp_processor_parse_string_fallback(self):
-        """Test parsing strings with fallback formats."""
+        """
+        Test that TimestampProcessor.parse_timestamp returns None for unparseable string inputs.
+        """
         from claude_monitor.core.data_processors import TimestampProcessor
 
         processor = TimestampProcessor()
@@ -1539,7 +1750,11 @@ class TestDataProcessors:
             assert result is None
 
     def test_timestamp_processor_parse_numeric(self):
-        """Test parsing numeric timestamps."""
+        """
+        Test that TimestampProcessor correctly parses numeric timestamps as UTC-aware datetimes.
+        
+        Verifies that both integer and float Unix timestamps are converted to the expected datetime using the timezone handler.
+        """
         from claude_monitor.core.data_processors import TimestampProcessor
 
         processor = TimestampProcessor()
@@ -1557,7 +1772,9 @@ class TestDataProcessors:
             assert result == mock_dt
 
     def test_timestamp_processor_parse_invalid(self):
-        """Test parsing invalid timestamps."""
+        """
+        Test that TimestampProcessor.parse_timestamp returns None for invalid timestamp inputs, including None, unparseable strings, and invalid types.
+        """
         from claude_monitor.core.data_processors import TimestampProcessor
 
         processor = TimestampProcessor()
@@ -1572,7 +1789,9 @@ class TestDataProcessors:
         assert processor.parse_timestamp({"not": "timestamp"}) is None
 
     def test_token_extractor_basic_extraction(self):
-        """Test basic token extraction."""
+        """
+        Test that TokenExtractor correctly extracts token counts from direct fields in a data dictionary.
+        """
         from claude_monitor.core.data_processors import TokenExtractor
 
         # Test direct token fields
@@ -1592,7 +1811,9 @@ class TestDataProcessors:
         assert result["total_tokens"] == 165
 
     def test_token_extractor_usage_field(self):
-        """Test extraction from usage field."""
+        """
+        Test that TokenExtractor correctly extracts input, output, and total tokens from the 'usage' field in a data dictionary.
+        """
         from claude_monitor.core.data_processors import TokenExtractor
 
         data = {"usage": {"input_tokens": 200, "output_tokens": 100}}
@@ -1604,7 +1825,9 @@ class TestDataProcessors:
         assert result["total_tokens"] == 300
 
     def test_token_extractor_message_usage(self):
-        """Test extraction from message.usage field."""
+        """
+        Test that TokenExtractor correctly extracts token counts from the nested message.usage field in the input data.
+        """
         from claude_monitor.core.data_processors import TokenExtractor
 
         data = {
@@ -1625,7 +1848,9 @@ class TestDataProcessors:
         assert result["total_tokens"] == 245
 
     def test_token_extractor_empty_data(self):
-        """Test extraction from empty data."""
+        """
+        Test that TokenExtractor returns zero counts for all token types when given empty data.
+        """
         from claude_monitor.core.data_processors import TokenExtractor
 
         result = TokenExtractor.extract_tokens({})
@@ -1637,7 +1862,11 @@ class TestDataProcessors:
         assert result["total_tokens"] == 0
 
     def test_data_converter_extract_model_name(self):
-        """Test model name extraction."""
+        """
+        Tests the extraction of the model name from various data structures using the DataConverter.
+        
+        Verifies correct extraction from direct and nested fields, handling of missing data with a default value, and graceful handling of None input.
+        """
         from claude_monitor.core.data_processors import DataConverter
 
         # Test direct model field
@@ -1684,7 +1913,9 @@ class TestDataProcessors:
         assert result["settings.notifications.push"] is False
 
     def test_data_converter_flatten_with_prefix(self):
-        """Test flattening with custom prefix."""
+        """
+        Test that flattening a nested dictionary with a custom prefix produces correctly prefixed keys.
+        """
         from claude_monitor.core.data_processors import DataConverter
 
         data = {"inner": {"value": 42}}
@@ -1693,7 +1924,9 @@ class TestDataProcessors:
         assert result["prefix.inner.value"] == 42
 
     def test_data_converter_to_serializable(self):
-        """Test object serialization."""
+        """
+        Test the DataConverter.to_serializable method for correct serialization of various data types, including datetime objects, dictionaries, lists, and primitive types.
+        """
         from claude_monitor.core.data_processors import DataConverter
 
         # Test datetime

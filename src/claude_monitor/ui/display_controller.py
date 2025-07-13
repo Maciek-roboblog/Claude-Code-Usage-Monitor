@@ -36,7 +36,9 @@ class DisplayController:
     """Main controller for coordinating UI display operations."""
 
     def __init__(self):
-        """Initialize display controller with components."""
+        """
+        Initializes the DisplayController with all required UI components, managers, and utilities for session display, loading, error handling, screen management, live updates, notifications, and session calculations.
+        """
         self.session_display = SessionDisplayComponent()
         self.loading_screen = LoadingScreenComponent()
         self.error_display = ErrorDisplayComponent()
@@ -50,7 +52,11 @@ class DisplayController:
         self.notification_manager = NotificationManager(config_dir)
 
     def _extract_session_data(self, active_block: dict) -> dict:
-        """Extract basic session data from active block."""
+        """
+        Extracts core session metrics from an active session block dictionary.
+        
+        Returns a dictionary containing token usage, session cost, per-model statistics, message count, entries, and session start/end times.
+        """
         return {
             "tokens_used": active_block.get("totalTokens", 0),
             "session_cost": active_block.get("costUSD", 0.0),
@@ -62,7 +68,12 @@ class DisplayController:
         }
 
     def _calculate_token_limits(self, args, token_limit: int) -> tuple:
-        """Calculate token limits based on plan and arguments."""
+        """
+        Determine the effective token limits for the session based on the user's plan and provided arguments.
+        
+        Returns:
+            tuple: A pair of integers representing the token limits to use for the session. If the plan is "custom" and a custom token limit is specified, both values are set to the custom limit; otherwise, both are set to the provided token_limit.
+        """
         if (
             args.plan == "custom"
             and hasattr(args, "custom_limit_tokens")
@@ -72,13 +83,25 @@ class DisplayController:
         return token_limit, token_limit
 
     def _calculate_time_data(self, session_data: dict, current_time: datetime) -> dict:
-        """Calculate time-related data for the session."""
+        """
+        Calculate and return time-related metrics for a session using the provided session data and current time.
+        
+        Returns:
+            dict: A dictionary containing computed time metrics such as reset time, minutes to reset, total session minutes, and elapsed session minutes.
+        """
         return self.session_calculator.calculate_time_data(session_data, current_time)
 
     def _calculate_cost_predictions(
         self, session_data: dict, time_data: dict, args, cost_limit_p90: Optional[float]
     ) -> dict:
-        """Calculate cost-related predictions."""
+        """
+        Calculate cost prediction metrics for the current session based on plan and provided limits.
+        
+        Determines the appropriate cost limit using the user's plan and percentile limit, then delegates to the session calculator to compute cost per minute, remaining cost, and predicted end time.
+        
+        Returns:
+            dict: A dictionary containing cost prediction metrics for the session.
+        """
         # Determine cost limit based on plan
         if Plans.is_valid_plan(args.plan) and cost_limit_p90 is not None:
             cost_limit = cost_limit_p90
@@ -98,7 +121,12 @@ class DisplayController:
         predicted_end_time: datetime,
         reset_time: datetime,
     ) -> dict:
-        """Check and update notification states."""
+        """
+        Check session and usage conditions to determine which user notifications should be shown, updating notification states as needed.
+        
+        Returns:
+            notifications (dict): Flags indicating whether to show notifications for switching to custom limits, exceeding maximum limits, or predicted cost exceedance before reset.
+        """
         notifications = {}
 
         # Switch to custom notification
@@ -149,7 +177,18 @@ class DisplayController:
         predicted_end_time: datetime,
         reset_time: datetime,
     ) -> dict:
-        """Format times for display."""
+        """
+        Formats predicted end time, reset time, and current time for display according to user preferences and timezone.
+        
+        Parameters:
+            args: User arguments containing timezone and time format preferences.
+            current_time (datetime): The current UTC time.
+            predicted_end_time (datetime): The predicted session end time in UTC.
+            reset_time (datetime): The session reset time in UTC.
+        
+        Returns:
+            dict: A dictionary with formatted string representations of the predicted end time, reset time, and current time in the selected timezone and format.
+        """
         tz_handler = TimezoneHandler(default_tz="Europe/Warsaw")
         timezone_to_use = (
             args.timezone
@@ -192,15 +231,18 @@ class DisplayController:
     def create_data_display(
         self, data: Dict[str, Any], args: Any, token_limit: int
     ) -> Any:
-        """Create display renderable from data.
-
-        Args:
-            data: Usage data dictionary
-            args: Command line arguments
-            token_limit: Current token limit
-
+        """
+        Creates a Rich renderable display for session usage data, handling active and inactive sessions, plan-specific cost limits, and error conditions.
+        
+        If no valid data or active session is found, displays an appropriate error or inactive session screen. For active sessions, processes session data, applies plan-based percentile limits, and formats the display. Handles exceptions by logging errors and showing an error screen.
+        
+        Parameters:
+            data (dict): Usage data containing session blocks.
+            args: Parsed command-line arguments with plan and timezone information.
+            token_limit (int): The current token limit for the session.
+        
         Returns:
-            Rich renderable for display
+            Any: A Rich renderable object representing the current display state.
         """
         if not data or "blocks" not in data:
             screen_buffer = self.error_display.format_error_screen(
@@ -304,18 +346,21 @@ class DisplayController:
         current_time: datetime,
         cost_limit_p90: Optional[float] = None,
     ) -> Dict[str, Any]:
-        """Process active session data for display.
-
-        Args:
-            active_block: Active session block data
-            data: Full usage data
-            args: Command line arguments
-            token_limit: Current token limit
-            current_time: Current UTC time
-            cost_limit_p90: Optional cost limit
-
+        """
+        Aggregates and processes all relevant metrics and display data for an active session.
+        
+        Combines session usage statistics, model distribution, token and cost limits, time metrics, burn rate, cost predictions, notification flags, and formatted display times into a single dictionary for UI rendering.
+        
+        Parameters:
+            active_block (dict): The current active session block containing raw session data.
+            data (dict): The complete usage data, including all session blocks.
+            args: Parsed command-line arguments or configuration options.
+            token_limit (int): The current token usage limit for the session.
+            current_time (datetime): The current UTC time.
+            cost_limit_p90 (Optional[float]): Optional cost limit for percentile-based plans.
+        
         Returns:
-            Processed data dictionary for display
+            dict: A dictionary containing all processed session metrics and display-ready values.
         """
         # Extract session data
         session_data = self._extract_session_data(active_block)
@@ -389,13 +434,14 @@ class DisplayController:
     def _calculate_model_distribution(
         self, raw_per_model_stats: Dict[str, Any]
     ) -> Dict[str, float]:
-        """Calculate model distribution percentages from current active session only.
-
-        Args:
-            raw_per_model_stats: Raw per-model token statistics from the active session block
-
+        """
+        Compute the percentage distribution of token usage per model for the current active session.
+        
+        Parameters:
+            raw_per_model_stats (dict): Raw token statistics per model from the active session.
+        
         Returns:
-            Dictionary mapping model names to usage percentages for the current session
+            dict: Mapping of normalized model names to their percentage of total token usage in the session.
         """
         if not raw_per_model_stats:
             return {}
@@ -435,14 +481,16 @@ class DisplayController:
         timezone: str = "Europe/Warsaw",
         custom_message: str = None,
     ) -> Any:
-        """Create loading screen display.
-
-        Args:
-            plan: Current plan name
-            timezone: Display timezone
-
+        """
+        Return a Rich renderable representing the loading screen for the specified plan and timezone.
+        
+        Parameters:
+        	plan (str): The user plan to display on the loading screen.
+        	timezone (str): The timezone to use for display formatting.
+        	custom_message (str, optional): An optional custom message to show on the loading screen.
+        
         Returns:
-            Rich renderable for loading screen
+        	Any: A Rich renderable object for the loading screen.
         """
         return self.loading_screen.create_loading_screen_renderable(
             plan, timezone, custom_message
@@ -451,32 +499,35 @@ class DisplayController:
     def create_error_display(
         self, plan: str = "pro", timezone: str = "Europe/Warsaw"
     ) -> Any:
-        """Create error screen display.
-
-        Args:
-            plan: Current plan name
-            timezone: Display timezone
-
+        """
+        Create and return a Rich renderable for the error screen based on the current plan and display timezone.
+        
+        Parameters:
+            plan (str): The user plan to display on the error screen.
+            timezone (str): The timezone to use for formatting time-related information.
+        
         Returns:
-            Rich renderable for error screen
+            Any: A Rich renderable object representing the error screen.
         """
         screen_buffer = self.error_display.format_error_screen(plan, timezone)
         return self.buffer_manager.create_screen_renderable(screen_buffer)
 
     def create_live_context(self):
-        """Create live display context manager.
-
+        """
+        Create and return a Rich Live display context manager for dynamic UI updates.
+        
         Returns:
-            Live display context manager
+            Live: A Rich Live context manager for rendering live-updating UI components.
         """
         return self.live_manager.create_live_display()
 
     def set_screen_dimensions(self, width: int, height: int) -> None:
-        """Set screen dimensions for responsive layouts.
-
-        Args:
-            width: Screen width
-            height: Screen height
+        """
+        Set the screen width and height for responsive UI layouts.
+        
+        Parameters:
+            width (int): The width of the screen in characters or pixels.
+            height (int): The height of the screen in characters or pixels.
         """
         self.screen_manager.set_screen_dimensions(width, height)
 
@@ -485,10 +536,11 @@ class LiveDisplayManager:
     """Manager for Rich Live display operations."""
 
     def __init__(self, console: Optional[Console] = None):
-        """Initialize live display manager.
-
-        Args:
-            console: Optional Rich console instance
+        """
+        Initialize the LiveDisplayManager with an optional Rich Console instance.
+        
+        Parameters:
+        	console (Optional[Console]): A Rich Console to use for live display output. If not provided, a default console will be used.
         """
         self._console = console
         self._live_context = None
@@ -500,15 +552,16 @@ class LiveDisplayManager:
         console: Optional[Console] = None,
         refresh_per_second: float = 0.75,
     ) -> Live:
-        """Create Rich Live display context.
-
-        Args:
-            auto_refresh: Whether to auto-refresh
-            console: Optional console instance
-            refresh_per_second: Display refresh rate (0.1-20 Hz)
-
+        """
+        Create and return a Rich Live display context manager for dynamic UI rendering.
+        
+        Parameters:
+        	auto_refresh (bool): If True, the display auto-refreshes at the specified rate.
+        	console (Optional[Console]): Console instance to use for rendering; defaults to the manager's console if not provided.
+        	refresh_per_second (float): Refresh rate for the display in Hertz.
+        
         Returns:
-            Rich Live context manager
+        	Live: A Rich Live context manager configured for the display.
         """
         display_console = console or self._console
 
@@ -526,17 +579,20 @@ class ScreenBufferManager:
     """Manager for screen buffer operations and rendering."""
 
     def __init__(self):
-        """Initialize screen buffer manager."""
+        """
+        Initialize the ScreenBufferManager with no console instance.
+        """
         self.console = None
 
     def create_screen_renderable(self, screen_buffer: List[str]):
-        """Create Rich renderable from screen buffer.
-
-        Args:
-            screen_buffer: List of screen lines with Rich markup
-
+        """
+        Convert a list of screen buffer lines with Rich markup into a Rich Group renderable for display.
+        
+        Parameters:
+            screen_buffer (List[str]): Lines of text or Rich renderables to be grouped for display.
+        
         Returns:
-            Rich Group renderable
+            Group: A Rich Group renderable containing the processed lines.
         """
         from claude_monitor.terminal.themes import get_themed_console
 
@@ -557,9 +613,14 @@ class ScreenBufferManager:
 
 # Legacy functions for backward compatibility
 def create_screen_renderable(screen_buffer: List[str]):
-    """Legacy function - create screen renderable.
-
-    Maintained for backward compatibility.
+    """
+    Creates a Rich renderable from a screen buffer for backward compatibility.
+    
+    Parameters:
+        screen_buffer (List[str]): List of strings or Rich-compatible lines representing the screen content.
+    
+    Returns:
+        Group: A Rich Group renderable containing the formatted screen lines.
     """
     manager = ScreenBufferManager()
     return manager.create_screen_renderable(screen_buffer)
@@ -570,18 +631,21 @@ class SessionCalculator:
     (Moved from ui/calculators.py)"""
 
     def __init__(self):
-        """Initialize session calculator."""
+        """
+        Initializes the SessionCalculator with a timezone handler for session time computations.
+        """
         self.tz_handler = TimezoneHandler()
 
     def calculate_time_data(self, session_data: dict, current_time: datetime) -> dict:
-        """Calculate time-related data for the session.
-
-        Args:
-            session_data: Dictionary containing session information
-            current_time: Current UTC time
-
+        """
+        Compute session timing metrics including start, reset, and elapsed times.
+        
+        Parameters:
+            session_data (dict): Session information containing start and end time strings.
+            current_time (datetime): The current UTC time.
+        
         Returns:
-            Dictionary with calculated time data
+            dict: Contains start time, reset time, minutes until reset, total session duration in minutes, and elapsed session minutes.
         """
         # Parse start time
         start_time = None
@@ -623,15 +687,20 @@ class SessionCalculator:
     def calculate_cost_predictions(
         self, session_data: dict, time_data: dict, cost_limit: Optional[float] = None
     ) -> dict:
-        """Calculate cost-related predictions.
-
-        Args:
-            session_data: Dictionary containing session cost information
-            time_data: Time data from calculate_time_data
-            cost_limit: Optional cost limit (defaults to 100.0)
-
+        """
+        Calculate cost predictions for a session, including cost per minute, remaining budget, and predicted depletion time.
+        
+        Parameters:
+            session_data (dict): Session data containing cost information.
+            time_data (dict): Time metrics for the session, including elapsed minutes and reset time.
+            cost_limit (Optional[float]): Maximum allowed session cost. Defaults to 100.0 if not provided.
+        
         Returns:
-            Dictionary with cost predictions
+            dict: Dictionary with keys:
+                - "cost_per_minute": The average cost incurred per minute.
+                - "cost_limit": The cost limit used for calculations.
+                - "cost_remaining": Remaining budget before reaching the cost limit.
+                - "predicted_end_time": Estimated time when the cost limit will be reached, or the session reset time if prediction is not possible.
         """
         elapsed_minutes = time_data["elapsed_session_minutes"]
         session_cost = session_data.get("session_cost", 0.0)

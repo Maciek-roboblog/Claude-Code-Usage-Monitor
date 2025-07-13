@@ -14,12 +14,28 @@ class P90Config:
 
 
 def _did_hit_limit(tokens: int, common_limits: Sequence[int], threshold: float) -> bool:
+    """
+    Determine if the token count meets or exceeds any of the configured limits scaled by the threshold.
+    
+    Returns:
+        True if the token count is greater than or equal to any limit multiplied by the threshold; otherwise, False.
+    """
     return any(tokens >= limit * threshold for limit in common_limits)
 
 
 def _extract_sessions(
     blocks: Sequence[Dict[str, Any]], filter_fn: Callable[[Dict[str, Any]], bool]
 ) -> List[int]:
+    """
+    Extracts the `totalTokens` values from blocks that satisfy a filter function and have a positive token count.
+    
+    Parameters:
+        blocks: A sequence of session block dictionaries.
+        filter_fn: A callable that returns True for blocks to include.
+    
+    Returns:
+        A list of `totalTokens` integers from blocks passing the filter and with `totalTokens` > 0.
+    """
     return [
         block["totalTokens"]
         for block in blocks
@@ -28,6 +44,18 @@ def _extract_sessions(
 
 
 def _calculate_p90_from_blocks(blocks: Sequence[Dict[str, Any]], cfg: P90Config) -> int:
+    """
+    Compute the 90th percentile token limit from session blocks using the provided configuration.
+    
+    Filters blocks to sessions that are neither gaps nor active and that have hit a configured token limit threshold. If no such sessions exist, considers all non-gap, non-active sessions. Returns the greater of the computed 90th percentile token count and the configured default minimum limit.
+    
+    Parameters:
+        blocks (Sequence[Dict[str, Any]]): List of session block dictionaries to analyze.
+        cfg (P90Config): Configuration specifying token limits, threshold, and minimum limit.
+    
+    Returns:
+        int: The computed 90th percentile token limit, or the default minimum limit if no sessions are found.
+    """
     hits = _extract_sessions(
         blocks,
         lambda b: (
@@ -50,6 +78,11 @@ def _calculate_p90_from_blocks(blocks: Sequence[Dict[str, Any]], cfg: P90Config)
 
 class P90Calculator:
     def __init__(self, config: Optional[P90Config] = None):
+        """
+        Initialize a P90Calculator instance with the specified configuration.
+        
+        If no configuration is provided, uses default token limits, threshold, minimum limit, and cache TTL values.
+        """
         if config is None:
             from claude_monitor.core.plans import (
                 COMMON_TOKEN_LIMITS,
@@ -67,6 +100,16 @@ class P90Calculator:
 
     @lru_cache(maxsize=1)
     def _cached_calc(self, key: int, blocks_tuple: tuple) -> int:
+        """
+        Compute the P90 token limit from a tuple of session block data, using the stored configuration.
+        
+        Parameters:
+            key (int): Cache key, typically derived from the current time and cache TTL.
+            blocks_tuple (tuple): Tuple of (isGap, isActive, totalTokens) representing session blocks.
+        
+        Returns:
+            int: The calculated 90th percentile token limit.
+        """
         blocks = [
             {"isGap": g, "isActive": a, "totalTokens": t} for g, a, t in blocks_tuple
         ]
@@ -77,6 +120,16 @@ class P90Calculator:
         blocks: Optional[List[Dict[str, Any]]] = None,
         use_cache: bool = True,
     ) -> Optional[int]:
+        """
+        Compute the 90th percentile (P90) token usage limit from a list of session blocks, with optional caching.
+        
+        Parameters:
+            blocks (Optional[List[Dict[str, Any]]]): List of session block dictionaries to analyze. If None or empty, returns None.
+            use_cache (bool): Whether to use cached results based on block content and a time-based expiration key.
+        
+        Returns:
+            Optional[int]: The computed P90 token limit, or None if no blocks are provided.
+        """
         if not blocks:
             return None
         if not use_cache:

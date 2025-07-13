@@ -22,22 +22,18 @@ def analyze_usage(
     data_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Main entry point to generate response_final.json.
-
-    Algorithm redesigned to:
-    1. First divide all outputs into blocks
-    2. Save data about outputs (tokens in/out, cache, tokens by model, entries)
-    3. Only then check for limits
-    4. If limit is detected, add information that it occurred
-
-    Args:
-        hours_back: Only analyze data from last N hours (None = all data)
-        use_cache: Use cached data when available
-        quick_start: Use minimal data for quick startup (last 24h only)
-        data_path: Optional path to Claude data directory
-
+    Analyzes Claude Monitor usage data and returns a structured usage report.
+    
+    Loads usage entries from the specified data path (or default location), segments them into session blocks, calculates burn rates and usage projections, detects usage limits, and compiles all results into a dictionary suitable for JSON output. The report includes detailed block data, aggregate statistics, and metadata about the analysis run.
+    
+    Parameters:
+        hours_back (Optional[int]): Number of hours of data to analyze (None for all available data).
+        use_cache (bool): Whether to use cached data if available.
+        quick_start (bool): If True, limits analysis to recent data for faster startup.
+        data_path (Optional[str]): Path to the directory containing Claude usage data.
+    
     Returns:
-        Dictionary with analyzed blocks
+        Dict[str, Any]: Dictionary containing analyzed blocks, aggregate statistics, and metadata.
     """
     logger.info(
         f"analyze_usage called with hours_back={hours_back}, use_cache={use_cache}, "
@@ -101,7 +97,11 @@ def analyze_usage(
 
 
 def _process_burn_rates(blocks: list, calculator: BurnRateCalculator) -> None:
-    """Process burn rate data for active blocks."""
+    """
+    Calculates and assigns burn rate snapshots and usage projections for active session blocks.
+    
+    For each block marked as active, computes the current burn rate and, if available, attaches a burn rate snapshot and projected usage data to the block.
+    """
     for block in blocks:
         if block.is_active:
             burn_rate = calculator.calculate_burn_rate(block)
@@ -117,7 +117,17 @@ def _process_burn_rates(blocks: list, calculator: BurnRateCalculator) -> None:
 
 
 def _create_result(blocks: list, entries: list, metadata: dict) -> dict:
-    """Create the final result dictionary."""
+    """
+    Constructs the final analysis result as a dictionary containing formatted session blocks, metadata, entry count, total tokens, and total cost.
+    
+    Parameters:
+        blocks (list): List of session block objects to include in the result.
+        entries (list): List of usage entry objects analyzed.
+        metadata (dict): Metadata about the analysis run.
+    
+    Returns:
+        dict: Dictionary with keys 'blocks', 'metadata', 'entries_count', 'total_tokens', and 'total_cost'.
+    """
     blocks_data = _convert_blocks_to_dict_format(blocks)
 
     total_tokens = sum(b.total_tokens for b in blocks)
@@ -133,7 +143,12 @@ def _create_result(blocks: list, entries: list, metadata: dict) -> dict:
 
 
 def _is_limit_in_block_timerange(limit_info, block):
-    """Check if limit timestamp falls within block's time range."""
+    """
+    Determine whether a limit event's timestamp occurs within the start and end time of a given block.
+    
+    Returns:
+        bool: True if the limit event falls within the block's time range, otherwise False.
+    """
     limit_timestamp = limit_info["timestamp"]
 
     if limit_timestamp.tzinfo is None:
@@ -143,7 +158,15 @@ def _is_limit_in_block_timerange(limit_info, block):
 
 
 def _format_limit_info(limit_info):
-    """Format limit info for block assignment."""
+    """
+    Format a usage limit detection dictionary into a standardized structure with type, ISO 8601 timestamp, content, and optional reset time.
+    
+    Parameters:
+        limit_info (dict): Dictionary containing limit event details, including 'type', 'timestamp', 'content', and optionally 'reset_time'.
+    
+    Returns:
+        dict: Formatted limit information with stringified timestamps and standardized keys.
+    """
     return {
         "type": limit_info["type"],
         "timestamp": limit_info["timestamp"].isoformat(),
@@ -157,7 +180,14 @@ def _format_limit_info(limit_info):
 
 
 def _convert_blocks_to_dict_format(blocks):
-    """Convert blocks to dictionary format for JSON output."""
+    """
+    Convert a list of session blocks into dictionaries suitable for JSON serialization.
+    
+    Each block is transformed into a dictionary with required and optional fields, making the data ready for structured output.
+     
+    Returns:
+        List[dict]: List of block dictionaries formatted for JSON output.
+    """
     blocks_data = []
 
     for block in blocks:
@@ -169,7 +199,12 @@ def _convert_blocks_to_dict_format(blocks):
 
 
 def _create_base_block_dict(block):
-    """Create base block dictionary with required fields."""
+    """
+    Create a dictionary representation of a session block with all required fields for analysis output.
+    
+    Returns:
+        dict: A dictionary containing block identifiers, time ranges, token counts, cost, model usage, message counts, duration, and formatted entries.
+    """
     return {
         "id": block.id,
         "isActive": block.is_active,
@@ -198,7 +233,11 @@ def _create_base_block_dict(block):
 
 
 def _format_block_entries(entries):
-    """Format block entries for JSON output."""
+    """
+    Convert a list of entry objects into dictionaries with standardized fields for JSON serialization.
+    
+    Each dictionary includes timestamp (ISO 8601), token counts, cost, model, message ID, and request ID.
+    """
     return [
         {
             "timestamp": entry.timestamp.isoformat(),
@@ -216,7 +255,14 @@ def _format_block_entries(entries):
 
 
 def _add_optional_block_data(block, block_dict):
-    """Add optional burn rate, projection, and limit data to block dict."""
+    """
+    Attach optional burn rate, projection, and limit message data to a block dictionary if present on the block object.
+    
+    Adds the following fields to the block dictionary when available:
+    - `burnRate`: Snapshot of token burn rate and cost per hour.
+    - `projection`: Usage projection data.
+    - `limitMessages`: List of usage limit messages.
+    """
     if hasattr(block, "burn_rate_snapshot") and block.burn_rate_snapshot:
         block_dict["burnRate"] = {
             "tokensPerMinute": block.burn_rate_snapshot.tokens_per_minute,

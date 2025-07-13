@@ -48,11 +48,10 @@ class PricingCalculator:
     }
 
     def __init__(self, custom_pricing: Optional[Dict[str, Dict[str, float]]] = None):
-        """Initialize with optional custom pricing.
-
-        Args:
-            custom_pricing: Optional custom pricing dictionary to override defaults.
-                          Should follow same structure as MODEL_PRICING.
+        """
+        Initializes the PricingCalculator with optional custom pricing.
+        
+        If a custom pricing dictionary is provided, it overrides the default fallback pricing for supported Claude models. Otherwise, default pricing is used. Initializes the internal cost cache for computed results.
         """
         # Use fallback pricing if no custom pricing provided
         self.pricing = custom_pricing or {
@@ -76,18 +75,22 @@ class PricingCalculator:
         tokens: Optional[TokenCounts] = None,
         strict: bool = False,
     ) -> float:
-        """Calculate cost with flexible API supporting both signatures.
-
-        Args:
-            model: Model name
-            input_tokens: Number of input tokens (ignored if tokens provided)
-            output_tokens: Number of output tokens (ignored if tokens provided)
-            cache_creation_tokens: Number of cache creation tokens
-            cache_read_tokens: Number of cache read tokens
-            tokens: Optional TokenCounts object (takes precedence)
-
+        """
+        Calculates the total USD cost for token usage on a specified Claude model.
+        
+        Supports both explicit token count arguments and a TokenCounts object (which takes precedence). Returns zero cost for the synthetic model. The cost is computed by multiplying each token type (input, output, cache creation, cache read) by its respective per-million-token rate for the given model, summing the results, and rounding to six decimal places. Results are cached for efficiency.
+        
+        Parameters:
+            model (str): Name of the Claude model.
+            input_tokens (int, optional): Number of input tokens. Ignored if `tokens` is provided.
+            output_tokens (int, optional): Number of output tokens. Ignored if `tokens` is provided.
+            cache_creation_tokens (int, optional): Number of cache creation tokens. Ignored if `tokens` is provided.
+            cache_read_tokens (int, optional): Number of cache read tokens. Ignored if `tokens` is provided.
+            tokens (Optional[TokenCounts]): Optional TokenCounts object containing all token counts. If provided, overrides individual token arguments.
+            strict (bool, optional): If True, raises KeyError for unknown models; otherwise, uses fallback pricing.
+        
         Returns:
-            Total cost in USD
+            float: Total cost in USD for the specified token usage.
         """
         # Handle synthetic model
         if model == "<synthetic>":
@@ -133,17 +136,20 @@ class PricingCalculator:
     def _get_pricing_for_model(
         self, model: str, strict: bool = False
     ) -> Dict[str, float]:
-        """Get pricing for a model with optional fallback logic.
-
-        Args:
-            model: Model name
-            strict: If True, raise KeyError for unknown models
-
+        """
+        Retrieve the pricing dictionary for a given model, applying fallback logic if necessary.
+        
+        If the model is not found in the configured pricing and strict mode is enabled, raises a KeyError. Otherwise, falls back to hardcoded pricing based on the model name. Ensures that cache creation and cache read pricing fields are present in the returned dictionary.
+        
+        Parameters:
+            model (str): The name of the model to retrieve pricing for.
+            strict (bool): If True, raises a KeyError when the model is unknown; otherwise, uses fallback pricing.
+        
         Returns:
-            Pricing dictionary with input/output/cache costs
-
+            Dict[str, float]: A dictionary containing pricing rates for input, output, cache creation, and cache read tokens.
+        
         Raises:
-            KeyError: If strict=True and model is unknown
+            KeyError: If strict is True and the model is not found in the configured pricing.
         """
         # Try normalized model name first
         normalized = normalize_model_name(model)
@@ -181,14 +187,20 @@ class PricingCalculator:
         return self.FALLBACK_PRICING["sonnet"]
 
     def calculate_cost_for_entry(self, entry_data: Dict[str, Any], mode: Any) -> float:
-        """Calculate cost for a single entry (backward compatibility).
-
-        Args:
-            entry_data: Entry data dictionary
-            mode: Cost mode (for backward compatibility)
-
+        """
+        Calculate the cost in USD for a single usage entry dictionary, supporting legacy key formats and cached cost retrieval.
+        
+        If the mode indicates cached cost and a cost field is present in the entry, returns that value directly. Otherwise, extracts the model and token counts from the entry and computes the cost using the current pricing configuration.
+        
+        Parameters:
+            entry_data (Dict[str, Any]): Dictionary containing usage entry data, possibly with legacy key names.
+            mode (Any): Mode object indicating cost calculation behavior; if its value is "cached", a cached cost may be used.
+        
         Returns:
-            Cost in USD
+            float: The calculated or cached cost in USD.
+        
+        Raises:
+            KeyError: If the model key is missing from the entry data.
         """
         # If cost is present and mode is cached, use it
         if mode.value == "cached":

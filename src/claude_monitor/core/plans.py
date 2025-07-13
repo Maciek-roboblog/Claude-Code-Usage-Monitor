@@ -19,7 +19,18 @@ class PlanType(Enum):
 
     @classmethod
     def from_string(cls, value: str) -> "PlanType":
-        """Case-insensitive creation of PlanType from a string."""
+        """
+        Create a PlanType enum member from a case-insensitive string.
+        
+        Parameters:
+            value (str): The plan type name to convert.
+        
+        Returns:
+            PlanType: The corresponding PlanType enum member.
+        
+        Raises:
+            ValueError: If the provided string does not match any PlanType.
+        """
         try:
             return cls(value.lower())
         except ValueError:
@@ -38,7 +49,9 @@ class PlanConfig:
 
     @property
     def formatted_token_limit(self) -> str:
-        """Human-readable token limit (e.g., '44k' instead of '44000')."""
+        """
+        Returns the token limit as a human-readable string, using 'k' notation for values of 1,000 or more.
+        """
         if self.token_limit >= 1_000:
             return f"{self.token_limit // 1_000}k"
         return str(self.token_limit)
@@ -89,7 +102,15 @@ class Plans:
 
     @classmethod
     def _build_config(cls, plan_type: PlanType) -> PlanConfig:
-        """Instantiate PlanConfig from the PLAN_LIMITS dictionary."""
+        """
+        Create a PlanConfig instance for the specified PlanType using predefined plan limits.
+        
+        Parameters:
+        	plan_type (PlanType): The subscription plan type for which to build the configuration.
+        
+        Returns:
+        	PlanConfig: The configuration object containing limits and display name for the given plan type.
+        """
         data = PLAN_LIMITS[plan_type]
         return PlanConfig(
             name=plan_type.value,
@@ -101,17 +122,38 @@ class Plans:
 
     @classmethod
     def all_plans(cls) -> Dict[PlanType, PlanConfig]:
-        """Return a copy of all available plan configurations."""
+        """
+        Return a dictionary of all available plan types mapped to their configuration objects.
+        
+        Returns:
+            Dict[PlanType, PlanConfig]: Mapping of each PlanType to its corresponding PlanConfig instance.
+        """
         return {pt: cls._build_config(pt) for pt in PLAN_LIMITS}
 
     @classmethod
     def get_plan(cls, plan_type: PlanType) -> PlanConfig:
-        """Get configuration for a specific PlanType."""
+        """
+        Return the configuration details for the specified subscription plan type.
+        
+        Parameters:
+        	plan_type (PlanType): The type of subscription plan.
+        
+        Returns:
+        	PlanConfig: The configuration object containing limits and display information for the given plan type.
+        """
         return cls._build_config(plan_type)
 
     @classmethod
     def get_plan_by_name(cls, name: str) -> Optional[PlanConfig]:
-        """Get PlanConfig by its string name (case-insensitive)."""
+        """
+        Return the PlanConfig for a given plan name string, or None if the name is invalid.
+        
+        Parameters:
+            name (str): The case-insensitive name of the plan.
+        
+        Returns:
+            Optional[PlanConfig]: The configuration for the specified plan, or None if the name does not match any known plan.
+        """
         try:
             pt = PlanType.from_string(name)
             return cls.get_plan(pt)
@@ -121,10 +163,16 @@ class Plans:
     @classmethod
     def get_token_limit(cls, plan: str, blocks=None) -> int:
         """
-        Get the token limit for a plan.
-
-        For "custom" plans, if `blocks` are provided, compute the P90 limit.
-        Otherwise, return the predefined limit or default.
+        Return the token limit for the specified plan name.
+        
+        For the "custom" plan, if `blocks` are provided, calculates the P90 token limit using the provided session blocks. Returns the predefined or default token limit for other plans or if calculation is not possible.
+        
+        Parameters:
+            plan (str): The name of the subscription plan.
+            blocks: Optional session blocks for P90 calculation (used only for "custom" plans).
+        
+        Returns:
+            int: The token limit for the specified plan.
         """
         cfg = cls.get_plan_by_name(plan)
         if cfg is None:
@@ -141,19 +189,43 @@ class Plans:
 
     @classmethod
     def get_cost_limit(cls, plan: str) -> float:
-        """Get the cost limit for a plan, or default if invalid."""
+        """
+        Return the cost limit for the specified plan name, or the default cost limit if the plan is unrecognized.
+        
+        Parameters:
+            plan (str): The name of the subscription plan.
+        
+        Returns:
+            float: The cost limit associated with the plan, or the default if the plan is invalid.
+        """
         cfg = cls.get_plan_by_name(plan)
         return cfg.cost_limit if cfg else cls.DEFAULT_COST_LIMIT
 
     @classmethod
     def get_message_limit(cls, plan: str) -> int:
-        """Get the message limit for a plan, or default if invalid."""
+        """
+        Return the message limit for the specified plan name, or the default limit if the plan is unrecognized.
+        
+        Parameters:
+            plan (str): The name of the subscription plan.
+        
+        Returns:
+            int: The maximum number of messages allowed for the plan.
+        """
         cfg = cls.get_plan_by_name(plan)
         return cfg.message_limit if cfg else cls.DEFAULT_MESSAGE_LIMIT
 
     @classmethod
     def is_valid_plan(cls, plan: str) -> bool:
-        """Check whether a given plan name is recognized."""
+        """
+        Return True if the provided plan name corresponds to a recognized subscription plan; otherwise, return False.
+        
+        Parameters:
+            plan (str): The name of the subscription plan to validate.
+        
+        Returns:
+            bool: True if the plan name is valid, False otherwise.
+        """
         return cls.get_plan_by_name(plan) is not None
 
 
@@ -177,25 +249,29 @@ DEFAULT_COST_LIMIT: float = Plans.DEFAULT_COST_LIMIT
 
 
 def get_token_limit(plan: str, blocks=None) -> int:
-    """Get token limit for a plan, using P90 for custom plans.
-
-    Args:
-        plan: Plan type ('pro', 'max5', 'max20', 'custom')
-        blocks: Optional session blocks for custom P90 calculation
-
+    """
+    Return the token limit for the specified plan name.
+    
+    If the plan is "custom" and session blocks are provided, calculates the P90 token limit using those blocks; otherwise, returns the predefined or default token limit.
+    
+    Parameters:
+        plan (str): The name of the subscription plan.
+        blocks: Optional session blocks used for P90 calculation with custom plans.
+    
     Returns:
-        Token limit for the plan
+        int: The token limit for the specified plan.
     """
     return Plans.get_token_limit(plan, blocks)
 
 
 def get_cost_limit(plan: str) -> float:
-    """Get standard cost limit for a plan.
-
-    Args:
-        plan: Plan type ('pro', 'max5', 'max20', 'custom')
-
+    """
+    Return the cost limit in USD for the specified subscription plan.
+    
+    Parameters:
+        plan (str): The name of the subscription plan.
+    
     Returns:
-        Cost limit for the plan in USD
+        float: The cost limit in USD for the given plan, or the default if the plan is unrecognized.
     """
     return Plans.get_cost_limit(plan)

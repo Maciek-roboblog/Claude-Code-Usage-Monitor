@@ -18,7 +18,9 @@ class TestSessionAnalyzer:
         assert analyzer.timezone_handler is not None
 
     def test_session_analyzer_init_custom_duration(self):
-        """Test SessionAnalyzer with custom duration."""
+        """
+        Test that SessionAnalyzer initializes correctly with a custom session duration.
+        """
         analyzer = SessionAnalyzer(session_duration_hours=3)
 
         assert analyzer.session_duration_hours == 3
@@ -32,7 +34,9 @@ class TestSessionAnalyzer:
         assert result == []
 
     def test_transform_to_blocks_single_entry(self):
-        """Test transform_to_blocks with single entry."""
+        """
+        Verifies that transforming a list containing a single usage entry results in one session block containing that entry.
+        """
         analyzer = SessionAnalyzer()
 
         entry = UsageEntry(
@@ -50,7 +54,9 @@ class TestSessionAnalyzer:
         assert blocks[0].entries[0] == entry
 
     def test_transform_to_blocks_multiple_entries_same_block(self):
-        """Test transform_to_blocks with entries in same block."""
+        """
+        Tests that multiple usage entries within the session duration are grouped into a single session block.
+        """
         analyzer = SessionAnalyzer()
 
         base_time = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
@@ -77,7 +83,9 @@ class TestSessionAnalyzer:
         assert len(blocks[0].entries) == 2
 
     def test_transform_to_blocks_multiple_blocks(self):
-        """Test transform_to_blocks creating multiple blocks."""
+        """
+        Tests that transform_to_blocks creates multiple session blocks when usage entries are separated by a time gap exceeding the session duration, ensuring each entry is placed in the correct block.
+        """
         analyzer = SessionAnalyzer()
 
         base_time = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
@@ -105,7 +113,9 @@ class TestSessionAnalyzer:
         assert sum(len(block.entries) for block in blocks) == 2
 
     def test_should_create_new_block_time_gap(self):
-        """Test _should_create_new_block with time gap."""
+        """
+        Verifies that the `_should_create_new_block` method correctly determines whether a new session block should be created based on the time gap between an existing block and a new usage entry.
+        """
         analyzer = SessionAnalyzer()
 
         # Create a mock block
@@ -137,7 +147,9 @@ class TestSessionAnalyzer:
         assert analyzer._should_create_new_block(block, entry2)
 
     def test_round_to_hour(self):
-        """Test _round_to_hour functionality."""
+        """
+        Verify that the _round_to_hour method correctly rounds various datetime values down to the nearest hour.
+        """
         analyzer = SessionAnalyzer()
 
         # Test various timestamps
@@ -161,7 +173,9 @@ class TestSessionAnalyzer:
             assert result == expected
 
     def test_create_new_block(self):
-        """Test _create_new_block functionality."""
+        """
+        Tests that the `_create_new_block` method creates a `SessionBlock` with the correct start time rounded to the hour, end time based on session duration, and a properly formatted block ID.
+        """
         analyzer = SessionAnalyzer()
 
         entry = UsageEntry(
@@ -179,7 +193,9 @@ class TestSessionAnalyzer:
         assert block.id == "2024-01-01T12:00:00+00:00"
 
     def test_add_entry_to_block(self):
-        """Test _add_entry_to_block functionality."""
+        """
+        Tests that the `_add_entry_to_block` method correctly adds a usage entry to a session block and updates the block's token counts, cost, models, and sent message count.
+        """
         analyzer = SessionAnalyzer()
 
         block = SessionBlock(
@@ -213,7 +229,9 @@ class TestSessionAnalyzer:
         assert block.sent_messages_count == 1
 
     def test_finalize_block(self):
-        """Test _finalize_block functionality."""
+        """
+        Tests that the `_finalize_block` method sets the `actual_end_time` of a `SessionBlock` to the timestamp of its last entry.
+        """
         analyzer = SessionAnalyzer()
 
         block = SessionBlock(
@@ -239,14 +257,18 @@ class TestSessionAnalyzer:
         )
 
     def test_detect_limits_empty_list(self):
-        """Test detect_limits with empty list."""
+        """
+        Test that detect_limits returns an empty list when given no entries.
+        """
         analyzer = SessionAnalyzer()
         result = analyzer.detect_limits([])
 
         assert result == []
 
     def test_detect_limits_no_limits(self):
-        """Test detect_limits with no limit messages."""
+        """
+        Verify that detect_limits returns an empty list when no limit messages are present in the raw entries.
+        """
         analyzer = SessionAnalyzer()
 
         raw_entries = [
@@ -262,7 +284,9 @@ class TestSessionAnalyzer:
         assert result == []
 
     def test_detect_single_limit_rate_limit(self):
-        """Test _detect_single_limit with rate limit message."""
+        """
+        Verifies that the `_detect_single_limit` method identifies a rate limit message in assistant response data and returns a dictionary with expected keys if a limit is detected.
+        """
         analyzer = SessionAnalyzer()
 
         raw_data = {
@@ -284,7 +308,9 @@ class TestSessionAnalyzer:
             assert "message" in result
 
     def test_detect_single_limit_opus_limit(self):
-        """Test _detect_single_limit with Opus daily limit."""
+        """
+        Tests that the `_detect_single_limit` method correctly identifies an Opus daily limit message in assistant response data and returns a dictionary with expected keys if a limit is detected.
+        """
         analyzer = SessionAnalyzer()
 
         raw_data = {
@@ -306,7 +332,9 @@ class TestSessionAnalyzer:
             assert "message" in result
 
     def test_is_opus_limit(self):
-        """Test _is_opus_limit detection."""
+        """
+        Verifies that the `_is_opus_limit` method correctly identifies messages indicating a Claude 3 Opus daily limit and does not falsely detect unrelated messages.
+        """
         analyzer = SessionAnalyzer()
 
         # Test cases that should be detected as Opus limits
@@ -330,7 +358,9 @@ class TestSessionAnalyzer:
             assert analyzer._is_opus_limit(case) is False
 
     def test_extract_wait_time(self):
-        """Test _extract_wait_time functionality."""
+        """
+        Tests that the `_extract_wait_time` method correctly extracts wait times in minutes from various text messages, returning the expected wait duration or `None` if no wait time is mentioned.
+        """
         analyzer = SessionAnalyzer()
 
         test_cases = [
@@ -349,7 +379,9 @@ class TestSessionAnalyzer:
             assert wait_minutes == expected_minutes
 
     def test_parse_reset_timestamp(self):
-        """Test _parse_reset_timestamp functionality."""
+        """
+        Tests that the `_parse_reset_timestamp` method correctly parses reset timestamps from various text formats, returning either a `datetime` object or `None`.
+        """
         analyzer = SessionAnalyzer()
 
         # Test with various timestamp formats
@@ -365,7 +397,9 @@ class TestSessionAnalyzer:
             assert result is None or isinstance(result, datetime)
 
     def test_mark_active_blocks(self):
-        """Test _mark_active_blocks functionality."""
+        """
+        Tests that the `_mark_active_blocks` method correctly marks session blocks as active if their `actual_end_time` is within the last hour, and inactive otherwise.
+        """
         analyzer = SessionAnalyzer()
 
         now = datetime.now(timezone.utc)
@@ -396,7 +430,9 @@ class TestSessionAnalyzerIntegration:
     """Integration tests for SessionAnalyzer."""
 
     def test_full_analysis_workflow(self):
-        """Test complete analysis workflow."""
+        """
+        Simulates a full analysis workflow by creating multiple usage entries with time gaps, transforming them into session blocks, and verifying correct block segmentation, entry aggregation, token counts, and cost calculations.
+        """
         analyzer = SessionAnalyzer()
 
         # Create realistic usage entries
@@ -444,7 +480,9 @@ class TestSessionAnalyzerIntegration:
         assert abs(total_cost - 0.0045) < 0.0001  # 0.001 + 0.002 + 0.0015
 
     def test_limit_detection_workflow(self):
-        """Test limit detection workflow."""
+        """
+        Tests that the SessionAnalyzer correctly detects usage limits from raw assistant message entries, verifying that detected limits are returned as a list of dictionaries containing "type" and "message" keys.
+        """
         analyzer = SessionAnalyzer()
 
         raw_entries = [
@@ -484,7 +522,9 @@ class TestSessionAnalyzerEdgeCases:
     """Test edge cases and error conditions."""
 
     def test_malformed_entry_handling(self):
-        """Test handling of malformed entries."""
+        """
+        Verifies that the SessionAnalyzer can process entries with potentially malformed data, such as missing or unusual fields, without raising exceptions.
+        """
         analyzer = SessionAnalyzer()
 
         # Entry with None timestamp should be handled gracefully
@@ -501,7 +541,9 @@ class TestSessionAnalyzerEdgeCases:
         assert len(blocks) == 1
 
     def test_negative_token_counts(self):
-        """Test handling of negative token counts."""
+        """
+        Verify that the SessionAnalyzer correctly includes entries with negative token counts in session blocks without raising exceptions.
+        """
         analyzer = SessionAnalyzer()
 
         entry = UsageEntry(
@@ -519,7 +561,9 @@ class TestSessionAnalyzerEdgeCases:
         assert blocks[0].token_counts.input_tokens == -100
 
     def test_very_large_time_gaps(self):
-        """Test handling of very large time gaps."""
+        """
+        Tests that entries separated by very large time gaps result in the creation of multiple session blocks.
+        """
         analyzer = SessionAnalyzer()
 
         base_time = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)

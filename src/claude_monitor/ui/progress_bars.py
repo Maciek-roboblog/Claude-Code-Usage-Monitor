@@ -13,16 +13,22 @@ class BaseProgressBar(ABC):
     """Abstract base class for progress bar components."""
 
     def __init__(self, width: int = 50):
-        """Initialize base progress bar.
-
-        Args:
-            width: Width of the progress bar in characters
+        """
+        Initialize the base progress bar with a specified width.
+        
+        Parameters:
+            width (int): The width of the progress bar in characters. Must be between 10 and 200.
         """
         self.width = width
         self._validate_width()
 
     def _validate_width(self) -> None:
-        """Validate width parameter."""
+        """
+        Ensures the progress bar width is within the allowed range of 10 to 200 characters.
+        
+        Raises:
+            ValueError: If the width is less than 10 or greater than 200.
+        """
         if self.width < 10:
             raise ValueError("Progress bar width must be at least 10 characters")
         if self.width > 200:
@@ -31,14 +37,15 @@ class BaseProgressBar(ABC):
     def _calculate_filled_segments(
         self, percentage: float, max_value: float = 100.0
     ) -> int:
-        """Calculate number of filled segments based on percentage.
-
-        Args:
-            percentage: Current percentage value
-            max_value: Maximum percentage value (default 100)
-
+        """
+        Calculate the number of filled segments in the progress bar based on a bounded percentage.
+        
+        Parameters:
+            percentage (float): The current progress value as a percentage.
+            max_value (float, optional): The maximum percentage value to consider. Defaults to 100.0.
+        
         Returns:
-            Number of filled segments
+            int: The number of filled segments corresponding to the bounded percentage.
         """
         bounded_percentage = max(0, min(percentage, max_value))
         return int(self.width * bounded_percentage / max_value)
@@ -51,17 +58,18 @@ class BaseProgressBar(ABC):
         filled_style: Optional[str] = None,
         empty_style: Optional[str] = None,
     ) -> str:
-        """Render the actual progress bar.
-
-        Args:
-            filled: Number of filled segments
-            filled_char: Character for filled segments
-            empty_char: Character for empty segments
-            filled_style: Optional style tag for filled segments
-            empty_style: Optional style tag for empty segments
-
+        """
+        Constructs a progress bar string with a specified number of filled and empty segments, optionally applying styles to each segment type.
+        
+        Parameters:
+        	filled (int): Number of filled segments in the bar.
+        	filled_char (str, optional): Character used for filled segments. Defaults to "█".
+        	empty_char (str, optional): Character used for empty segments. Defaults to "░".
+        	filled_style (str, optional): Style tag to apply to filled segments.
+        	empty_style (str, optional): Style tag to apply to empty segments.
+        
         Returns:
-            Formatted bar string
+        	str: The formatted progress bar string with applied styles.
         """
         filled_bar = filled_char * filled
         empty_bar = empty_char * (self.width - filled)
@@ -74,28 +82,30 @@ class BaseProgressBar(ABC):
         return f"{filled_bar}{empty_bar}"
 
     def _format_percentage(self, percentage: float, precision: int = 1) -> str:
-        """Format percentage value for display.
-
-        Args:
-            percentage: Percentage value to format
-            precision: Number of decimal places
-
+        """
+        Format a float percentage value as a string with a specified number of decimal places, followed by a percent sign.
+        
+        Parameters:
+        	percentage (float): The percentage value to format.
+        	precision (int): The number of decimal places to include.
+        
         Returns:
-            Formatted percentage string
+        	str: The formatted percentage string.
         """
         return f"{percentage:.{precision}f}%"
 
     def _get_color_style_by_threshold(
         self, value: float, thresholds: List[Tuple[float, str]]
     ) -> str:
-        """Get color style based on value thresholds.
-
-        Args:
-            value: Current value to check
-            thresholds: List of (threshold, style) tuples in descending order
-
+        """
+        Return the style string corresponding to the first threshold that the value meets or exceeds.
+        
+        Parameters:
+            value (float): The value to compare against thresholds.
+            thresholds (List[Tuple[float, str]]): List of (threshold, style) pairs in descending order.
+        
         Returns:
-            Style string for the current value
+            str: The style string associated with the matched threshold, or the last style if none match.
         """
         for threshold, style in thresholds:
             if value >= threshold:
@@ -104,12 +114,10 @@ class BaseProgressBar(ABC):
 
     @abstractmethod
     def render(self, *args, **kwargs) -> str:
-        """Render the progress bar.
-
-        This method must be implemented by subclasses.
-
-        Returns:
-            Formatted progress bar string
+        """
+        Render the progress bar as a formatted string.
+        
+        This abstract method must be implemented by subclasses to generate the specific progress bar display.
         """
 
 
@@ -117,13 +125,14 @@ class TokenProgressBar(BaseProgressBar):
     """Token usage progress bar component."""
 
     def render(self, percentage: float) -> str:
-        """Render token usage progress bar.
-
-        Args:
-            percentage: Usage percentage (can be > 100)
-
+        """
+        Render a token usage progress bar with color-coded segments and an icon indicating usage level.
+        
+        Parameters:
+            percentage (float): The token usage percentage, which may exceed 100.
+        
         Returns:
-            Formatted progress bar string
+            str: A formatted string displaying the progress bar, usage icon, and percentage.
         """
         filled = self._calculate_filled_segments(min(percentage, 100.0))
 
@@ -151,14 +160,15 @@ class TimeProgressBar(BaseProgressBar):
     """Time progress bar component for session duration."""
 
     def render(self, elapsed_minutes: float, total_minutes: float) -> str:
-        """Render time progress bar.
-
-        Args:
-            elapsed_minutes: Minutes elapsed in session
-            total_minutes: Total session duration in minutes
-
+        """
+        Render a progress bar representing elapsed time relative to a total session duration.
+        
+        Parameters:
+            elapsed_minutes (float): The number of minutes that have elapsed in the session.
+            total_minutes (float): The total duration of the session in minutes.
+        
         Returns:
-            Formatted time progress bar string
+            str: A formatted string displaying a clock icon, the progress bar, and the remaining time.
         """
         from claude_monitor.utils.time_utils import format_time
 
@@ -180,13 +190,16 @@ class ModelUsageBar(BaseProgressBar):
     """Model usage progress bar showing Sonnet vs Opus distribution."""
 
     def render(self, per_model_stats: Dict[str, Any]) -> str:
-        """Render model usage progress bar.
-
-        Args:
-            per_model_stats: Dictionary of model statistics
-
+        """
+        Render a progress bar visualizing the distribution of token usage across different models.
+        
+        Displays the proportion of tokens attributed to Sonnet and Opus models, with colored segments representing each. If no data or tokens are present, shows an empty bar with an appropriate message. Includes a summary of usage percentages and a debug string listing up to three model names.
+        
+        Parameters:
+            per_model_stats (Dict[str, Any]): Dictionary mapping model names to their token usage statistics.
+        
         Returns:
-            Formatted model usage bar string
+            str: Formatted string containing the model usage progress bar, summary percentages, and model names.
         """
         if not per_model_stats:
             empty_bar = self._render_bar(0, empty_style="table.border")

@@ -34,7 +34,16 @@ class ThemeConfig:
     rich_theme: Theme
 
     def get_color(self, key: str, default: str = "default") -> str:
-        """Get color for key with fallback."""
+        """
+        Return the color value associated with the given key, or a default if the key is not present.
+        
+        Parameters:
+            key (str): The color key to look up.
+            default (str): The fallback color value if the key is not found.
+        
+        Returns:
+            str: The color value for the specified key, or the default value.
+        """
         return self.colors.get(key, default)
 
 
@@ -47,7 +56,12 @@ class AdaptiveColorScheme:
 
     @staticmethod
     def get_light_background_theme() -> Theme:
-        """Font colors optimized for light terminal backgrounds (WCAG AA+ contrast)."""
+        """
+        Return a `Theme` object with color mappings optimized for readability on light terminal backgrounds, ensuring high contrast according to WCAG AA+ standards.
+        
+        Returns:
+            Theme: A `rich.theme.Theme` instance with styles designed for light backgrounds.
+        """
         return Theme(
             {
                 "header": "color(17)",  # Deep blue (#00005f) - 21:1 contrast
@@ -103,7 +117,12 @@ class AdaptiveColorScheme:
 
     @staticmethod
     def get_dark_background_theme() -> Theme:
-        """Font colors optimized for dark terminal backgrounds (WCAG AA+ contrast)."""
+        """
+        Return a `Theme` object with color mappings optimized for dark terminal backgrounds, ensuring high contrast and readability according to WCAG AA+ standards.
+        
+        Returns:
+            Theme: A `rich.theme.Theme` instance with styles tailored for dark backgrounds.
+        """
         return Theme(
             {
                 "header": "color(117)",  # Light blue (#87d7ff) - 14:1 contrast
@@ -159,7 +178,12 @@ class AdaptiveColorScheme:
 
     @staticmethod
     def get_classic_theme() -> Theme:
-        """Classic colors for maximum compatibility."""
+        """
+        Return a classic color theme using standard terminal color names for maximum compatibility across environments.
+        
+        Returns:
+            Theme: A `rich.theme.Theme` object with color mappings optimized for broad terminal support.
+        """
         return Theme(
             {
                 "header": "cyan",
@@ -219,7 +243,17 @@ class BackgroundDetector:
 
     @staticmethod
     def detect_background() -> BackgroundType:
-        """Detect terminal background using multiple methods."""
+        """
+        Detects the terminal background type (light, dark, or unknown) using multiple detection strategies.
+        
+        Attempts detection in the following order:
+        1. Parses the COLORFGBG environment variable.
+        2. Checks terminal-related environment variables for hints.
+        3. Queries the terminal background color using the OSC 11 escape sequence.
+        
+        Returns:
+            BackgroundType: The detected background type, or DARK as a fallback if detection fails.
+        """
         # Method 1: Check COLORFGBG environment variable
         colorfgbg_result = BackgroundDetector._check_colorfgbg()
         if colorfgbg_result != BackgroundType.UNKNOWN:
@@ -240,7 +274,12 @@ class BackgroundDetector:
 
     @staticmethod
     def _check_colorfgbg() -> BackgroundType:
-        """Check COLORFGBG environment variable."""
+        """
+        Attempts to determine the terminal background type by parsing the COLORFGBG environment variable.
+        
+        Returns:
+            BackgroundType: The detected background type (LIGHT, DARK, or UNKNOWN) based on the background color index.
+        """
         colorfgbg = os.environ.get("COLORFGBG", "")
         if not colorfgbg:
             return BackgroundType.UNKNOWN
@@ -263,7 +302,12 @@ class BackgroundDetector:
 
     @staticmethod
     def _check_environment_hints() -> BackgroundType:
-        """Check environment variables for theme hints."""
+        """
+        Infers the terminal background type by examining environment variables for known terminal programs and theme indicators.
+        
+        Returns:
+            BackgroundType: The detected background type (LIGHT, DARK, or UNKNOWN) based on environment hints.
+        """
         if os.environ.get("WT_SESSION"):
             return BackgroundType.DARK
 
@@ -285,7 +329,12 @@ class BackgroundDetector:
 
     @staticmethod
     def _query_background_color() -> BackgroundType:
-        """Query terminal background color using OSC 11."""
+        """
+        Attempts to detect the terminal background type by querying the terminal for its background color using the OSC 11 escape sequence.
+        
+        Returns:
+            BackgroundType: The detected background type (LIGHT, DARK, or UNKNOWN) based on the perceived brightness of the terminal's background color, or UNKNOWN if detection fails.
+        """
         if not sys.stdin.isatty() or not sys.stdout.isatty():
             return BackgroundType.UNKNOWN
 
@@ -348,13 +397,21 @@ class ThemeManager:
     """Manages themes with auto-detection and thread safety."""
 
     def __init__(self):
+        """
+        Initialize the ThemeManager with thread safety, theme state, and available theme configurations.
+        """
         self._lock = threading.Lock()
         self._current_theme: Optional[ThemeConfig] = None
         self._forced_theme: Optional[str] = None
         self.themes = self._load_themes()
 
     def _load_themes(self) -> Dict[str, ThemeConfig]:
-        """Load all available themes."""
+        """
+        Initializes and returns a dictionary of available theme configurations, each with associated symbols and a Rich theme object for light, dark, and classic terminal backgrounds.
+        
+        Returns:
+            themes (Dict[str, ThemeConfig]): Mapping of theme names to their ThemeConfig objects.
+        """
         themes = {}
 
         # Load themes with Rich theme objects
@@ -386,7 +443,11 @@ class ThemeManager:
         return themes
 
     def _get_symbols_for_theme(self, theme_name: str) -> Dict[str, str]:
-        """Get symbols based on theme."""
+        """
+        Return a dictionary of UI symbols appropriate for the specified theme.
+        
+        For the "classic" theme, returns ASCII-compatible symbols; for other themes, returns Unicode symbols.
+        """
         if theme_name == "classic":
             return {
                 "progress_empty": "-",
@@ -408,7 +469,12 @@ class ThemeManager:
         }
 
     def auto_detect_theme(self) -> str:
-        """Auto-detect appropriate theme based on terminal."""
+        """
+        Automatically selects the appropriate theme name ("light" or "dark") based on detected terminal background.
+        
+        Returns:
+            str: The name of the theme to use ("light" or "dark"). Defaults to "dark" if background detection is inconclusive.
+        """
         background = BackgroundDetector.detect_background()
 
         if background == BackgroundType.LIGHT:
@@ -421,7 +487,18 @@ class ThemeManager:
     def get_theme(
         self, name: Optional[str] = None, force_detection: bool = False
     ) -> ThemeConfig:
-        """Get theme by name or auto-detect."""
+        """
+        Returns a theme configuration by name or automatically detects the appropriate theme based on terminal background.
+        
+        If `name` is "auto" or not provided, the method detects the terminal background and selects the corresponding theme, caching the result unless `force_detection` is True. If a specific theme name is given, it returns that theme if available, otherwise defaults to the dark theme.
+        
+        Parameters:
+            name (Optional[str]): The name of the theme to retrieve, or "auto" to trigger detection.
+            force_detection (bool): If True, forces re-detection of the terminal background even if a theme was previously cached.
+        
+        Returns:
+            ThemeConfig: The selected theme configuration.
+        """
         with self._lock:
             if name == "auto" or name is None:
                 if force_detection or self._forced_theme is None:
@@ -441,12 +518,26 @@ class ThemeManager:
     def get_console(
         self, theme_name: Optional[str] = None, force_detection: bool = False
     ) -> Console:
-        """Get themed console instance."""
+        """
+        Return a `Console` instance configured with the selected theme.
+        
+        Parameters:
+            theme_name (str, optional): Name of the theme to use. If None or "auto", the theme is auto-detected.
+            force_detection (bool): If True, forces re-detection of the terminal background and theme selection.
+        
+        Returns:
+            Console: A `rich.console.Console` instance using the selected theme.
+        """
         theme = self.get_theme(theme_name, force_detection)
         return Console(theme=theme.rich_theme, force_terminal=True)
 
     def get_current_theme(self) -> Optional[ThemeConfig]:
-        """Get currently active theme."""
+        """
+        Return the currently active theme configuration.
+        
+        Returns:
+            ThemeConfig or None: The active theme configuration, or None if no theme is set.
+        """
         return self._current_theme
 
 
@@ -475,7 +566,15 @@ VELOCITY_INDICATORS = {
 
 # Helper functions for style selection
 def get_cost_style(cost: float) -> str:
-    """Get appropriate style for a cost value."""
+    """
+    Return the style key corresponding to the given cost value based on predefined thresholds.
+    
+    Parameters:
+        cost (float): The cost value to evaluate.
+    
+    Returns:
+        str: The style key associated with the cost category.
+    """
     for threshold, style in COST_THRESHOLDS:
         if cost >= threshold:
             return style
@@ -483,7 +582,15 @@ def get_cost_style(cost: float) -> str:
 
 
 def get_velocity_indicator(burn_rate: float) -> Dict[str, str]:
-    """Get velocity indicator based on burn rate."""
+    """
+    Return an emoji and label indicating the velocity category for a given burn rate.
+    
+    Parameters:
+        burn_rate (float): The burn rate value to categorize.
+    
+    Returns:
+        Dict[str, str]: A dictionary with 'emoji' and 'label' keys representing the velocity indicator.
+    """
     for key, indicator in VELOCITY_INDICATORS.items():
         if burn_rate < indicator["threshold"]:
             return {"emoji": indicator["emoji"], "label": indicator["label"]}
@@ -495,13 +602,27 @@ _theme_manager = ThemeManager()
 
 
 def get_themed_console(force_theme=None) -> Console:
-    """Get themed console - backward compatibility wrapper."""
+    """
+    Return a themed Console instance configured with the specified or auto-detected theme.
+    
+    Parameters:
+        force_theme (str, optional): Name of the theme to use. If not provided, the theme is auto-detected.
+    
+    Returns:
+        Console: A rich Console instance with the selected theme applied.
+    """
     if force_theme and isinstance(force_theme, str):
         return _theme_manager.get_console(force_theme)
     return _theme_manager.get_console(force_theme)
 
 
 def print_themed(text: str, style: str = "info") -> None:
-    """Print text with themed styling - backward compatibility."""
+    """
+    Prints the given text to the terminal using the current themed console and specified style.
+    
+    Parameters:
+        text (str): The text to display.
+        style (str): The style key to apply to the text. Defaults to "info".
+    """
     console = _theme_manager.get_console()
     console.print(f"[{style}]{text}[/]")

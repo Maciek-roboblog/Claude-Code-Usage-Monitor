@@ -16,12 +16,13 @@ class DataManager:
     def __init__(
         self, cache_ttl: int = 30, hours_back: int = 96, data_path: Optional[str] = None
     ):
-        """Initialize data manager with cache and fetch settings.
-
-        Args:
-            cache_ttl: Cache time-to-live in seconds
-            hours_back: Hours of historical data to fetch
-            data_path: Path to data directory
+        """
+        Initializes the DataManager with cache duration, historical data range, and optional data directory.
+        
+        Parameters:
+            cache_ttl (int): Time-to-live for cached data in seconds.
+            hours_back (int): Number of hours of historical data to retrieve when fetching.
+            data_path (Optional[str]): Optional path to the directory containing data files.
         """
         self.cache_ttl = cache_ttl
         self._cache: Optional[Any] = None
@@ -33,13 +34,16 @@ class DataManager:
         self._last_successful_fetch: Optional[float] = None
 
     def get_data(self, force_refresh: bool = False) -> Optional[Dict[str, Any]]:
-        """Get monitoring data with caching and error handling.
-
-        Args:
-            force_refresh: Force refresh ignoring cache
-
+        """
+        Retrieve monitoring usage data, using cached data when valid and handling errors with retries.
+        
+        If `force_refresh` is False and the cache is valid, returns cached data. Otherwise, attempts to fetch fresh data up to three times, handling file access and data format errors. Falls back to cached data if available when fetching fails; returns None if no data can be retrieved.
+        
+        Parameters:
+            force_refresh (bool): If True, bypasses the cache and forces a fresh data fetch.
+        
         Returns:
-            Usage data dictionary or None if fetch fails
+            Optional[Dict[str, Any]]: Usage data dictionary if available, otherwise None.
         """
         if not force_refresh and self._is_cache_valid():
             cache_age = time.time() - self._cache_timestamp
@@ -107,13 +111,20 @@ class DataManager:
         return None
 
     def invalidate_cache(self) -> None:
-        """Invalidate the cache."""
+        """
+        Clears the cached data and resets the cache timestamp.
+        """
         self._cache = None
         self._cache_timestamp = None
         logger.debug("Cache invalidated")
 
     def _is_cache_valid(self) -> bool:
-        """Check if cache is still valid."""
+        """
+        Determine whether the cached data exists and is within the configured time-to-live period.
+        
+        Returns:
+            bool: True if the cache is present and not expired; otherwise, False.
+        """
         if self._cache is None or self._cache_timestamp is None:
             return False
 
@@ -121,23 +132,37 @@ class DataManager:
         return cache_age <= self.cache_ttl
 
     def _set_cache(self, data: Any) -> None:
-        """Set cache with current timestamp."""
+        """
+        Store the provided data in the cache and update the cache timestamp to the current time.
+        """
         self._cache = data
         self._cache_timestamp = time.time()
 
     @property
     def cache_age(self) -> float:
-        """Get age of cached data in seconds."""
+        """
+        Return the age of the cached data in seconds.
+        
+        Returns:
+            float: Number of seconds since the cache was last updated, or infinity if no cache exists.
+        """
         if self._cache_timestamp is None:
             return float("inf")
         return time.time() - self._cache_timestamp
 
     @property
     def last_error(self) -> Optional[str]:
-        """Get last error message."""
+        """
+        Returns the last error message encountered during data fetching, or None if no error has occurred.
+        """
         return self._last_error
 
     @property
     def last_successful_fetch_time(self) -> Optional[float]:
-        """Get timestamp of last successful fetch."""
+        """
+        Return the timestamp of the last successful data fetch.
+        
+        Returns:
+            float or None: Unix timestamp of the last successful fetch, or None if no successful fetch has occurred.
+        """
         return self._last_successful_fetch

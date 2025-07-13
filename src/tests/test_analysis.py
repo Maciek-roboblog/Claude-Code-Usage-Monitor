@@ -31,7 +31,9 @@ class TestAnalyzeUsage:
     @patch("claude_monitor.data.analysis.SessionAnalyzer")
     @patch("claude_monitor.data.analysis.BurnRateCalculator")
     def test_analyze_usage_basic(self, mock_calc_class, mock_analyzer_class, mock_load):
-        """Test basic analyze_usage functionality."""
+        """
+        Tests that `analyze_usage` correctly processes usage entries and session blocks, aggregates token and cost totals, and returns a result dictionary with expected keys and values for a basic usage scenario.
+        """
         sample_entry = UsageEntry(
             timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
             input_tokens=100,
@@ -78,7 +80,11 @@ class TestAnalyzeUsage:
     def test_analyze_usage_quick_start_no_hours(
         self, mock_calc_class, mock_analyzer_class, mock_load
     ):
-        """Test analyze_usage with quick_start=True and hours_back=None."""
+        """
+        Test that analyze_usage uses a 24-hour window when quick_start is True and hours_back is None.
+        
+        Verifies that usage entries are loaded for the default 24-hour period, and that the metadata in the result reflects quick start mode and the correct hours analyzed.
+        """
         mock_load.return_value = ([], [])
         mock_analyzer = Mock()
         mock_analyzer.transform_to_blocks.return_value = []
@@ -100,7 +106,9 @@ class TestAnalyzeUsage:
     def test_analyze_usage_quick_start_with_hours(
         self, mock_calc_class, mock_analyzer_class, mock_load
     ):
-        """Test analyze_usage with quick_start=True and specific hours_back."""
+        """
+        Tests that analyze_usage correctly handles quick_start mode with a specified hours_back value, ensuring usage entries are loaded for the given time window and metadata reflects the configuration.
+        """
         mock_load.return_value = ([], [])
         mock_analyzer = Mock()
         mock_analyzer.transform_to_blocks.return_value = []
@@ -122,7 +130,9 @@ class TestAnalyzeUsage:
     def test_analyze_usage_with_limits(
         self, mock_calc_class, mock_analyzer_class, mock_load
     ):
-        """Test analyze_usage with limit detection."""
+        """
+        Tests that `analyze_usage` correctly detects and reports usage limits, ensuring limit information is reflected in the metadata and attached to session blocks.
+        """
         sample_entry = UsageEntry(
             timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
             input_tokens=100,
@@ -167,7 +177,9 @@ class TestAnalyzeUsage:
     def test_analyze_usage_no_raw_entries(
         self, mock_calc_class, mock_analyzer_class, mock_load
     ):
-        """Test analyze_usage when no raw entries are provided."""
+        """
+        Verify that analyze_usage correctly handles the case when no raw usage entries are provided, ensuring no limits are detected and limit detection is not invoked.
+        """
         sample_entry = UsageEntry(
             timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
             input_tokens=100,
@@ -203,7 +215,9 @@ class TestProcessBurnRates:
     """Test the _process_burn_rates function."""
 
     def test_process_burn_rates_active_block(self):
-        """Test burn rate processing for active blocks."""
+        """
+        Test that burn rate and usage projection data are correctly assigned to active session blocks, while inactive blocks remain unchanged.
+        """
         active_block = SessionBlock(
             id="active_block",
             start_time=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
@@ -244,7 +258,9 @@ class TestProcessBurnRates:
         assert inactive_block.burn_rate_snapshot is None
 
     def test_process_burn_rates_no_burn_rate(self):
-        """Test burn rate processing when calculator returns None."""
+        """
+        Test that _process_burn_rates does not assign burn rate or projection data when the calculator returns None.
+        """
         active_block = SessionBlock(
             id="active_block",
             start_time=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
@@ -262,7 +278,9 @@ class TestProcessBurnRates:
         assert active_block.projection_data is None
 
     def test_process_burn_rates_no_projection(self):
-        """Test burn rate processing when projection returns None."""
+        """
+        Test that burn rate processing assigns a burn rate snapshot but no projection data when the projection calculation returns None.
+        """
         active_block = SessionBlock(
             id="active_block",
             start_time=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
@@ -287,7 +305,9 @@ class TestCreateResult:
 
     @patch("claude_monitor.data.analysis._convert_blocks_to_dict_format")
     def test_create_result_basic(self, mock_convert):
-        """Test basic _create_result functionality."""
+        """
+        Verifies that the `_create_result` function aggregates block data, entry count, and metadata into a result dictionary with correct totals for tokens and cost.
+        """
         # Create test blocks
         block1 = Mock()
         block1.total_tokens = 100
@@ -368,7 +388,9 @@ class TestLimitFunctions:
         assert _is_limit_in_block_timerange(limit_info, block) is True
 
     def test_format_limit_info_complete(self):
-        """Test _format_limit_info with all fields."""
+        """
+        Tests that `_format_limit_info` correctly formats a limit info dictionary with all fields, including converting datetime values to ISO 8601 strings.
+        """
         limit_info = {
             "type": "rate_limit",
             "timestamp": datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
@@ -386,7 +408,11 @@ class TestLimitFunctions:
         }
 
     def test_format_limit_info_no_reset_time(self):
-        """Test _format_limit_info without reset_time."""
+        """
+        Test that _format_limit_info correctly formats limit info when reset_time is not provided.
+        
+        Verifies that the returned dictionary includes a None value for reset_time and properly formats the timestamp as an ISO 8601 string.
+        """
         limit_info = {
             "type": "general_limit",
             "timestamp": datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
@@ -407,7 +433,9 @@ class TestBlockConversion:
     """Test block conversion functions."""
 
     def test_format_block_entries(self):
-        """Test _format_block_entries function."""
+        """
+        Tests that the _format_block_entries function correctly converts UsageEntry objects into dictionaries with properly formatted field names and ISO 8601 timestamps.
+        """
         entry1 = UsageEntry(
             timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
             input_tokens=100,
@@ -448,7 +476,9 @@ class TestBlockConversion:
         }
 
     def test_create_base_block_dict(self):
-        """Test _create_base_block_dict function."""
+        """
+        Tests that the `_create_base_block_dict` function correctly converts a `SessionBlock` instance into a dictionary with all expected fields and accurate aggregated values.
+        """
         entry = UsageEntry(
             timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
             input_tokens=100,
@@ -507,7 +537,9 @@ class TestBlockConversion:
         assert result["entries_count"] == 1
 
     def test_add_optional_block_data_all_fields(self):
-        """Test _add_optional_block_data with all optional fields."""
+        """
+        Test that _add_optional_block_data correctly adds all optional fields—burn rate, projection data, and limit messages—to the block dictionary when present.
+        """
         block = Mock()
         block.burn_rate_snapshot = BurnRate(tokens_per_minute=5.0, cost_per_hour=1.0)
         block.projection_data = {
@@ -536,7 +568,9 @@ class TestBlockConversion:
         ]
 
     def test_add_optional_block_data_no_fields(self):
-        """Test _add_optional_block_data with no optional fields."""
+        """
+        Test that _add_optional_block_data does not add optional keys when the block lacks optional attributes.
+        """
         block = Mock()
         # Remove all optional attributes
         if hasattr(block, "burn_rate_snapshot"):
@@ -556,7 +590,9 @@ class TestBlockConversion:
     @patch("claude_monitor.data.analysis._create_base_block_dict")
     @patch("claude_monitor.data.analysis._add_optional_block_data")
     def test_convert_blocks_to_dict_format(self, mock_add_optional, mock_create_base):
-        """Test _convert_blocks_to_dict_format function."""
+        """
+        Tests that the `_convert_blocks_to_dict_format` function correctly converts a list of session blocks to their dictionary representations using the provided helper functions, ensuring each block is processed and the output matches expected structure.
+        """
         block1 = Mock()
         block2 = Mock()
         blocks = [block1, block2]

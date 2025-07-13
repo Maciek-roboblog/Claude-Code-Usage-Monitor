@@ -34,23 +34,16 @@ def report_error(
     tags: Optional[Dict[str, str]] = None,
     level: ErrorLevel = ErrorLevel.ERROR,
 ) -> None:
-    """Report an exception to Sentry with standardized context and tagging.
-
-    This replaces the common pattern:
-    ```python
-    with sentry_sdk.configure_scope() as scope:
-        scope.set_tag("component", "component_name")
-        scope.set_context("context_name", {...})
-    sentry_sdk.capture_exception(exception)
-    ```
-
-    Args:
-        exception: The exception to report
-        component: Component name for tagging (e.g., "data_loader", "monitor_controller")
-        context_name: Optional context name (e.g., "file_error", "parsing")
-        context_data: Optional dictionary of context data
-        tags: Optional additional tags beyond the component tag
-        level: Error severity level
+    """
+    Reports an exception with standardized context and tags, logging locally and sending to Sentry if available.
+    
+    Parameters:
+        exception (Exception): The exception instance to report.
+        component (str): Identifier for the component where the error occurred.
+        context_name (str, optional): Name for the error context (e.g., "file_error").
+        context_data (dict, optional): Additional context data to include.
+        tags (dict, optional): Additional tags for Sentry.
+        level (ErrorLevel, optional): Severity level for the error (default is ErrorLevel.ERROR).
     """
     logger = logging.getLogger(component)
     log_method = getattr(logger, level.value, logger.error)
@@ -89,13 +82,14 @@ def report_file_error(
     operation: str = "read",
     additional_context: Optional[Dict[str, Any]] = None,
 ) -> None:
-    """Report file-related errors with standardized context.
-
-    Args:
-        exception: The exception that occurred
-        file_path: Path to the file
-        operation: The operation that failed (read, write, parse, etc.)
-        additional_context: Any additional context data
+    """
+    Report a file-related exception with standardized context and tagging.
+    
+    Parameters:
+        exception (Exception): The exception instance to report.
+        file_path (str): The path of the file involved in the error.
+        operation (str, optional): The file operation that failed (e.g., "read", "write", "parse"). Defaults to "read".
+        additional_context (dict, optional): Additional context data to include in the error report.
     """
     context_data = {
         "file_path": str(file_path),

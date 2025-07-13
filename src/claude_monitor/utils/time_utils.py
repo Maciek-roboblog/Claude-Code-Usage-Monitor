@@ -52,10 +52,11 @@ class TimeFormatDetector:
 
     @classmethod
     def detect_from_cli(cls, args) -> Optional[bool]:
-        """Detect from CLI arguments.
-
+        """
+        Detects the user's time format preference from CLI arguments.
+        
         Returns:
-            True for 12h format, False for 24h, None if not specified
+            True if the CLI specifies 12-hour format, False if 24-hour format, or None if not specified.
         """
         if args and hasattr(args, "time_format"):
             if args.time_format == "12h":
@@ -66,10 +67,14 @@ class TimeFormatDetector:
 
     @classmethod
     def detect_from_timezone(cls, timezone_name: str) -> Optional[bool]:
-        """Detect using Babel/timezone data.
-
+        """
+        Infers whether a timezone typically uses the 12-hour or 24-hour time format based on its geographic location, using Babel if available.
+        
+        Parameters:
+            timezone_name (str): The IANA timezone name to analyze.
+        
         Returns:
-            True for 12h format, False for 24h, None if cannot determine
+            True if the timezone is associated with a country that predominantly uses the 12-hour format, False if 24-hour, or None if detection is not possible.
         """
         if not HAS_BABEL:
             return None
@@ -86,10 +91,11 @@ class TimeFormatDetector:
 
     @classmethod
     def detect_from_locale(cls) -> bool:
-        """Detect from system locale.
-
+        """
+        Detects whether the system locale prefers a 12-hour or 24-hour time format.
+        
         Returns:
-            True for 12h format, False for 24h
+            bool: True if the locale uses a 12-hour format, False if it uses a 24-hour format.
         """
         try:
             locale.setlocale(locale.LC_TIME, "")
@@ -107,10 +113,11 @@ class TimeFormatDetector:
 
     @classmethod
     def detect_from_system(cls) -> str:
-        """Platform-specific system detection.
-
+        """
+        Detects the system's preferred time format (12-hour or 24-hour) using platform-specific methods.
+        
         Returns:
-            '12h' or '24h'
+            str: '12h' if the system uses a 12-hour time format, '24h' if it uses a 24-hour format.
         """
         system = platform.system()
 
@@ -161,7 +168,12 @@ class TimeFormatDetector:
 
     @classmethod
     def get_preference(cls, args=None, timezone_name=None) -> bool:
-        """Main entry point - returns True for 12h, False for 24h."""
+        """
+        Determines the user's preferred time format (12-hour or 24-hour) using CLI arguments, timezone, or system settings.
+        
+        Returns:
+            bool: True if 12-hour format is preferred, False if 24-hour format is preferred.
+        """
         cli_pref = cls.detect_from_cli(args)
         if cli_pref is not None:
             return cli_pref
@@ -179,7 +191,11 @@ class SystemTimeDetector:
 
     @staticmethod
     def get_timezone() -> str:
-        """Detect system timezone."""
+        """
+        Detects and returns the system's current timezone as a string.
+        
+        Checks the TZ environment variable first, then uses platform-specific methods to determine the timezone on macOS, Linux, or Windows. Returns "UTC" if the timezone cannot be determined.
+        """
         tz = os.environ.get("TZ")
         if tz:
             return tz
@@ -235,7 +251,9 @@ class SystemTimeDetector:
 
     @staticmethod
     def get_time_format() -> str:
-        """Detect system time format ('12h' or '24h')."""
+        """
+        Detects and returns the system's time format as either "12h" or "24h".
+        """
         return TimeFormatDetector.detect_from_system()
 
 
@@ -243,11 +261,20 @@ class TimezoneHandler:
     """Handles timezone conversions and timestamp parsing."""
 
     def __init__(self, default_tz: str = "UTC"):
-        """Initialize with a default timezone."""
+        """
+        Initialize the TimezoneHandler with a specified default timezone.
+        
+        Parameters:
+            default_tz (str): The timezone name to use as default. Defaults to "UTC".
+        """
         self.default_tz = self._validate_and_get_tz(default_tz)
 
     def _validate_and_get_tz(self, tz_name: str):
-        """Validate and return pytz timezone object."""
+        """
+        Validates the given timezone name and returns the corresponding pytz timezone object.
+        
+        If the timezone name is invalid or unknown, returns UTC.
+        """
         try:
             return pytz.timezone(tz_name)
         except pytz.exceptions.UnknownTimeZoneError:
@@ -255,7 +282,17 @@ class TimezoneHandler:
             return pytz.UTC
 
     def parse_timestamp(self, timestamp_str: str) -> Optional[datetime]:
-        """Parse various timestamp formats."""
+        """
+        Parses a timestamp string in ISO 8601 or common date/time formats and returns a timezone-aware datetime object.
+        
+        Attempts to interpret the input as an ISO 8601 timestamp (with optional timezone or microseconds), or as one of several common date/time formats. Naive datetimes are localized to the default timezone. Returns `None` if parsing fails.
+        
+        Parameters:
+            timestamp_str (str): The timestamp string to parse.
+        
+        Returns:
+            Optional[datetime]: A timezone-aware datetime object if parsing succeeds, otherwise `None`.
+        """
         if not timestamp_str:
             return None
 
@@ -299,19 +336,43 @@ class TimezoneHandler:
         return None
 
     def ensure_utc(self, dt: datetime) -> datetime:
-        """Convert datetime to UTC."""
+        """
+        Converts a datetime object to UTC, localizing it to the default timezone if it is naive.
+        
+        Parameters:
+            dt (datetime): The datetime object to convert.
+        
+        Returns:
+            datetime: The UTC-aware datetime object.
+        """
         if dt.tzinfo is None:
             dt = self.default_tz.localize(dt)
         return dt.astimezone(pytz.UTC)
 
     def ensure_timezone(self, dt: datetime) -> datetime:
-        """Ensure datetime has timezone info."""
+        """
+        Ensures that a datetime object is timezone-aware, localizing it to the default timezone if it is naive.
+        
+        Parameters:
+        	dt (datetime): The datetime object to check and localize if necessary.
+        
+        Returns:
+        	datetime: A timezone-aware datetime object.
+        """
         if dt.tzinfo is None:
             return self.default_tz.localize(dt)
         return dt
 
     def validate_timezone(self, tz_name: str) -> bool:
-        """Check if timezone name is valid."""
+        """
+        Check whether the given timezone name is recognized by pytz.
+        
+        Parameters:
+            tz_name (str): The timezone name to validate.
+        
+        Returns:
+            bool: True if the timezone name is valid, False otherwise.
+        """
         try:
             pytz.timezone(tz_name)
             return True
@@ -319,28 +380,70 @@ class TimezoneHandler:
             return False
 
     def convert_to_timezone(self, dt: datetime, tz_name: str) -> datetime:
-        """Convert datetime to specific timezone."""
+        """
+        Converts a datetime object to the specified timezone.
+        
+        If the input datetime is naive, it is first localized to the handler's default timezone before conversion.
+        
+        Parameters:
+            dt (datetime): The datetime object to convert. Naive datetimes are assumed to be in the default timezone.
+            tz_name (str): The name of the target timezone.
+        
+        Returns:
+            datetime: The datetime object converted to the specified timezone.
+        """
         tz = self._validate_and_get_tz(tz_name)
         if dt.tzinfo is None:
             dt = self.default_tz.localize(dt)
         return dt.astimezone(tz)
 
     def set_timezone(self, tz_name: str) -> None:
-        """Set default timezone."""
+        """
+        Sets the default timezone for the handler.
+        
+        Parameters:
+        	tz_name (str): The name of the timezone to set as default.
+        """
         self.default_tz = self._validate_and_get_tz(tz_name)
 
     def to_utc(self, dt: datetime) -> datetime:
-        """Convert to UTC (assumes naive datetime is in default tz)."""
+        """
+        Converts a datetime object to UTC, localizing naive datetimes to the default timezone first.
+        
+        Parameters:
+        	dt (datetime): The datetime object to convert.
+        
+        Returns:
+        	datetime: The UTC-converted datetime object.
+        """
         return self.ensure_utc(dt)
 
     def to_timezone(self, dt: datetime, tz_name: Optional[str] = None) -> datetime:
-        """Convert to timezone (defaults to default_tz)."""
+        """
+        Converts a datetime object to the specified timezone, or to the default timezone if none is provided.
+        
+        Parameters:
+        	dt (datetime): The datetime object to convert.
+        	tz_name (str, optional): The target timezone name. If not provided, the default timezone is used.
+        
+        Returns:
+        	datetime: The datetime object converted to the target timezone.
+        """
         if tz_name is None:
             tz_name = self.default_tz.zone
         return self.convert_to_timezone(dt, tz_name)
 
     def format_datetime(self, dt: datetime, use_12_hour: Optional[bool] = None) -> str:
-        """Format datetime with timezone info."""
+        """
+        Formats a datetime object as a string with timezone information, using either 12-hour or 24-hour format.
+        
+        Parameters:
+            dt (datetime): The datetime object to format.
+            use_12_hour (Optional[bool]): If True, formats in 12-hour format; if False, uses 24-hour format. If None, the preferred format is detected automatically.
+        
+        Returns:
+            str: The formatted datetime string with timezone abbreviation.
+        """
         if use_12_hour is None:
             use_12_hour = TimeFormatDetector.get_preference(
                 timezone_name=dt.tzinfo.zone if dt.tzinfo else None
@@ -357,22 +460,41 @@ class TimezoneHandler:
 
 
 def get_time_format_preference(args=None) -> bool:
-    """Get time format preference - returns True for 12h, False for 24h."""
+    """
+    Determine the user's preferred time format.
+    
+    Returns:
+        bool: True if 12-hour format is preferred, False if 24-hour format is preferred.
+    """
     return TimeFormatDetector.get_preference(args)
 
 
 def get_system_timezone() -> str:
-    """Get system timezone."""
+    """
+    Returns the system's current timezone as a string.
+    
+    If detection fails, defaults to "UTC".
+    """
     return SystemTimeDetector.get_timezone()
 
 
 def get_system_time_format() -> str:
-    """Get system time format ('12h' or '24h')."""
+    """
+    Return the system's time format as either '12h' or '24h', based on platform-specific detection.
+    """
     return SystemTimeDetector.get_time_format()
 
 
 def format_time(minutes):
-    """Format minutes into human-readable time (e.g., '3h 45m')."""
+    """
+    Convert a number of minutes into a human-readable string in hours and minutes.
+    
+    Parameters:
+        minutes (int or float): The total number of minutes to format.
+    
+    Returns:
+        str: A string representing the time in "Xh Ym" or "Xm" format.
+    """
     if minutes < 60:
         return f"{int(minutes)}m"
     hours = int(minutes // 60)
@@ -383,15 +505,11 @@ def format_time(minutes):
 
 
 def percentage(part: float, whole: float, decimal_places: int = 1) -> float:
-    """Calculate percentage with safe division.
-
-    Args:
-        part: Part value
-        whole: Whole value
-        decimal_places: Number of decimal places to round to
-
+    """
+    Safely calculate the percentage of `part` relative to `whole`, rounded to a specified number of decimal places.
+    
     Returns:
-        Percentage value
+        The percentage value as a float, or 0.0 if `whole` is zero.
     """
     if whole == 0:
         return 0.0
@@ -400,7 +518,17 @@ def percentage(part: float, whole: float, decimal_places: int = 1) -> float:
 
 
 def format_display_time(dt_obj, use_12h_format=None, include_seconds=True):
-    """Central time formatting with 12h/24h support."""
+    """
+    Format a datetime object as a string in 12-hour or 24-hour format, with optional seconds.
+    
+    Parameters:
+        dt_obj (datetime): The datetime object to format.
+        use_12h_format (bool, optional): If True, formats in 12-hour format; if False, uses 24-hour format. If None, detects preference automatically.
+        include_seconds (bool, optional): If True, includes seconds in the output.
+    
+    Returns:
+        str: The formatted time string.
+    """
     if use_12h_format is None:
         use_12h_format = get_time_format_preference()
 

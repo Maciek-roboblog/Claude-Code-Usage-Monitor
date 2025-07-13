@@ -56,19 +56,22 @@ class SessionDisplayComponent:
     """Main component for displaying active session information."""
 
     def __init__(self):
-        """Initialize session display component with sub-components."""
+        """
+        Initialize the SessionDisplayComponent with progress bar and model usage sub-components.
+        """
         self.token_progress = TokenProgressBar()
         self.time_progress = TimeProgressBar()
         self.model_usage = ModelUsageBar()
 
     def _render_wide_progress_bar(self, percentage: float) -> str:
-        """Render a wide progress bar (50 chars) using centralized progress bar logic.
-
-        Args:
-            percentage: Progress percentage (can be > 100)
-
+        """
+        Render a 50-character-wide progress bar with a color-coded emoji indicator based on the given percentage.
+        
+        Parameters:
+            percentage (float): The progress value to display; values above 100 are capped for rendering.
+        
         Returns:
-            Formatted progress bar string
+            str: A formatted string representing the progress bar with an emoji indicator.
         """
         from claude_monitor.terminal.themes import get_cost_style
 
@@ -95,15 +98,13 @@ class SessionDisplayComponent:
         return f"{color} [{filled_bar}]"
 
     def format_active_session_screen_v2(self, data: SessionDisplayData) -> List[str]:
-        """Format complete active session screen using data class.
-
-        This is the refactored version using SessionDisplayData.
-
-        Args:
-            data: SessionDisplayData object containing all display information
-
+        """
+        Format the active session screen using a SessionDisplayData object.
+        
+        Accepts a SessionDisplayData instance containing all session display parameters and returns a list of formatted strings representing the active session UI.
+         
         Returns:
-            List of formatted lines for display
+            List[str]: Formatted lines for the active session display.
         """
         return self.format_active_session_screen(
             plan=data.plan,
@@ -152,32 +153,13 @@ class SessionDisplayComponent:
         original_limit: int = 0,
         **kwargs,
     ) -> List[str]:
-        """Format complete active session screen.
-
-        Args:
-            plan: Current plan name
-            timezone: Display timezone
-            tokens_used: Number of tokens used
-            token_limit: Token limit for the plan
-            usage_percentage: Usage percentage
-            tokens_left: Remaining tokens
-            elapsed_session_minutes: Minutes elapsed in session
-            total_session_minutes: Total session duration
-            burn_rate: Current burn rate
-            session_cost: Session cost in USD
-            per_model_stats: Model usage statistics
-            sent_messages: Number of messages sent
-            entries: Session entries
-            predicted_end_str: Predicted end time string
-            reset_time_str: Reset time string
-            current_time_str: Current time string
-            show_switch_notification: Show plan switch notification
-            show_exceed_notification: Show exceed limit notification
-            show_tokens_will_run_out: Show token depletion warning
-            original_limit: Original plan limit
-
+        """
+        Formats the active session screen with detailed usage statistics, progress bars, predictions, and notifications.
+        
+        Displays cost, token, message, and time usage with visual indicators, adapting the layout and limits based on the user's plan type. Includes model usage distribution, burn rate, cost rate, and predictions for token depletion and reset times. Appends relevant notifications and session status. Returns a list of formatted strings representing the session screen for terminal UI rendering.
+        
         Returns:
-            List of formatted screen lines
+            List[str]: Formatted lines representing the active session screen.
         """
 
         screen_buffer = []
@@ -342,15 +324,10 @@ class SessionDisplayComponent:
         original_limit: int,
         token_limit: int,
     ) -> None:
-        """Add notification messages to screen buffer.
-
-        Args:
-            screen_buffer: Screen buffer to append to
-            show_switch_notification: Show plan switch notification
-            show_exceed_notification: Show exceed limit notification
-            show_tokens_will_run_out: Show token depletion warning
-            original_limit: Original plan limit
-            token_limit: Current token limit
+        """
+        Appends relevant notification messages to the screen buffer based on session status flags.
+        
+        Notification types include token limit exceeded, cost limit exceeded, and impending token depletion. A blank line is added after notifications if any are present.
         """
         notifications_added = False
 
@@ -383,17 +360,20 @@ class SessionDisplayComponent:
         current_time: Optional[datetime] = None,
         args: Optional[Any] = None,
     ) -> List[str]:
-        """Format screen for no active session state.
-
-        Args:
-            plan: Current plan name
-            timezone: Display timezone
-            token_limit: Token limit for the plan
-            current_time: Current datetime
-            args: Command line arguments
-
+        """
+        Format the display screen for when there is no active session.
+        
+        Generates a list of formatted strings representing the UI for an inactive session state, including zeroed usage statistics, an empty token progress bar, and the current time if available. Handles timezone conversion and displays placeholders if time information is unavailable.
+        
+        Parameters:
+            plan (str): The current plan name.
+            timezone (str): The timezone to display.
+            token_limit (int): The token limit for the plan.
+            current_time (Optional[datetime]): The current datetime, if available.
+            args (Optional[Any]): Optional command-line arguments containing timezone preferences.
+        
         Returns:
-            List of formatted screen lines
+            List[str]: Formatted lines for the no-active-session screen.
         """
 
         screen_buffer = []

@@ -19,12 +19,19 @@ class TestBurnRateCalculator:
 
     @pytest.fixture
     def calculator(self):
-        """Create a BurnRateCalculator instance."""
+        """
+        Create and return a new instance of BurnRateCalculator.
+        """
         return BurnRateCalculator()
 
     @pytest.fixture
     def mock_active_block(self):
-        """Create a mock active block for testing."""
+        """
+        Create and return a mock active block with predefined token counts, cost, and a future end time for testing purposes.
+        
+        Returns:
+            Mock: A mock object representing an active block with set attributes.
+        """
         block = Mock()
         block.is_active = True
         block.duration_minutes = 30
@@ -40,7 +47,12 @@ class TestBurnRateCalculator:
 
     @pytest.fixture
     def mock_inactive_block(self):
-        """Create a mock inactive block for testing."""
+        """
+        Create and return a mock inactive block with predefined token counts, duration, and cost for use in tests.
+        
+        Returns:
+            Mock: A mock object representing an inactive block.
+        """
         block = Mock()
         block.is_active = False
         block.duration_minutes = 30
@@ -60,12 +72,16 @@ class TestBurnRateCalculator:
         assert burn_rate.cost_per_hour == 1.0
 
     def test_calculate_burn_rate_inactive_block(self, calculator, mock_inactive_block):
-        """Test burn rate calculation for inactive block returns None."""
+        """
+        Test that calculating the burn rate for an inactive block returns None.
+        """
         burn_rate = calculator.calculate_burn_rate(mock_inactive_block)
         assert burn_rate is None
 
     def test_calculate_burn_rate_zero_duration(self, calculator, mock_active_block):
-        """Test burn rate calculation with zero duration returns None."""
+        """
+        Test that calculating burn rate for a block with zero duration returns None.
+        """
         mock_active_block.duration_minutes = 0
         burn_rate = calculator.calculate_burn_rate(mock_active_block)
         assert burn_rate is None
@@ -84,7 +100,9 @@ class TestBurnRateCalculator:
     def test_calculate_burn_rate_edge_case_small_duration(
         self, calculator, mock_active_block
     ):
-        """Test burn rate calculation with very small duration."""
+        """
+        Test that burn rate calculation returns the expected tokens per minute for an active block with a minimal duration of one minute.
+        """
         mock_active_block.duration_minutes = 1  # 1 minute minimum for active check
         burn_rate = calculator.calculate_burn_rate(mock_active_block)
 
@@ -117,7 +135,9 @@ class TestBurnRateCalculator:
     def test_project_block_usage_no_remaining_time(
         self, mock_datetime, calculator, mock_active_block
     ):
-        """Test projection when block has already ended."""
+        """
+        Test that projecting usage for a block with an end time in the past returns None.
+        """
         # Mock current time to be after block end time
         mock_now = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
         mock_datetime.now.return_value = mock_now
@@ -128,7 +148,9 @@ class TestBurnRateCalculator:
         assert projection is None
 
     def test_project_block_usage_no_burn_rate(self, calculator, mock_inactive_block):
-        """Test projection when burn rate cannot be calculated."""
+        """
+        Test that projecting usage for a block with no calculable burn rate returns None.
+        """
         projection = calculator.project_block_usage(mock_inactive_block)
         assert projection is None
 
@@ -138,12 +160,19 @@ class TestHourlyBurnRateCalculation:
 
     @pytest.fixture
     def current_time(self):
-        """Current time for testing."""
+        """
+        Returns a fixed UTC datetime for use in tests.
+        """
         return datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
     @pytest.fixture
     def mock_blocks(self):
-        """Create mock blocks for testing."""
+        """
+        Return a list of mock block dictionaries representing different session scenarios for testing purposes.
+        
+        Returns:
+            List[dict]: A list of dictionaries, each representing a mock block with start time, end time, token counts, and gap status.
+        """
         block1 = {
             "start_time": "2024-01-01T11:30:00Z",
             "actual_end_time": None,
@@ -179,7 +208,11 @@ class TestHourlyBurnRateCalculation:
 
     @patch("claude_monitor.core.calculations._calculate_total_tokens_in_hour")
     def test_calculate_hourly_burn_rate_success(self, mock_calc_tokens, current_time):
-        """Test successful hourly burn rate calculation."""
+        """
+        Test that `calculate_hourly_burn_rate` returns the correct burn rate when total tokens in the hour are provided.
+        
+        Verifies that the function computes the hourly burn rate as expected and that the total token calculation is called with the correct time window.
+        """
         mock_calc_tokens.return_value = 180.0  # Total tokens in hour
 
         blocks = [Mock()]
@@ -194,7 +227,9 @@ class TestHourlyBurnRateCalculation:
     def test_calculate_hourly_burn_rate_zero_tokens(
         self, mock_calc_tokens, current_time
     ):
-        """Test hourly burn rate calculation with zero tokens."""
+        """
+        Test that `calculate_hourly_burn_rate` returns 0.0 when the total tokens calculated for the hour is zero.
+        """
         mock_calc_tokens.return_value = 0.0
 
         blocks = [Mock()]
@@ -204,7 +239,11 @@ class TestHourlyBurnRateCalculation:
 
     @patch("claude_monitor.core.calculations._process_block_for_burn_rate")
     def test_calculate_total_tokens_in_hour(self, mock_process_block, current_time):
-        """Test total tokens calculation for hour."""
+        """
+        Test that `_calculate_total_tokens_in_hour` correctly sums token counts from multiple blocks within a one-hour window.
+        
+        Verifies that the function processes each block, aggregates the returned token counts, and returns the correct total.
+        """
         # Mock returns different token counts for each block
         mock_process_block.side_effect = [150.0, 0.0, 0.0]
 
@@ -219,7 +258,9 @@ class TestHourlyBurnRateCalculation:
         assert mock_process_block.call_count == 3
 
     def test_process_block_for_burn_rate_gap_block(self, current_time):
-        """Test processing gap block returns zero."""
+        """
+        Test that processing a gap block with `_process_block_for_burn_rate` returns zero tokens.
+        """
         gap_block = {"isGap": True, "start_time": "2024-01-01T11:30:00Z"}
         one_hour_ago = current_time - timedelta(hours=1)
 
@@ -230,7 +271,9 @@ class TestHourlyBurnRateCalculation:
     def test_process_block_for_burn_rate_invalid_start_time(
         self, mock_parse_time, current_time
     ):
-        """Test processing block with invalid start time returns zero."""
+        """
+        Test that processing a block with an invalid start time returns zero tokens.
+        """
         mock_parse_time.return_value = None
 
         block = {"isGap": False, "start_time": "invalid"}
@@ -244,7 +287,9 @@ class TestHourlyBurnRateCalculation:
     def test_process_block_for_burn_rate_old_session(
         self, mock_parse_time, mock_end_time, current_time
     ):
-        """Test processing block that ended before the hour window."""
+        """
+        Test that processing a block which ended before the one-hour window returns zero tokens.
+        """
         one_hour_ago = current_time - timedelta(hours=1)
         old_time = one_hour_ago - timedelta(minutes=30)
 
@@ -274,7 +319,9 @@ class TestCalculationEdgeCases:
         assert burn_rate is None
 
     def test_projection_with_zero_cost(self):
-        """Test projection calculation with zero cost."""
+        """
+        Test that usage projection returns zero projected cost when the block's cost is zero.
+        """
         calculator = BurnRateCalculator()
 
         block = Mock()
@@ -290,7 +337,11 @@ class TestCalculationEdgeCases:
         assert projection.projected_total_cost == 0.0
 
     def test_very_large_token_counts(self):
-        """Test calculations with very large token counts."""
+        """
+        Test that burn rate calculations handle very large token counts and costs without errors.
+        
+        Verifies that the calculated tokens per minute and cost per hour are correct for a block with high token and cost values.
+        """
         calculator = BurnRateCalculator()
 
         block = Mock()
@@ -316,7 +367,9 @@ class TestP90Calculator:
     """Test cases for P90Calculator."""
 
     def test_p90_config_creation(self):
-        """Test P90Config dataclass creation."""
+        """
+        Verify that the P90Config dataclass is created with the expected attribute values.
+        """
         from claude_monitor.core.p90_calculator import P90Config
 
         config = P90Config(
@@ -332,7 +385,9 @@ class TestP90Calculator:
         assert config.cache_ttl_seconds == 300
 
     def test_did_hit_limit_true(self):
-        """Test _did_hit_limit returns True when limit is hit."""
+        """
+        Verify that _did_hit_limit returns True when the token count meets or exceeds the threshold for any provided limit.
+        """
         from claude_monitor.core.p90_calculator import _did_hit_limit
 
         # 9000 tokens with 10000 limit and 0.9 threshold = 9000 >= 9000
@@ -344,7 +399,9 @@ class TestP90Calculator:
         assert result is True
 
     def test_did_hit_limit_false(self):
-        """Test _did_hit_limit returns False when limit is not hit."""
+        """
+        Verify that _did_hit_limit returns False when the token count does not meet or exceed the threshold for any provided limits.
+        """
         from claude_monitor.core.p90_calculator import _did_hit_limit
 
         # 8000 tokens with 10000 limit and 0.9 threshold = 8000 < 9000
@@ -356,7 +413,9 @@ class TestP90Calculator:
         assert result is False
 
     def test_extract_sessions_basic(self):
-        """Test _extract_sessions with basic filtering."""
+        """
+        Tests that the `_extract_sessions` function correctly filters out gap blocks and extracts token counts from the provided blocks.
+        """
         from claude_monitor.core.p90_calculator import _extract_sessions
 
         blocks = [
@@ -369,6 +428,15 @@ class TestP90Calculator:
 
         # Filter function that excludes gaps
         def filter_fn(b):
+            """
+            Return True if the block is not marked as a gap.
+            
+            Parameters:
+            	b (dict): A block dictionary to check.
+            
+            Returns:
+            	bool: True if the block is not a gap; otherwise, False.
+            """
             return not b.get("isGap", False)
 
         result = _extract_sessions(blocks, filter_fn)
@@ -376,7 +444,11 @@ class TestP90Calculator:
         assert result == [1000, 3000]
 
     def test_extract_sessions_complex_filter(self):
-        """Test _extract_sessions with complex filtering."""
+        """
+        Tests that _extract_sessions correctly filters blocks using a custom filter function, extracting token counts only from blocks that are neither gaps nor active.
+        
+        Verifies that the resulting list contains the expected token counts after applying the filter.
+        """
         from claude_monitor.core.p90_calculator import _extract_sessions
 
         blocks = [
@@ -387,6 +459,15 @@ class TestP90Calculator:
         ]
 
         def filter_fn(b):
+            """
+            Return True if the block is neither a gap nor active.
+            
+            Parameters:
+            	b (dict): A block dictionary to check.
+            
+            Returns:
+            	bool: True if the block is not a gap and not active, otherwise False.
+            """
             return not b.get("isGap", False) and not b.get("isActive", False)
 
         result = _extract_sessions(blocks, filter_fn)
@@ -394,7 +475,11 @@ class TestP90Calculator:
         assert result == [1000, 4000]
 
     def test_calculate_p90_from_blocks_with_hits(self):
-        """Test _calculate_p90_from_blocks when limit hits are found."""
+        """
+        Test that `_calculate_p90_from_blocks` returns an integer limit when some blocks meet or exceed the configured threshold.
+        
+        Verifies that the function correctly identifies blocks that hit the limit and returns a positive integer as the calculated P90 limit.
+        """
         from claude_monitor.core.p90_calculator import (
             P90Config,
             _calculate_p90_from_blocks,
@@ -421,7 +506,9 @@ class TestP90Calculator:
         assert result > 0
 
     def test_calculate_p90_from_blocks_no_hits(self):
-        """Test _calculate_p90_from_blocks when no limit hits are found."""
+        """
+        Test that _calculate_p90_from_blocks returns the default minimum limit when no blocks meet the limit threshold.
+        """
         from claude_monitor.core.p90_calculator import (
             P90Config,
             _calculate_p90_from_blocks,
@@ -448,7 +535,9 @@ class TestP90Calculator:
         assert result > 0
 
     def test_calculate_p90_from_blocks_empty(self):
-        """Test _calculate_p90_from_blocks with empty or invalid blocks."""
+        """
+        Test that _calculate_p90_from_blocks returns the default minimum limit when given empty or invalid blocks.
+        """
         from claude_monitor.core.p90_calculator import (
             P90Config,
             _calculate_p90_from_blocks,
@@ -484,7 +573,9 @@ class TestP90Calculator:
         assert calculator._cfg.default_min_limit > 0
 
     def test_p90_calculator_custom_config(self):
-        """Test P90Calculator with custom configuration."""
+        """
+        Verify that P90Calculator correctly initializes and uses a custom P90Config configuration.
+        """
         from claude_monitor.core.p90_calculator import P90Calculator, P90Config
 
         custom_config = P90Config(
@@ -501,7 +592,9 @@ class TestP90Calculator:
         assert calculator._cfg.default_min_limit == 3000
 
     def test_p90_calculator_calculate_basic(self):
-        """Test P90Calculator.calculate with basic blocks."""
+        """
+        Tests that P90Calculator.calculate_p90_limit returns a positive integer for a typical list of non-gap, inactive blocks.
+        """
         from claude_monitor.core.p90_calculator import P90Calculator
 
         calculator = P90Calculator()
@@ -518,7 +611,9 @@ class TestP90Calculator:
         assert result > 0
 
     def test_p90_calculator_calculate_empty(self):
-        """Test P90Calculator.calculate with empty blocks."""
+        """
+        Test that P90Calculator.calculate_p90_limit returns None when given an empty list of blocks.
+        """
         from claude_monitor.core.p90_calculator import P90Calculator
 
         calculator = P90Calculator()
@@ -528,7 +623,9 @@ class TestP90Calculator:
         assert result is None
 
     def test_p90_calculator_caching(self):
-        """Test P90Calculator caching behavior."""
+        """
+        Test that P90Calculator returns consistent results for repeated calls with the same input, verifying caching behavior.
+        """
         from claude_monitor.core.p90_calculator import P90Calculator
 
         calculator = P90Calculator()
@@ -547,7 +644,9 @@ class TestP90Calculator:
         assert result1 == result2
 
     def test_p90_calculation_edge_cases(self):
-        """Test P90 calculation with edge cases."""
+        """
+        Test that P90 calculation handles edge cases with low and very high token counts, ensuring results meet minimum limits and remain positive.
+        """
         from claude_monitor.core.p90_calculator import (
             P90Config,
             _calculate_p90_from_blocks,
@@ -575,7 +674,9 @@ class TestP90Calculator:
         assert result > 0
 
     def test_p90_quantiles_calculation(self):
-        """Test that P90 uses proper quantiles calculation."""
+        """
+        Verify that the P90 calculation function returns a value within the expected quantile range for a known distribution of token counts.
+        """
         from claude_monitor.core.p90_calculator import (
             P90Config,
             _calculate_p90_from_blocks,

@@ -15,32 +15,44 @@ class TestLastUsedParams:
     """Test suite for LastUsedParams class."""
 
     def setup_method(self):
-        """Set up test environment."""
+        """
+        Set up a temporary directory and initialize a LastUsedParams instance for testing.
+        """
         self.temp_dir = Path(tempfile.mkdtemp())
         self.last_used = LastUsedParams(self.temp_dir)
 
     def teardown_method(self):
-        """Clean up test environment."""
+        """
+        Remove the temporary directory used for testing, cleaning up any files or subdirectories created during the test.
+        """
         import shutil
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_init_default_config_dir(self):
-        """Test initialization with default config directory."""
+        """
+        Tests that LastUsedParams initializes with the default configuration directory and correct parameters file path.
+        """
         last_used = LastUsedParams()
         expected_dir = Path.home() / ".claude-monitor"
         assert last_used.config_dir == expected_dir
         assert last_used.params_file == expected_dir / "last_used.json"
 
     def test_init_custom_config_dir(self):
-        """Test initialization with custom config directory."""
+        """
+        Test that LastUsedParams initializes correctly with a custom configuration directory.
+        
+        Verifies that the config directory and params file path are set to the provided custom directory.
+        """
         custom_dir = Path("/tmp/custom-config")
         last_used = LastUsedParams(custom_dir)
         assert last_used.config_dir == custom_dir
         assert last_used.params_file == custom_dir / "last_used.json"
 
     def test_save_success(self):
-        """Test successful saving of parameters."""
+        """
+        Verifies that parameters are saved to a file correctly, excluding the "plan" field, and that all expected fields and a timestamp are present in the saved data.
+        """
         # Create mock settings
         mock_settings = Mock()
         mock_settings.plan = "pro"
@@ -71,7 +83,9 @@ class TestLastUsedParams:
         assert "timestamp" in data
 
     def test_save_without_custom_limit(self):
-        """Test saving without custom limit tokens."""
+        """
+        Test that saving settings omits the 'custom_limit_tokens' field when it is None.
+        """
         mock_settings = Mock()
         mock_settings.plan = "pro"
         mock_settings.theme = "light"
@@ -90,7 +104,9 @@ class TestLastUsedParams:
         assert data["theme"] == "light"
 
     def test_save_creates_directory(self):
-        """Test that save creates directory if it doesn't exist."""
+        """
+        Test that the save method creates the configuration directory if it does not exist before saving parameters.
+        """
         # Use non-existent directory
         non_existent_dir = self.temp_dir / "non-existent"
         last_used = LastUsedParams(non_existent_dir)
@@ -111,7 +127,9 @@ class TestLastUsedParams:
 
     @patch("claude_monitor.core.settings.logger")
     def test_save_error_handling(self, mock_logger):
-        """Test error handling during save operation."""
+        """
+        Test that the save method handles file write errors gracefully by logging a warning instead of raising an exception.
+        """
         # Mock file operations to raise exception
         with patch("builtins.open", side_effect=PermissionError("Access denied")):
             mock_settings = Mock()
@@ -130,7 +148,9 @@ class TestLastUsedParams:
             mock_logger.warning.assert_called_once()
 
     def test_load_success(self):
-        """Test successful loading of parameters."""
+        """
+        Test that parameters are loaded correctly from a JSON file, with the timestamp field excluded from the result.
+        """
         # Create test data
         test_data = {
             "theme": "dark",
@@ -158,13 +178,17 @@ class TestLastUsedParams:
         assert result["custom_limit_tokens"] == 2000
 
     def test_load_file_not_exists(self):
-        """Test loading when file doesn't exist."""
+        """
+        Test that loading parameters returns an empty dictionary when the params file does not exist.
+        """
         result = self.last_used.load()
         assert result == {}
 
     @patch("claude_monitor.core.settings.logger")
     def test_load_error_handling(self, mock_logger):
-        """Test error handling during load operation."""
+        """
+        Test that loading from an invalid JSON file returns an empty dictionary and logs a warning.
+        """
         # Create invalid JSON file
         with open(self.last_used.params_file, "w") as f:
             f.write("invalid json")
@@ -175,7 +199,9 @@ class TestLastUsedParams:
         mock_logger.warning.assert_called_once()
 
     def test_clear_success(self):
-        """Test successful clearing of parameters."""
+        """
+        Test that the clear method successfully deletes the parameters file if it exists.
+        """
         # Create file first
         test_data = {"theme": "dark"}
         with open(self.last_used.params_file, "w") as f:
@@ -189,13 +215,17 @@ class TestLastUsedParams:
         assert not self.last_used.params_file.exists()
 
     def test_clear_file_not_exists(self):
-        """Test clearing when file doesn't exist."""
+        """
+        Test that clearing parameters does not raise an exception when the params file does not exist.
+        """
         # Should not raise exception
         self.last_used.clear()
 
     @patch("claude_monitor.core.settings.logger")
     def test_clear_error_handling(self, mock_logger):
-        """Test error handling during clear operation."""
+        """
+        Test that the clear method handles exceptions gracefully when file deletion fails, ensuring a warning is logged and no exception is raised.
+        """
         # Create file but mock unlink to raise exception
         with open(self.last_used.params_file, "w") as f:
             f.write("{}")
@@ -205,14 +235,18 @@ class TestLastUsedParams:
             mock_logger.warning.assert_called_once()
 
     def test_exists_true(self):
-        """Test exists method when file exists."""
+        """
+        Test that the `exists` method returns True when the parameters file exists.
+        """
         with open(self.last_used.params_file, "w") as f:
             f.write("{}")
 
         assert self.last_used.exists() is True
 
     def test_exists_false(self):
-        """Test exists method when file doesn't exist."""
+        """
+        Test that the `exists` method returns False when the parameters file does not exist.
+        """
         assert self.last_used.exists() is False
 
 
@@ -220,7 +254,9 @@ class TestSettings:
     """Test suite for Settings class."""
 
     def test_default_values(self):
-        """Test default settings values."""
+        """
+        Verifies that a Settings instance initialized with no CLI arguments has all fields set to their expected default values.
+        """
         settings = Settings(_cli_parse_args=[])
 
         assert settings.plan == "custom"
@@ -238,7 +274,9 @@ class TestSettings:
         assert settings.clear is False
 
     def test_plan_validator_valid_values(self):
-        """Test plan validator with valid values."""
+        """
+        Test that the plan validator accepts valid plan values and normalizes them to lowercase.
+        """
         valid_plans = ["pro", "max5", "max20", "custom"]
 
         for plan in valid_plans:
@@ -246,7 +284,9 @@ class TestSettings:
             assert settings.plan == plan.lower()
 
     def test_plan_validator_case_insensitive(self):
-        """Test plan validator is case insensitive."""
+        """
+        Test that the plan validator accepts plan values in any case and normalizes them to lowercase.
+        """
         settings = Settings(plan="PRO", _cli_parse_args=[])
         assert settings.plan == "pro"
 
@@ -254,12 +294,16 @@ class TestSettings:
         assert settings.plan == "max5"
 
     def test_plan_validator_invalid_value(self):
-        """Test plan validator with invalid value."""
+        """
+        Test that the plan validator raises a ValueError when an invalid plan value is provided.
+        """
         with pytest.raises(ValueError, match="Invalid plan: invalid"):
             Settings(plan="invalid", _cli_parse_args=[])
 
     def test_theme_validator_valid_values(self):
-        """Test theme validator with valid values."""
+        """
+        Verifies that the theme validator accepts valid theme values and normalizes them to lowercase.
+        """
         valid_themes = ["light", "dark", "classic", "auto"]
 
         for theme in valid_themes:
@@ -267,7 +311,9 @@ class TestSettings:
             assert settings.theme == theme.lower()
 
     def test_theme_validator_case_insensitive(self):
-        """Test theme validator is case insensitive."""
+        """
+        Test that the theme validator accepts theme values in a case-insensitive manner and normalizes them to lowercase.
+        """
         settings = Settings(theme="LIGHT", _cli_parse_args=[])
         assert settings.theme == "light"
 
@@ -275,12 +321,16 @@ class TestSettings:
         assert settings.theme == "dark"
 
     def test_theme_validator_invalid_value(self):
-        """Test theme validator with invalid value."""
+        """
+        Test that the theme validator raises a ValueError when an invalid theme value is provided.
+        """
         with pytest.raises(ValueError, match="Invalid theme: invalid"):
             Settings(theme="invalid", _cli_parse_args=[])
 
     def test_timezone_validator_valid_values(self):
-        """Test timezone validator with valid values."""
+        """
+        Verify that the Settings class accepts valid timezone values, including "auto", "local", and specific timezone names.
+        """
         # Test auto/local values
         settings = Settings(timezone="auto", _cli_parse_args=[])
         assert settings.timezone == "auto"
@@ -296,12 +346,16 @@ class TestSettings:
         assert settings.timezone == "Europe/Warsaw"
 
     def test_timezone_validator_invalid_value(self):
-        """Test timezone validator with invalid value."""
+        """
+        Test that providing an invalid timezone value to Settings raises a ValueError.
+        """
         with pytest.raises(ValueError, match="Invalid timezone: Invalid/Timezone"):
             Settings(timezone="Invalid/Timezone", _cli_parse_args=[])
 
     def test_time_format_validator_valid_values(self):
-        """Test time format validator with valid values."""
+        """
+        Verify that the time format validator accepts valid values ("12h", "24h", "auto") when initializing the Settings class.
+        """
         valid_formats = ["12h", "24h", "auto"]
 
         for fmt in valid_formats:
@@ -309,12 +363,16 @@ class TestSettings:
             assert settings.time_format == fmt
 
     def test_time_format_validator_invalid_value(self):
-        """Test time format validator with invalid value."""
+        """
+        Test that providing an invalid value to the time format validator raises a ValueError.
+        """
         with pytest.raises(ValueError, match="Invalid time format: invalid"):
             Settings(time_format="invalid", _cli_parse_args=[])
 
     def test_log_level_validator_valid_values(self):
-        """Test log level validator with valid values."""
+        """
+        Verify that the log level validator in the Settings class accepts all valid log level values, including case-insensitive input.
+        """
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
         for level in valid_levels:
@@ -326,12 +384,18 @@ class TestSettings:
             assert settings.log_level == level
 
     def test_log_level_validator_invalid_value(self):
-        """Test log level validator with invalid value."""
+        """
+        Test that providing an invalid log level to Settings raises a ValueError.
+        """
         with pytest.raises(ValueError, match="Invalid log level: invalid"):
             Settings(log_level="invalid", _cli_parse_args=[])
 
     def test_field_constraints(self):
-        """Test field constraints and validation."""
+        """
+        Verifies that the Settings class enforces field constraints and raises ValueError for invalid values.
+        
+        Tests that invalid values for custom_limit_tokens, refresh_rate, refresh_per_second, and reset_hour are correctly rejected.
+        """
         # Test positive constraints
         with pytest.raises(ValueError):
             Settings(custom_limit_tokens=0, _cli_parse_args=[])
@@ -361,7 +425,9 @@ class TestSettings:
     @patch("claude_monitor.core.settings.Settings._get_system_timezone")
     @patch("claude_monitor.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_version_flag(self, mock_time_format, mock_timezone):
-        """Test version flag handling."""
+        """
+        Test that passing the --version flag prints version information and exits the program.
+        """
         with patch("builtins.print") as mock_print:
             with patch("sys.exit") as mock_exit:
                 Settings.load_with_last_used(["--version"])
@@ -372,7 +438,9 @@ class TestSettings:
     @patch("claude_monitor.core.settings.Settings._get_system_timezone")
     @patch("claude_monitor.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_clear_flag(self, mock_time_format, mock_timezone):
-        """Test clear flag handling."""
+        """
+        Tests that passing the '--clear' flag to Settings.load_with_last_used calls the clear method on the LastUsedParams instance.
+        """
         mock_timezone.return_value = "UTC"
         mock_time_format.return_value = "24h"
 
@@ -398,7 +466,9 @@ class TestSettings:
     @patch("claude_monitor.core.settings.Settings._get_system_timezone")
     @patch("claude_monitor.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_merge_params(self, mock_time_format, mock_timezone):
-        """Test merging with last used parameters."""
+        """
+        Test that loading settings with no CLI arguments merges values from last used parameters and saves the updated settings.
+        """
         mock_timezone.return_value = "UTC"
         mock_time_format.return_value = "24h"
 
@@ -429,7 +499,11 @@ class TestSettings:
     @patch("claude_monitor.core.settings.Settings._get_system_timezone")
     @patch("claude_monitor.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_cli_priority(self, mock_time_format, mock_timezone):
-        """Test CLI arguments take priority over last used params."""
+        """
+        Test that command-line arguments override last used parameters when loading settings.
+        
+        Ensures that values provided via CLI take precedence over those loaded from the last used parameters, while unspecified fields fall back to the last used values.
+        """
         mock_timezone.return_value = "UTC"
         mock_time_format.return_value = "24h"
 
@@ -453,7 +527,9 @@ class TestSettings:
     @patch("claude_monitor.core.settings.Settings._get_system_timezone")
     @patch("claude_monitor.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_auto_timezone(self, mock_time_format, mock_timezone):
-        """Test auto timezone detection."""
+        """
+        Test that the settings loader detects and sets the system timezone and time format when no timezone is specified in the CLI arguments or last used parameters.
+        """
         mock_timezone.return_value = "America/New_York"
         mock_time_format.return_value = "12h"
 
@@ -470,7 +546,9 @@ class TestSettings:
     @patch("claude_monitor.core.settings.Settings._get_system_timezone")
     @patch("claude_monitor.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_debug_flag(self, mock_time_format, mock_timezone):
-        """Test debug flag overrides log level."""
+        """
+        Test that enabling the debug flag sets debug mode to True and overrides the log level to "DEBUG".
+        """
         mock_timezone.return_value = "UTC"
         mock_time_format.return_value = "24h"
 
@@ -490,7 +568,9 @@ class TestSettings:
     def test_load_with_last_used_theme_detection(
         self, MockDetector, mock_time_format, mock_timezone
     ):
-        """Test theme auto-detection."""
+        """
+        Tests that when the theme is set to "auto", the theme is automatically detected using the background detector and set to "dark".
+        """
         mock_timezone.return_value = "UTC"
         mock_time_format.return_value = "24h"
 
@@ -516,7 +596,9 @@ class TestSettings:
     def test_load_with_last_used_custom_plan_reset(
         self, mock_time_format, mock_timezone
     ):
-        """Test custom plan resets custom_limit_tokens if not provided via CLI."""
+        """
+        Test that switching to the "custom" plan via CLI resets `custom_limit_tokens` to None if not specified in the CLI arguments, even when a previous value exists in last used parameters.
+        """
         mock_timezone.return_value = "UTC"
         mock_time_format.return_value = "24h"
 
@@ -534,7 +616,9 @@ class TestSettings:
             assert settings.custom_limit_tokens is None  # Should be reset
 
     def test_to_namespace(self):
-        """Test conversion to argparse.Namespace."""
+        """
+        Tests that the Settings instance is correctly converted to an argparse.Namespace with all fields accurately mapped.
+        """
         settings = Settings(
             plan="pro",
             timezone="UTC",
@@ -566,7 +650,9 @@ class TestSettings:
         assert namespace.version is True
 
     def test_to_namespace_none_values(self):
-        """Test conversion to namespace with None values."""
+        """
+        Test that converting a Settings instance with default (None) values to an argparse.Namespace preserves None for optional fields.
+        """
         settings = Settings(_cli_parse_args=[])
         namespace = settings.to_namespace()
 
@@ -579,7 +665,11 @@ class TestSettingsIntegration:
     """Integration tests for Settings class."""
 
     def test_complete_workflow(self):
-        """Test complete workflow with real file operations."""
+        """
+        Integration test that verifies settings persistence and correct merging of CLI arguments with previously saved parameters across multiple runs using real file operations.
+        
+        Simulates two consecutive runs: the first saves settings with specific CLI arguments, and the second loads and merges new CLI arguments with the previously saved settings, ensuring correct precedence and persistence.
+        """
         with tempfile.TemporaryDirectory() as temp_dir:
             config_dir = Path(temp_dir)
 
@@ -613,7 +703,9 @@ class TestSettingsIntegration:
                         assert settings2.plan == "pro"  # From CLI
 
     def test_settings_customise_sources(self):
-        """Test settings source customization."""
+        """
+        Tests that `settings_customise_sources` returns only the "init_settings" source, ignoring other provided sources.
+        """
         sources = Settings.settings_customise_sources(
             Settings,
             "init_settings",

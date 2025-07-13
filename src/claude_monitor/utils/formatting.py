@@ -14,14 +14,17 @@ logger = logging.getLogger(__name__)
 
 
 def format_currency(amount: float, currency: str = "USD") -> str:
-    """Format currency amount with appropriate symbol and formatting.
-
-    Args:
-        amount: The amount to format
-        currency: Currency code (default: USD)
-
+    """
+    Format a numeric amount as a currency string, using appropriate symbols and conventions.
+    
+    For USD, prepends a dollar sign and places the minus sign before the dollar sign for negative values. For other currencies, appends the currency code after the formatted amount.
+    
+    Parameters:
+        amount (float): The numeric amount to format.
+        currency (str, optional): The currency code (default is "USD").
+    
     Returns:
-        Formatted currency string
+        str: The formatted currency string.
     """
     amount = round(amount, 2)
 
@@ -35,15 +38,14 @@ def format_currency(amount: float, currency: str = "USD") -> str:
 
 
 def format_time(minutes: float) -> str:
-    """Format minutes into human-readable time (e.g., '3h 45m').
-
-    This is a re-export from time_utils for backward compatibility.
-
-    Args:
-        minutes: Duration in minutes
-
+    """
+    Convert a duration in minutes to a human-readable string (e.g., "3h 45m").
+    
+    Parameters:
+        minutes (float): Duration in minutes to format.
+    
     Returns:
-        Formatted time string
+        str: Formatted time string.
     """
     from claude_monitor.utils.time_utils import format_time as _format_time
 
@@ -55,28 +57,25 @@ def format_display_time(
     use_12h_format: Optional[bool] = None,
     include_seconds: bool = True,
 ) -> str:
-    """Format datetime for display with 12h/24h support.
-
-    This is a re-export from time_utils for backward compatibility.
-
-    Args:
-        dt_obj: Datetime object to format
-        use_12h_format: Whether to use 12-hour format (None for auto-detect)
-        include_seconds: Whether to include seconds in output
-
+    """
+    Format a datetime object as a display string with optional 12-hour or 24-hour format and optional seconds.
+    
+    Parameters:
+    	dt_obj (datetime): The datetime object to format.
+    	use_12h_format (Optional[bool]): If True, use 12-hour format; if False, use 24-hour format; if None, auto-detects preference.
+    	include_seconds (bool): If True, includes seconds in the output.
+    
     Returns:
-        Formatted time string
+    	str: The formatted time string.
     """
     return _format_display_time(dt_obj, use_12h_format, include_seconds)
 
 
 def _get_pref(args) -> bool:
-    """Internal helper function for getting time format preference.
-
-    Args:
-        args: Arguments object or None
-
+    """
+    Return the user's preferred time format as a boolean.
+    
     Returns:
-        True for 12-hour format, False for 24-hour format
+        True if the user prefers 12-hour time format, False for 24-hour format.
     """
     return get_time_format_preference(args)

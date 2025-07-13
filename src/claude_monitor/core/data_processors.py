@@ -14,17 +14,18 @@ class TimestampProcessor:
     """Unified timestamp parsing and processing utilities."""
 
     def __init__(self, timezone_handler: Optional[TimezoneHandler] = None):
-        """Initialize with optional timezone handler."""
+        """
+        Initialize a TimestampProcessor with an optional TimezoneHandler.
+        
+        If no timezone handler is provided, a default TimezoneHandler instance is created.
+        """
         self.timezone_handler = timezone_handler or TimezoneHandler()
 
     def parse_timestamp(self, timestamp_value: Any) -> Optional[datetime]:
-        """Parse timestamp from various formats to UTC datetime.
-
-        Args:
-            timestamp_value: Timestamp in various formats (str, int, float, datetime)
-
-        Returns:
-            Parsed UTC datetime or None if parsing fails
+        """
+        Parses a timestamp value from various formats into a UTC-aware datetime object.
+        
+        Accepts strings (ISO 8601, with or without 'Z' suffix), integers, floats (as Unix timestamps), or datetime objects. Returns a timezone-aware UTC datetime if parsing succeeds, or None if the input is invalid or cannot be parsed.
         """
         if timestamp_value is None:
             return None
@@ -65,13 +66,13 @@ class TokenExtractor:
 
     @staticmethod
     def extract_tokens(data: Dict[str, Any]) -> Dict[str, int]:
-        """Extract token counts from data in standardized format.
-
-        Args:
-            data: Data dictionary with token information
-
+        """
+        Extracts standardized token counts from a data dictionary, handling various possible key names and nested structures.
+        
+        Searches for token counts in multiple locations and key variants within the input data, prioritizing assistant-type structures. Returns a dictionary with standardized keys: "input_tokens", "output_tokens", "cache_creation_tokens", "cache_read_tokens", and "total_tokens", each representing the corresponding token count or zero if not found.
+         
         Returns:
-            Dictionary with standardized token keys and counts
+            Dict[str, int]: Dictionary containing standardized token counts.
         """
         import logging
 
@@ -172,14 +173,15 @@ class DataConverter:
 
     @staticmethod
     def flatten_nested_dict(data: Dict[str, Any], prefix: str = "") -> Dict[str, Any]:
-        """Flatten nested dictionary structure.
-
-        Args:
-            data: Nested dictionary
-            prefix: Prefix for flattened keys
-
+        """
+        Recursively flattens a nested dictionary into a single-level dictionary with dot-separated keys.
+        
+        Parameters:
+            data (Dict[str, Any]): The nested dictionary to flatten.
+            prefix (str, optional): String to prepend to each key in the flattened dictionary.
+        
         Returns:
-            Flattened dictionary
+            Dict[str, Any]: A flat dictionary where nested keys are concatenated with dots.
         """
         result = {}
 
@@ -197,14 +199,17 @@ class DataConverter:
     def extract_model_name(
         data: Dict[str, Any], default: str = "claude-3-5-sonnet"
     ) -> str:
-        """Extract model name from various data sources.
-
-        Args:
-            data: Data containing model information
-            default: Default model name if not found
-
+        """
+        Extracts the model name string from multiple possible locations within a data dictionary.
+        
+        Searches for a model name in nested keys such as "message.model", "model", "Model", "usage.model", and "request.model". Returns the first valid string found, or the provided default if none are present.
+        
+        Parameters:
+            data (dict): Dictionary potentially containing model information.
+            default (str): Model name to return if none is found in the data.
+        
         Returns:
-            Extracted model name
+            str: The extracted model name or the default value.
         """
         model_candidates = [
             data.get("message", {}).get("model"),
@@ -222,13 +227,10 @@ class DataConverter:
 
     @staticmethod
     def to_serializable(obj: Any) -> Any:
-        """Convert object to JSON-serializable format.
-
-        Args:
-            obj: Object to convert
-
-        Returns:
-            JSON-serializable representation
+        """
+        Convert an object into a JSON-serializable format.
+        
+        Recursively processes dictionaries, lists, and tuples, and converts datetime objects to ISO 8601 strings. Returns the original object if it is already serializable.
         """
         if isinstance(obj, datetime):
             return obj.isoformat()

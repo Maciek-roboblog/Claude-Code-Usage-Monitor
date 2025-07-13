@@ -35,16 +35,19 @@ def load_usage_entries(
     mode: CostMode = CostMode.AUTO,
     include_raw: bool = False,
 ) -> Tuple[List[UsageEntry], Optional[List[Dict[str, Any]]]]:
-    """Load and convert JSONL files to UsageEntry objects.
-
-    Args:
-        data_path: Path to Claude data directory (defaults to ~/.claude/projects)
-        hours_back: Only include entries from last N hours
-        mode: Cost calculation mode
-        include_raw: Whether to return raw JSON data alongside entries
-
+    """
+    Loads and processes Claude Monitor JSONL usage files, returning structured usage entries and optionally raw JSON data.
+    
+    Scans the specified data directory for JSONL files, filters entries by recency if `hours_back` is set, deduplicates entries, maps them to `UsageEntry` objects with cost calculation according to the specified mode, and sorts them by timestamp. If `include_raw` is True, also returns the corresponding raw JSON entries.
+    
+    Parameters:
+        data_path (str, optional): Path to the directory containing Claude usage data. Defaults to `~/.claude/projects` if not specified.
+        hours_back (int, optional): If provided, only includes entries from the last N hours.
+        mode (CostMode): Determines how costs are calculated for each entry.
+        include_raw (bool): If True, returns the raw JSON data alongside processed entries.
+    
     Returns:
-        Tuple of (usage_entries, raw_data) where raw_data is None unless include_raw=True
+        Tuple[List[UsageEntry], Optional[List[Dict[str, Any]]]]: A tuple containing the list of processed usage entries and, if requested, the list of raw JSON entries.
     """
     data_path = Path(data_path if data_path else "~/.claude/projects").expanduser()
     timezone_handler = TimezoneHandler()
@@ -85,13 +88,13 @@ def load_usage_entries(
 
 
 def load_all_raw_entries(data_path: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Load all raw JSONL entries without processing.
-
-    Args:
-        data_path: Path to Claude data directory
-
+    """
+    Load all raw JSON entries from JSONL files in the specified directory.
+    
+    Reads every line from all `.jsonl` files found under the given directory (defaulting to `~/.claude/projects`), parses each line as JSON, and returns a list of raw dictionaries. Malformed lines and file read errors are skipped.
+     
     Returns:
-        List of raw JSON dictionaries
+        List[Dict[str, Any]]: A list of raw JSON objects from all discovered JSONL files.
     """
     data_path = Path(data_path if data_path else "~/.claude/projects").expanduser()
     jsonl_files = _find_jsonl_files(data_path)
@@ -115,7 +118,12 @@ def load_all_raw_entries(data_path: Optional[str] = None) -> List[Dict[str, Any]
 
 
 def _find_jsonl_files(data_path: Path) -> List[Path]:
-    """Find all .jsonl files in the data directory."""
+    """
+    Recursively finds all `.jsonl` files under the specified data directory.
+    
+    Returns:
+        List of paths to `.jsonl` files found. Returns an empty list if the directory does not exist.
+    """
     if not data_path.exists():
         logger.warning("Data path does not exist: %s", data_path)
         return []
@@ -131,7 +139,21 @@ def _process_single_file(
     timezone_handler: TimezoneHandler,
     pricing_calculator: PricingCalculator,
 ) -> Tuple[List[UsageEntry], Optional[List[Dict[str, Any]]]]:
-    """Process a single JSONL file."""
+    """
+    Processes a single JSONL file, filtering and deduplicating entries, mapping valid entries to `UsageEntry` objects, and optionally collecting raw data.
+    
+    Parameters:
+        file_path (Path): Path to the JSONL file to process.
+        mode (CostMode): Cost calculation mode for usage entries.
+        cutoff_time (Optional[datetime]): Only entries after this timestamp are processed; if None, all entries are considered.
+        processed_hashes (Set[str]): Set of unique hashes for deduplication across files.
+        include_raw (bool): If True, collects and returns raw JSON data for each processed entry.
+        timezone_handler (TimezoneHandler): Handles timezone conversion for timestamps.
+        pricing_calculator (PricingCalculator): Calculates cost for each usage entry.
+    
+    Returns:
+        Tuple[List[UsageEntry], Optional[List[Dict[str, Any]]]]: A tuple containing the list of processed `UsageEntry` objects and, if requested, the corresponding raw JSON data.
+    """
     entries = []
     raw_data = [] if include_raw else None
 
@@ -195,7 +217,12 @@ def _should_process_entry(
     processed_hashes: Set[str],
     timezone_handler: TimezoneHandler,
 ) -> bool:
-    """Check if entry should be processed based on time and uniqueness."""
+    """
+    Determine whether a data entry should be processed based on its timestamp and uniqueness.
+    
+    Returns:
+        bool: True if the entry's timestamp is after the cutoff time (if specified) and its unique hash has not been processed; otherwise, False.
+    """
     if cutoff_time:
         timestamp_str = data.get("timestamp")
         if timestamp_str:
@@ -212,7 +239,12 @@ def _should_process_entry(
 
 
 def _create_unique_hash(data: dict) -> Optional[str]:
-    """Create unique hash for deduplication."""
+    """
+    Generate a unique hash string for an entry by combining its message ID and request ID.
+    
+    Returns:
+        A string in the format "message_id:request_id" if both identifiers are present; otherwise, None.
+    """
     message_id = data.get("message_id") or (
         data.get("message", {}).get("id")
         if isinstance(data.get("message"), dict)
@@ -224,7 +256,11 @@ def _create_unique_hash(data: dict) -> Optional[str]:
 
 
 def _update_processed_hashes(data: Dict[str, Any], processed_hashes: Set[str]) -> None:
-    """Update the processed hashes set with current entry's hash."""
+    """
+    Adds the unique hash of the given entry to the set of processed hashes for deduplication.
+    
+    If the entry's unique hash can be generated, it is added to the provided set to track processed entries and prevent duplicates.
+    """
     unique_hash = _create_unique_hash(data)
     if unique_hash:
         processed_hashes.add(unique_hash)
@@ -236,7 +272,14 @@ def _map_to_usage_entry(
     timezone_handler: TimezoneHandler,
     pricing_calculator: PricingCalculator,
 ) -> Optional[UsageEntry]:
-    """Map raw data to UsageEntry with proper cost calculation."""
+    """
+    Converts a raw data dictionary into a UsageEntry object with calculated cost.
+    
+    Attempts to extract timestamp, token counts, model name, and identifiers from the input data. Calculates the usage cost using the provided pricing calculator and mode. Returns None if required fields are missing or invalid.
+     
+    Returns:
+        UsageEntry if mapping and cost calculation succeed; otherwise, None.
+    """
     try:
         timestamp_processor = TimestampProcessor(timezone_handler)
         timestamp = timestamp_processor.parse_timestamp(data.get("timestamp", ""))
@@ -291,33 +334,63 @@ class UsageEntryMapper:
     def __init__(
         self, pricing_calculator: PricingCalculator, timezone_handler: TimezoneHandler
     ):
-        """Initialize with required components."""
+        """
+        Initialize a UsageEntryMapper with a pricing calculator and timezone handler.
+        
+        The provided components are used for cost calculation and timestamp processing when mapping raw data to UsageEntry objects.
+        """
         self.pricing_calculator = pricing_calculator
         self.timezone_handler = timezone_handler
 
     def map(self, data: dict, mode: CostMode) -> Optional[UsageEntry]:
-        """Map raw data to UsageEntry - compatibility interface."""
+        """
+        Converts a raw data dictionary into a UsageEntry object using the specified cost calculation mode.
+        
+        Parameters:
+            data (dict): The raw usage entry data to be mapped.
+            mode (CostMode): The cost calculation mode to use.
+        
+        Returns:
+            UsageEntry or None: The mapped UsageEntry object, or None if the data is invalid or incomplete.
+        """
         return _map_to_usage_entry(
             data, mode, self.timezone_handler, self.pricing_calculator
         )
 
     def _has_valid_tokens(self, tokens: Dict[str, int]) -> bool:
-        """Check if tokens are valid (for test compatibility)."""
+        """
+        Determine whether the provided token counts contain any positive values.
+        
+        Returns:
+            bool: True if at least one token count is greater than zero; otherwise, False.
+        """
         return any(v > 0 for v in tokens.values())
 
     def _extract_timestamp(self, data: dict) -> Optional[datetime]:
-        """Extract timestamp (for test compatibility)."""
+        """
+        Extracts the timestamp from the given data dictionary using the configured timezone handler.
+        
+        Returns:
+            The parsed datetime object if the "timestamp" field exists and is valid; otherwise, None.
+        """
         if "timestamp" not in data:
             return None
         processor = TimestampProcessor(self.timezone_handler)
         return processor.parse_timestamp(data["timestamp"])
 
     def _extract_model(self, data: dict) -> str:
-        """Extract model name (for test compatibility)."""
+        """
+        Extracts the model name from the provided data dictionary, returning "unknown" if not found.
+        """
         return DataConverter.extract_model_name(data, default="unknown")
 
     def _extract_metadata(self, data: dict) -> Dict[str, str]:
-        """Extract metadata (for test compatibility)."""
+        """
+        Extracts the message and request identifiers from the entry data for compatibility with legacy tests.
+        
+        Returns:
+            A dictionary containing 'message_id' and 'request_id' extracted from the input data.
+        """
         message = data.get("message", {})
         return {
             "message_id": data.get("message_id") or message.get("id", ""),

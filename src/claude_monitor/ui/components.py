@@ -19,40 +19,43 @@ class VelocityIndicator:
 
     @staticmethod
     def get_velocity_emoji(burn_rate: float) -> str:
-        """Get velocity emoji based on burn rate.
-
-        Args:
-            burn_rate: Token burn rate per minute
-
+        """
+        Return an emoji representing the token burn rate velocity level.
+        
+        Parameters:
+            burn_rate (float): The token burn rate per minute.
+        
         Returns:
-            Emoji representing velocity level
+            str: An emoji corresponding to the velocity level for the given burn rate.
         """
         indicator = get_velocity_indicator(burn_rate)
         return indicator["emoji"]
 
     @staticmethod
     def get_velocity_description(burn_rate: float) -> str:
-        """Get velocity description based on burn rate.
-
-        Args:
-            burn_rate: Token burn rate per minute
-
+        """
+        Return a text description representing the velocity level for a given token burn rate.
+        
+        Parameters:
+            burn_rate (float): Token burn rate per minute.
+        
         Returns:
-            Text description of velocity level
+            str: Description of the velocity level corresponding to the burn rate.
         """
         indicator = get_velocity_indicator(burn_rate)
         return indicator["label"]
 
     @staticmethod
     def render(burn_rate: float, include_description: bool = False) -> str:
-        """Render velocity indicator.
-
-        Args:
-            burn_rate: Token burn rate per minute
-            include_description: Whether to include text description
-
+        """
+        Return a formatted velocity indicator string representing the token burn rate.
+        
+        Parameters:
+            burn_rate (float): The token burn rate per minute.
+            include_description (bool): If True, includes a descriptive label alongside the velocity emoji.
+        
         Returns:
-            Formatted velocity indicator
+            str: A string containing the velocity emoji, and optionally a description, corresponding to the burn rate.
         """
         emoji = VelocityIndicator.get_velocity_emoji(burn_rate)
         if include_description:
@@ -66,14 +69,15 @@ class CostIndicator:
 
     @staticmethod
     def render(cost: float, currency: str = "USD") -> str:
-        """Render cost indicator with appropriate styling.
-
-        Args:
-            cost: Cost amount
-            currency: Currency symbol/code
-
+        """
+        Return a styled string representing the cost amount with the appropriate currency symbol.
+        
+        Parameters:
+        	cost (float): The cost value to display.
+        	currency (str): The currency code or symbol to use (defaults to "USD").
+        
         Returns:
-            Formatted cost indicator
+        	str: A formatted and styled string showing the cost with currency.
         """
         style = get_cost_style(cost)
         symbol = "$" if currency == "USD" else currency
@@ -89,14 +93,15 @@ class ErrorDisplayComponent:
     def format_error_screen(
         self, plan: str = "pro", timezone: str = "Europe/Warsaw"
     ) -> List[str]:
-        """Format error screen for failed data fetch.
-
-        Args:
-            plan: Current plan name
-            timezone: Display timezone
-
+        """
+        Generates a formatted error screen as a list of strings when data fetching fails.
+        
+        Parameters:
+        	plan (str): The current subscription plan name.
+        	timezone (str): The timezone to display in the header.
+        
         Returns:
-            List of formatted error screen lines
+        	List[str]: Lines representing the error screen, including a header, error message, possible causes, and retry notice.
         """
         screen_buffer = []
 
@@ -118,7 +123,9 @@ class LoadingScreenComponent:
     """Loading screen component for displaying loading states."""
 
     def __init__(self):
-        """Initialize loading screen component."""
+        """
+        Initialize the LoadingScreenComponent instance.
+        """
 
     def create_loading_screen(
         self,
@@ -126,14 +133,16 @@ class LoadingScreenComponent:
         timezone: str = "Europe/Warsaw",
         custom_message: str = None,
     ) -> List[str]:
-        """Create loading screen content.
-
-        Args:
-            plan: Current plan name
-            timezone: Display timezone
-
+        """
+        Generate the content for a loading screen, including a header, loading message, optional custom message, and additional information for custom plans.
+        
+        Parameters:
+        	plan (str): The current subscription plan name.
+        	timezone (str): The timezone to display in the header.
+        	custom_message (str, optional): A custom message to display instead of the default loading message.
+        
         Returns:
-            List of loading screen lines
+        	List[str]: Lines of formatted strings representing the loading screen content.
         """
         screen_buffer = []
 
@@ -167,14 +176,16 @@ class LoadingScreenComponent:
         timezone: str = "Europe/Warsaw",
         custom_message: str = None,
     ):
-        """Create Rich renderable for loading screen.
-
-        Args:
-            plan: Current plan name
-            timezone: Display timezone
-
+        """
+        Generate a Rich renderable object representing the loading screen.
+        
+        Parameters:
+            plan (str): The current plan name.
+            timezone (str): The timezone to display.
+            custom_message (str, optional): An optional custom message to include in the loading screen.
+        
         Returns:
-            Rich renderable for loading screen
+            A Rich renderable object containing the formatted loading screen.
         """
         screen_buffer = self.create_loading_screen(plan, timezone, custom_message)
 
@@ -188,12 +199,26 @@ class AdvancedCustomLimitDisplay:
     """Display component for session-based P90 limits from general_limit sessions."""
 
     def __init__(self, console: Console):
+        """
+        Initialize the AdvancedCustomLimitDisplay with a console for output.
+        
+        Parameters:
+            console (Console): The Rich Console instance used for rendering output.
+        """
         self.console = console
 
     def _collect_session_data(
         self, blocks: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
-        """Collect session data and identify limit sessions."""
+        """
+        Processes session blocks to extract all sessions, sessions that hit token limits, the current active session, and counts of total and active sessions.
+        
+        Parameters:
+            blocks (Optional[List[Dict[str, Any]]]): List of session data blocks to process.
+        
+        Returns:
+            Dict[str, Any]: A dictionary containing lists of all sessions, limit sessions, the current session, and counts of total and active sessions.
+        """
         if not blocks:
             return {
                 "all_sessions": [],
@@ -236,7 +261,12 @@ class AdvancedCustomLimitDisplay:
         }
 
     def _is_limit_session(self, session: Dict[str, Any]) -> bool:
-        """Check if session hit a general limit."""
+        """
+        Determine whether a session has reached or exceeded a general token limit.
+        
+        Returns:
+            bool: True if the session's token count meets or surpasses a threshold of any common token limit; otherwise, False.
+        """
         tokens = session["tokens"]
 
         from claude_monitor.core.plans import (
@@ -253,7 +283,12 @@ class AdvancedCustomLimitDisplay:
     def _calculate_session_percentiles(
         self, sessions: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Calculate percentiles from session data."""
+        """
+        Compute percentile statistics and averages for tokens, costs, and messages from a list of session data.
+        
+        Returns:
+            A dictionary containing p50, p75, p90, and p95 percentiles for tokens, costs, and messages, as well as their averages and the total session count. If the input list is empty, returns default values.
+        """
         if not sessions:
             return {
                 "tokens": {"p50": 44000, "p75": 66000, "p90": 88000, "p95": 110000},
@@ -300,9 +335,10 @@ class AdvancedCustomLimitDisplay:
 def format_error_screen(
     plan: str = "pro", timezone: str = "Europe/Warsaw"
 ) -> List[str]:
-    """Legacy function - format error screen.
-
-    Maintained for backward compatibility.
+    """
+    Generate a formatted error screen as a list of strings for display in the terminal.
+    
+    This legacy function is maintained for backward compatibility and delegates to the ErrorDisplayComponent to produce the error screen content.
     """
     component = ErrorDisplayComponent()
     return component.format_error_screen(plan, timezone)

@@ -21,33 +21,45 @@ class TestFormatTime:
     """Test cases for format_time function."""
 
     def test_format_time_less_than_hour(self):
-        """Test formatting minutes less than an hour."""
+        """
+        Test that `format_time` correctly formats minute values less than one hour as minutes only.
+        """
         assert format_time(0) == "0m"
         assert format_time(1) == "1m"
         assert format_time(30) == "30m"
         assert format_time(59) == "59m"
 
     def test_format_time_exact_hours(self):
-        """Test formatting exact hours (no minutes)."""
+        """
+        Test that `format_time` correctly formats values representing exact hours without minutes.
+        """
         assert format_time(60) == "1h"
         assert format_time(120) == "2h"
         assert format_time(180) == "3h"
 
     def test_format_time_hours_and_minutes(self):
-        """Test formatting hours and minutes."""
+        """
+        Tests that the format_time function correctly formats durations given in minutes into strings showing both hours and minutes.
+        """
         assert format_time(61) == "1h 1m"
         assert format_time(90) == "1h 30m"
         assert format_time(125) == "2h 5m"
         assert format_time(225) == "3h 45m"
 
     def test_format_time_large_values(self):
-        """Test formatting large time values."""
+        """
+        Test that `format_time` correctly formats large minute values into hour and minute strings.
+        
+        Verifies that values representing 24 hours or more are displayed as hours (and minutes if applicable).
+        """
         assert format_time(1440) == "24h"  # 1 day
         assert format_time(1500) == "25h"  # 25 hours
         assert format_time(1561) == "26h 1m"
 
     def test_format_time_float_values(self):
-        """Test formatting with float input values."""
+        """
+        Tests that the format_time function correctly formats float minute values, rounding or truncating as appropriate for hours and minutes.
+        """
         assert format_time(59.7) == "59m"
         assert (
             format_time(60.5) == "1h"
@@ -59,7 +71,9 @@ class TestFormatCurrency:
     """Test cases for format_currency function."""
 
     def test_format_usd_default(self):
-        """Test formatting USD currency (default)."""
+        """
+        Test that the `format_currency` function correctly formats various USD amounts using the default settings.
+        """
         assert format_currency(0.0) == "$0.00"
         assert format_currency(1.0) == "$1.00"
         assert format_currency(10.99) == "$10.99"
@@ -67,18 +81,24 @@ class TestFormatCurrency:
         assert format_currency(1234567.89) == "$1,234,567.89"
 
     def test_format_usd_explicit(self):
-        """Test formatting USD currency explicitly."""
+        """
+        Test that formatting currency values with an explicit "USD" currency code produces correctly formatted US dollar strings.
+        """
         assert format_currency(100.0, "USD") == "$100.00"
         assert format_currency(1000.50, "USD") == "$1,000.50"
 
     def test_format_other_currencies(self):
-        """Test formatting other currencies."""
+        """
+        Test that `format_currency` correctly formats values for non-USD currencies, ensuring proper placement of currency codes and number formatting.
+        """
         assert format_currency(100.0, "EUR") == "100.00 EUR"
         assert format_currency(1000.50, "GBP") == "1,000.50 GBP"
         assert format_currency(1234567.89, "JPY") == "1,234,567.89 JPY"
 
     def test_format_currency_edge_cases(self):
-        """Test edge cases for currency formatting."""
+        """
+        Test formatting of currency values for edge cases including very small, negative, and large amounts.
+        """
         assert format_currency(0.001, "USD") == "$0.00"
         assert format_currency(-10.50, "USD") == "$-10.50"
         assert format_currency(999999999.99, "USD") == "$999,999,999.99"
@@ -89,7 +109,9 @@ class TestGetTimeFormatPreference:
 
     @patch("claude_monitor.utils.time_utils.TimeFormatDetector.get_preference")
     def test_get_time_format_preference_no_args(self, mock_get_pref):
-        """Test getting time format preference without args."""
+        """
+        Tests that `get_time_format_preference` returns the correct value when called without arguments, using a mocked preference retrieval function.
+        """
         mock_get_pref.return_value = True
         result = get_time_format_preference()
         mock_get_pref.assert_called_once_with(None)
@@ -97,7 +119,11 @@ class TestGetTimeFormatPreference:
 
     @patch("claude_monitor.utils.time_utils.TimeFormatDetector.get_preference")
     def test_get_time_format_preference_with_args(self, mock_get_pref):
-        """Test getting time format preference with args."""
+        """
+        Tests that `get_time_format_preference` returns the correct value when provided with argument overrides.
+        
+        Verifies that the preference retrieval function is called with the given arguments and that the result matches the mocked return value.
+        """
         mock_args = {"time_format": "12h"}
         mock_get_pref.return_value = False
         result = get_time_format_preference(mock_args)
@@ -109,12 +135,16 @@ class TestFormatDisplayTime:
     """Test cases for format_display_time function."""
 
     def setUp(self):
-        """Set up test datetime."""
+        """
+        Initializes a fixed datetime object for use in display time formatting tests.
+        """
         self.test_dt = datetime(2024, 1, 1, 15, 30, 45, tzinfo=timezone.utc)
 
     @patch("claude_monitor.utils.time_utils.get_time_format_preference")
     def test_format_display_time_24h_with_seconds(self, mock_pref):
-        """Test 24-hour format with seconds."""
+        """
+        Tests that `format_display_time` correctly formats a datetime object in 24-hour format with seconds included.
+        """
         mock_pref.return_value = False
         dt = datetime(2024, 1, 1, 15, 30, 45, tzinfo=timezone.utc)
         result = format_display_time(dt, use_12h_format=False, include_seconds=True)
@@ -122,7 +152,9 @@ class TestFormatDisplayTime:
 
     @patch("claude_monitor.utils.time_utils.get_time_format_preference")
     def test_format_display_time_24h_without_seconds(self, mock_pref):
-        """Test 24-hour format without seconds."""
+        """
+        Tests that `format_display_time` correctly formats a datetime object in 24-hour format without including seconds.
+        """
         mock_pref.return_value = False
         dt = datetime(2024, 1, 1, 15, 30, 45, tzinfo=timezone.utc)
         result = format_display_time(dt, use_12h_format=False, include_seconds=False)
@@ -130,7 +162,11 @@ class TestFormatDisplayTime:
 
     @patch("claude_monitor.utils.time_utils.get_time_format_preference")
     def test_format_display_time_12h_with_seconds(self, mock_pref):
-        """Test 12-hour format with seconds."""
+        """
+        Verifies that `format_display_time` correctly formats a datetime in 12-hour format with seconds included.
+        
+        Ensures the output matches expected 12-hour time representations, accounting for platform-specific formatting differences.
+        """
         mock_pref.return_value = True
         dt = datetime(2024, 1, 1, 15, 30, 45, tzinfo=timezone.utc)
         result = format_display_time(dt, use_12h_format=True, include_seconds=True)
@@ -139,7 +175,9 @@ class TestFormatDisplayTime:
 
     @patch("claude_monitor.utils.time_utils.get_time_format_preference")
     def test_format_display_time_12h_without_seconds(self, mock_pref):
-        """Test 12-hour format without seconds."""
+        """
+        Tests that `format_display_time` correctly formats a datetime object in 12-hour format without seconds, handling both Unix and Windows output variations.
+        """
         mock_pref.return_value = True
         dt = datetime(2024, 1, 1, 15, 30, 45, tzinfo=timezone.utc)
         result = format_display_time(dt, use_12h_format=True, include_seconds=False)
@@ -157,7 +195,9 @@ class TestFormatDisplayTime:
         assert "PM" in result
 
     def test_format_display_time_platform_compatibility(self):
-        """Test that format_display_time works on different platforms."""
+        """
+        Verifies that the format_display_time function produces correct 12-hour formatted time strings with and without seconds across different operating systems.
+        """
         dt = datetime(2024, 1, 1, 3, 30, 45, tzinfo=timezone.utc)
 
         # Test 12-hour format - should work on both Unix and Windows
@@ -171,7 +211,9 @@ class TestFormatDisplayTime:
         assert "3:30 AM" in result_12h_no_sec or "03:30 AM" == result_12h_no_sec
 
     def test_format_display_time_edge_cases(self):
-        """Test edge cases for format_display_time."""
+        """
+        Tests that `format_display_time` correctly formats noon and midnight in 12-hour format, ensuring the presence of appropriate AM/PM indicators.
+        """
         # Test noon and midnight
         noon = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
         midnight = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
@@ -192,7 +234,9 @@ class TestFormattingAdvanced:
     """Advanced test cases for formatting utilities."""
 
     def test_format_currency_extensive_edge_cases(self):
-        """Test format_currency with extensive edge cases."""
+        """
+        Verifies that format_currency correctly handles a wide range of edge cases, including very small, negative, and very large amounts, as well as different currencies.
+        """
         # Test very small amounts
         assert format_currency(0.001, "USD") == "$0.00"
         assert format_currency(0.009, "USD") == "$0.01"
@@ -210,7 +254,11 @@ class TestFormattingAdvanced:
         assert format_currency(-1000.50, "GBP") == "-1,000.50 GBP"
 
     def test_format_currency_precision_handling(self):
-        """Test currency formatting precision handling."""
+        """
+        Test that `format_currency` correctly handles floating-point precision and rounding.
+        
+        Verifies that the function produces expected currency strings for values affected by floating-point arithmetic, including proper rounding up and down.
+        """
         # Test floating point precision issues
         assert (
             format_currency(0.1 + 0.2, "USD") == "$0.30"
@@ -219,7 +267,11 @@ class TestFormattingAdvanced:
         assert format_currency(10.004, "USD") == "$10.00"  # Should round down
 
     def test_format_currency_international_formats(self):
-        """Test currency formatting for various international formats."""
+        """
+        Test that `format_currency` correctly formats amounts for various international currency codes.
+        
+        Verifies that the formatted string includes the expected numeric format and the appropriate currency code suffix for each tested currency.
+        """
         currencies = [
             "JPY",
             "KRW",
@@ -240,7 +292,9 @@ class TestFormattingAdvanced:
             assert result.endswith(currency)
 
     def test_format_time_comprehensive_coverage(self):
-        """Test format_time with comprehensive edge cases."""
+        """
+        Verifies that the format_time function correctly formats a wide range of minute values, including zero, fractional, boundary, large, and mixed hour-minute cases.
+        """
         # Test zero and very small values
         assert format_time(0.0) == "0m"
         assert format_time(0.1) == "0m"
@@ -261,7 +315,11 @@ class TestFormattingAdvanced:
         assert format_time(125.7) == "2h 5m"
 
     def test_format_time_extreme_values(self):
-        """Test format_time with extreme values."""
+        """
+        Tests the behavior of format_time when given extremely large or negative minute values.
+        
+        Verifies that very large minute values are formatted with hours, and that negative values are handled gracefully according to the implementation.
+        """
         # Test very large values
         large_minutes = 100000
         result = format_time(large_minutes)
@@ -272,7 +330,9 @@ class TestFormattingAdvanced:
         # Note: This depends on implementation - might need to check actual behavior
 
     def test_format_display_time_comprehensive_platform_support(self):
-        """Test format_display_time comprehensive platform support."""
+        """
+        Verifies that `format_display_time` correctly formats various datetime values in both 12-hour and 24-hour formats with seconds, ensuring compatibility across different times of day and platform conventions.
+        """
         test_times = [
             datetime(2024, 1, 1, 0, 0, 0),  # Midnight
             datetime(2024, 1, 1, 12, 0, 0),  # Noon
@@ -295,7 +355,11 @@ class TestFormattingAdvanced:
             assert ("AM" in result_12h) or ("PM" in result_12h)
 
     def test_get_time_format_preference_edge_cases(self):
-        """Test get_time_format_preference with edge cases."""
+        """
+        Test `get_time_format_preference` for correct behavior with None and empty argument objects.
+        
+        Verifies that the function correctly delegates to the underlying preference detector and returns the expected boolean value for edge case inputs.
+        """
         # Test with None args
         with patch(
             "claude_monitor.utils.time_utils.TimeFormatDetector.get_preference"
@@ -316,7 +380,9 @@ class TestFormattingAdvanced:
             mock_pref.assert_called_once_with(empty_args)
 
     def test_internal_get_pref_function(self):
-        """Test the internal _get_pref helper function."""
+        """
+        Tests the internal `_get_pref` helper to ensure it correctly retrieves the time format preference using provided arguments.
+        """
         from claude_monitor.utils.formatting import _get_pref
 
         # Test with mock args
@@ -334,7 +400,9 @@ class TestFormattingErrorHandling:
     """Test error handling in formatting utilities."""
 
     def test_format_currency_error_conditions(self):
-        """Test format_currency error handling."""
+        """
+        Tests that format_currency handles infinite and NaN values gracefully, either by returning a string or raising an appropriate exception.
+        """
         # Test with very large numbers that might cause overflow
         try:
             result = format_currency(float("inf"), "USD")
@@ -353,7 +421,9 @@ class TestFormattingErrorHandling:
             pass
 
     def test_format_time_error_conditions(self):
-        """Test format_time error handling."""
+        """
+        Tests that the `format_time` function handles negative and extremely large input values gracefully, returning a string in both cases.
+        """
         # Test with negative values
         result = format_time(-10)
         # Should handle gracefully - exact behavior depends on implementation
@@ -364,7 +434,9 @@ class TestFormattingErrorHandling:
         assert isinstance(result, str)
 
     def test_format_display_time_invalid_inputs(self):
-        """Test format_display_time with invalid inputs."""
+        """
+        Test that `format_display_time` handles invalid or None datetime inputs gracefully, either by raising an appropriate exception or returning a sensible string.
+        """
         # Test with None datetime
         try:
             result = format_display_time(None)
@@ -379,7 +451,9 @@ class TestFormattingPerformance:
     """Test performance characteristics of formatting utilities."""
 
     def test_format_currency_performance_with_large_datasets(self):
-        """Test format_currency performance with many values."""
+        """
+        Tests that formatting 10,000 currency values completes within one second and produces the correct output types and count.
+        """
         import time
 
         # Test formatting many currency values
@@ -395,7 +469,9 @@ class TestFormattingPerformance:
         assert all(isinstance(r, str) for r in results)
 
     def test_format_time_performance_with_large_datasets(self):
-        """Test format_time performance with many values."""
+        """
+        Tests that the format_time function can efficiently process a large range of minute values, completing within one second and returning the correct number and type of results.
+        """
         import time
 
         # Test formatting many time values
@@ -415,7 +491,9 @@ class TestModelUtils:
     """Test cases for model utilities."""
 
     def test_normalize_model_name(self):
-        """Test model name normalization."""
+        """
+        Tests the normalize_model_name function to ensure correct normalization of Claude model names, handling of empty or None inputs, and preservation of unknown model names.
+        """
         # Test Claude 3 models
         assert normalize_model_name("claude-3-opus-20240229") == "claude-3-opus"
         assert normalize_model_name("claude-3-sonnet-20240229") == "claude-3-sonnet"
@@ -434,7 +512,9 @@ class TestModelUtils:
         assert normalize_model_name("unknown-model") == "unknown-model"
 
     def test_get_model_display_name(self):
-        """Test model display name generation."""
+        """
+        Verifies that `get_model_display_name` returns the correct display name for known Claude models and applies title casing for unknown model names.
+        """
         # Test known models
         assert get_model_display_name("claude-3-opus") == "Claude 3 Opus"
         assert get_model_display_name("claude-3-sonnet") == "Claude 3 Sonnet"
@@ -460,7 +540,9 @@ class TestModelUtils:
         assert is_claude_model("") is False
 
     def test_get_model_generation(self):
-        """Test model generation extraction."""
+        """
+        Verifies that the `get_model_generation` function correctly extracts the generation number from various Claude model names, including edge cases and unknown models.
+        """
         # Test Claude 3.5 models
         assert get_model_generation("claude-3-5-sonnet") == "3.5"
         assert get_model_generation("claude-3.5-sonnet") == "3.5"

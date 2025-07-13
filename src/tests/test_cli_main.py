@@ -13,7 +13,9 @@ class TestMain:
     """Test cases for main function."""
 
     def test_version_flag(self):
-        """Test --version flag returns 0 and prints version."""
+        """
+        Test that the `--version` CLI flag prints the version information and returns exit code 0.
+        """
         with patch("builtins.print") as mock_print:
             result = main(["--version"])
             assert result == 0
@@ -21,7 +23,9 @@ class TestMain:
             assert "claude-monitor" in mock_print.call_args[0][0]
 
     def test_v_flag(self):
-        """Test -v flag returns 0 and prints version."""
+        """
+        Test that the `-v` CLI flag prints the version information and returns exit code 0.
+        """
         with patch("builtins.print") as mock_print:
             result = main(["-v"])
             assert result == 0
@@ -43,7 +47,11 @@ class TestMain:
         mock_setup_environment,
         mock_load_settings,
     ):
-        """Test successful main execution."""
+        """
+        Test that the main function completes successfully with all setup steps executed.
+        
+        Verifies that environment setup, directory creation, logging, timezone initialization, and monitoring are called, and that the main function returns exit code 0.
+        """
         mock_settings = Mock()
         mock_settings.log_file = None
         mock_settings.log_level = "INFO"
@@ -75,7 +83,11 @@ class TestMain:
         mock_setup_environment,
         mock_load_settings,
     ):
-        """Test main execution with log file."""
+        """
+        Test that the main function sets up logging with the specified log file and log level when the --log-file argument is provided.
+        
+        Asserts that logging is configured correctly and main returns a success exit code.
+        """
         mock_settings = Mock()
         mock_settings.log_file = "/tmp/test.log"
         mock_settings.log_level = "DEBUG"
@@ -91,7 +103,9 @@ class TestMain:
         )
 
     def test_keyboard_interrupt_handling(self):
-        """Test keyboard interrupt returns 0."""
+        """
+        Test that a keyboard interrupt during settings loading causes the main function to exit gracefully with code 0 and prints a user stop message.
+        """
         with patch("claude_monitor.cli.main.Settings.load_with_last_used") as mock_load:
             mock_load.side_effect = KeyboardInterrupt()
             with patch("builtins.print") as mock_print:
@@ -101,7 +115,9 @@ class TestMain:
 
     @patch("claude_monitor.cli.main.Settings.load_with_last_used")
     def test_exception_handling(self, mock_load_settings):
-        """Test exception handling returns 1."""
+        """
+        Test that the main function returns exit code 1 and prints a traceback when an exception occurs during settings loading.
+        """
         mock_load_settings.side_effect = Exception("Test error")
 
         with patch("builtins.print"), patch("traceback.print_exc"):
@@ -114,14 +130,24 @@ class TestGetInitialTokenLimit:
 
     @pytest.fixture
     def mock_args_pro(self):
-        """Mock args for pro plan."""
+        """
+        Create and return a mock arguments object configured for the "pro" plan.
+        
+        Returns:
+            Mock: A mock object with the 'plan' attribute set to "pro".
+        """
         args = Mock()
         args.plan = "pro"
         return args
 
     @pytest.fixture
     def mock_args_custom_with_limit(self):
-        """Mock args for custom plan with explicit limit."""
+        """
+        Create a mock arguments object for a custom plan with an explicit token limit.
+        
+        Returns:
+            Mock: A mock object with 'plan' set to "custom" and 'custom_limit_tokens' set to 500000.
+        """
         args = Mock()
         args.plan = "custom"
         args.custom_limit_tokens = 500000
@@ -129,7 +155,12 @@ class TestGetInitialTokenLimit:
 
     @pytest.fixture
     def mock_args_custom_no_limit(self):
-        """Mock args for custom plan without explicit limit."""
+        """
+        Create a mock arguments object for a custom plan without an explicit token limit.
+        
+        Returns:
+            Mock: A mock object with 'plan' set to "custom" and 'custom_limit_tokens' set to None.
+        """
         args = Mock()
         args.plan = "custom"
         args.custom_limit_tokens = None
@@ -137,7 +168,11 @@ class TestGetInitialTokenLimit:
 
     @patch("claude_monitor.cli.main.get_token_limit")
     def test_pro_plan_token_limit(self, mock_get_token_limit, mock_args_pro):
-        """Test token limit for pro plan."""
+        """
+        Verify that the token limit for the "pro" plan is correctly retrieved using the token limit function.
+        
+        Ensures that `_get_initial_token_limit` calls the token limit retrieval with the "pro" plan and returns the expected value.
+        """
         mock_get_token_limit.return_value = 200000
 
         result = _get_initial_token_limit(mock_args_pro, "/test/path")
@@ -149,7 +184,11 @@ class TestGetInitialTokenLimit:
     def test_custom_plan_with_explicit_limit(
         self, mock_print_themed, mock_args_custom_with_limit
     ):
-        """Test custom plan with explicit token limit."""
+        """
+        Test that an explicit token limit is used for a custom plan and a themed message is printed.
+        
+        Verifies that when a custom plan is provided with an explicit token limit, the limit is returned and the appropriate informational message is displayed.
+        """
         result = _get_initial_token_limit(mock_args_custom_with_limit, "/test/path")
 
         assert result == 500000
@@ -167,7 +206,11 @@ class TestGetInitialTokenLimit:
         mock_analyze_usage,
         mock_args_custom_no_limit,
     ):
-        """Test custom plan P90 calculation success."""
+        """
+        Test that the initial token limit for a custom plan is correctly calculated using P90 usage analysis when no explicit limit is provided.
+        
+        Simulates successful usage analysis and verifies that the token limit is determined based on analyzed usage data.
+        """
         mock_usage_data = {"blocks": [{"totalTokens": 150000}]}
         mock_analyze_usage.return_value = mock_usage_data
         mock_get_token_limit.return_value = 175000
@@ -187,7 +230,9 @@ class TestGetInitialTokenLimit:
     def test_custom_plan_p90_calculation_failure(
         self, mock_print_themed, mock_analyze_usage, mock_args_custom_no_limit
     ):
-        """Test custom plan P90 calculation failure fallback."""
+        """
+        Test that when usage analysis fails for a custom plan without an explicit token limit, the default token limit is used and a warning is logged.
+        """
         mock_analyze_usage.side_effect = Exception("Analysis failed")
 
         with patch("logging.getLogger") as mock_get_logger:
@@ -204,7 +249,9 @@ class TestGetInitialTokenLimit:
     def test_custom_plan_no_usage_data(
         self, mock_print_themed, mock_analyze_usage, mock_args_custom_no_limit
     ):
-        """Test custom plan with no usage data fallback."""
+        """
+        Test that the token limit falls back to the default value when no usage data is available for a custom plan.
+        """
         mock_analyze_usage.return_value = None
 
         result = _get_initial_token_limit(mock_args_custom_no_limit, "/test/path")
@@ -217,7 +264,12 @@ class TestRunMonitoring:
 
     @pytest.fixture
     def mock_args(self):
-        """Mock args for monitoring."""
+        """
+        Create and return a mock object representing CLI arguments for monitoring tests.
+        
+        Returns:
+            Mock: A mock object with default attributes for theme, plan, timezone, refresh_per_second, and refresh_rate.
+        """
         args = Mock()
         args.theme = None
         args.plan = "pro"
@@ -231,7 +283,9 @@ class TestRunMonitoring:
     def test_no_data_paths_found(
         self, mock_print_themed, mock_discover_paths, mock_args
     ):
-        """Test behavior when no Claude data paths are found."""
+        """
+        Test that an error message is printed when no Claude data directories are found during monitoring setup.
+        """
         mock_discover_paths.return_value = []
 
         with patch("claude_monitor.cli.main.setup_terminal") as mock_setup:
@@ -262,7 +316,11 @@ class TestRunMonitoring:
         mock_discover_paths,
         mock_args,
     ):
-        """Test successful monitoring setup."""
+        """
+        Test that the monitoring setup initializes all components, registers callbacks, and starts the orchestrator as expected.
+        
+        Simulates a successful monitoring environment by mocking discovery of data paths, token limit retrieval, console and terminal setup, display controller, orchestrator, and live display context. Verifies that the orchestrator is started and required callbacks are registered.
+        """
         # Setup mocks
         mock_discover_paths.return_value = [Path("/test/claude/data")]
         mock_get_token_limit.return_value = 200000
@@ -314,7 +372,11 @@ class TestRunMonitoring:
         mock_discover_paths,
         mock_args,
     ):
-        """Test keyboard interrupt handling in monitoring."""
+        """
+        Test that a keyboard interrupt during monitoring setup triggers the cleanup handler.
+        
+        Simulates a keyboard interrupt when starting the monitoring orchestrator and verifies that the cleanup function is called with the previous terminal settings.
+        """
         mock_discover_paths.return_value = [Path("/test/claude/data")]
         mock_get_token_limit.return_value = 200000
         mock_old_settings = Mock()
@@ -346,7 +408,9 @@ class TestRunMonitoring:
                     mock_handle_cleanup.assert_called_once_with(mock_old_settings)
 
     def test_themed_console_with_theme_arg(self, mock_args):
-        """Test themed console selection with theme argument."""
+        """
+        Verify that specifying a theme argument results in the themed console being created with the correct theme during monitoring setup.
+        """
         mock_args.theme = "DARK"
 
         with patch("claude_monitor.cli.main.get_themed_console") as mock_get_console:
@@ -382,7 +446,11 @@ class TestMonitoringCallbacks:
         mock_get_token_limit,
         mock_discover_paths,
     ):
-        """Test data update callback functionality."""
+        """
+        Test that the data update callback registered with the orchestrator correctly triggers the display controller to update the data display with new monitoring data.
+        
+        This test sets up mocks for all dependencies, captures the update callback during monitoring setup, and verifies that invoking the callback with test data results in the display controller's `create_data_display` method being called with the expected arguments.
+        """
         # Setup basic mocks
         mock_args = Mock()
         mock_args.theme = None
@@ -413,6 +481,9 @@ class TestMonitoringCallbacks:
         update_callback = None
 
         def capture_callback(callback):
+            """
+            Captures and stores a callback function for later invocation by assigning it to the enclosing scope's variable.
+            """
             nonlocal update_callback
             update_callback = callback
 

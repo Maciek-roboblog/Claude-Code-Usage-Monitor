@@ -10,19 +10,24 @@ class SessionMonitor:
     """Monitors sessions with tracking and validation."""
 
     def __init__(self):
-        """Initialize session monitor."""
+        """
+        Initialize the SessionMonitor with empty session state, callback list, and session history.
+        """
         self._current_session_id: Optional[str] = None
         self._session_callbacks: List[Callable] = []
         self._session_history: List[Dict[str, Any]] = []
 
     def update(self, data: Dict[str, Any]) -> Tuple[bool, List[str]]:
-        """Update session tracking with new data and validate.
-
-        Args:
-            data: Monitoring data with blocks
-
+        """
+        Validates and updates the session state with new monitoring data.
+        
+        Processes the provided data to identify the currently active session. If the active session changes, triggers session change handling; if no session is active but one was previously, triggers session end handling.
+        
+        Parameters:
+            data (Dict[str, Any]): Monitoring data containing session blocks.
+        
         Returns:
-            Tuple of (is_valid, error_messages)
+            Tuple[bool, List[str]]: A tuple where the first element indicates if the data is valid, and the second is a list of validation error messages.
         """
         is_valid, errors = self.validate_data(data)
         if not is_valid:
@@ -51,13 +56,13 @@ class SessionMonitor:
         return is_valid, errors
 
     def validate_data(self, data: Any) -> Tuple[bool, List[str]]:
-        """Validate monitoring data structure and content.
-
-        Args:
-            data: Data to validate
-
+        """
+        Validates the structure and required fields of monitoring data.
+        
+        Checks that the input is a dictionary containing a "blocks" list, and that each block has the necessary fields with correct types.
+        
         Returns:
-            Tuple of (is_valid, error_messages)
+            A tuple containing a boolean indicating validation success and a list of error messages.
         """
         errors = []
 
@@ -80,14 +85,15 @@ class SessionMonitor:
         return len(errors) == 0, errors
 
     def _validate_block(self, block: Any, index: int) -> List[str]:
-        """Validate individual block.
-
-        Args:
-            block: Block to validate
-            index: Block index for error messages
-
+        """
+        Validates the structure and required fields of a single session block.
+        
+        Parameters:
+            block: The block to validate.
+            index: The index of the block, used for error message context.
+        
         Returns:
-            List of error messages
+            A list of error messages describing any validation failures for the block.
         """
         errors = []
 
@@ -116,12 +122,13 @@ class SessionMonitor:
     def _on_session_change(
         self, old_id: Optional[str], new_id: str, session_data: Dict[str, Any]
     ) -> None:
-        """Handle session change.
-
-        Args:
-            old_id: Previous session ID
-            new_id: New session ID
-            session_data: New session data
+        """
+        Handles logic when the active session changes, including updating session history and notifying registered callbacks of the session start event.
+        
+        Parameters:
+        	old_id (Optional[str]): The previous session ID, or None if there was no prior session.
+        	new_id (str): The new active session ID.
+        	session_data (Dict[str, Any]): Data associated with the new session.
         """
         if old_id is None:
             logger.info(f"New session started: {new_id}")
@@ -144,10 +151,8 @@ class SessionMonitor:
                 logger.error(f"Session callback error: {e}")
 
     def _on_session_end(self, session_id: str) -> None:
-        """Handle session end.
-
-        Args:
-            session_id: Ended session ID
+        """
+        Handles the end of a session by logging the event and notifying all registered callbacks with the session end event.
         """
         logger.info(f"Session ended: {session_id}")
 
@@ -158,34 +163,43 @@ class SessionMonitor:
                 logger.error(f"Session callback error: {e}")
 
     def register_callback(self, callback: Callable) -> None:
-        """Register session change callback.
-
-        Args:
-            callback: Function(event_type, session_id, session_data)
+        """
+        Registers a callback to be invoked on session start or end events.
+        
+        The callback should accept three arguments: event_type (str), session_id (str), and session_data (dict).
         """
         if callback not in self._session_callbacks:
             self._session_callbacks.append(callback)
 
     def unregister_callback(self, callback: Callable) -> None:
-        """Unregister session change callback.
-
-        Args:
-            callback: Callback to remove
+        """
+        Removes a previously registered callback from the session event listeners.
+        
+        If the callback is not registered, no action is taken.
         """
         if callback in self._session_callbacks:
             self._session_callbacks.remove(callback)
 
     @property
     def current_session_id(self) -> Optional[str]:
-        """Get current active session ID."""
+        """
+        Returns the ID of the currently active session, or None if no session is active.
+        """
         return self._current_session_id
 
     @property
     def session_count(self) -> int:
-        """Get total number of sessions tracked."""
+        """
+        Return the total number of sessions recorded in the session history.
+        """
         return len(self._session_history)
 
     @property
     def session_history(self) -> List[Dict[str, Any]]:
-        """Get session history."""
+        """
+        Return a copy of the session history containing details of all tracked sessions.
+        
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries, each representing a session's details.
+        """
         return self._session_history.copy()

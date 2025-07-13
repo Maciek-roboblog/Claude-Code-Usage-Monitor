@@ -19,7 +19,12 @@ except ImportError:
 
 
 def setup_terminal():
-    """Setup terminal for raw mode to prevent input interference."""
+    """
+    Configures the terminal to raw mode by disabling echo and canonical input processing.
+    
+    Returns:
+        old_settings: The original terminal settings if successful, or None if terminal control is unavailable or setup fails.
+    """
     if not HAS_TERMIOS or not sys.stdin.isatty():
         return None
 
@@ -34,7 +39,11 @@ def setup_terminal():
 
 
 def restore_terminal(old_settings):
-    """Restore terminal to original settings."""
+    """
+    Restores the terminal to its original settings and exits the alternate screen buffer.
+    
+    If original terminal settings are provided and terminal control is available, attempts to restore the terminal configuration. Also ensures the cursor is shown and the alternate screen buffer is exited using ANSI escape sequences.
+    """
     print("\033[?25h\033[?1049l", end="", flush=True)
 
     if old_settings and HAS_TERMIOS and sys.stdin.isatty():
@@ -45,19 +54,29 @@ def restore_terminal(old_settings):
 
 
 def enter_alternate_screen():
-    """Enter alternate screen buffer, clear and hide cursor."""
+    """
+    Switches the terminal to the alternate screen buffer, clears the display, moves the cursor to the home position, and hides the cursor.
+    """
     print("\033[?1049h\033[2J\033[H\033[?25l", end="", flush=True)
 
 
 def handle_cleanup_and_exit(old_terminal_settings, message="Monitoring stopped."):
-    """Handle cleanup and exit gracefully."""
+    """
+    Restores the terminal to its original settings, displays an informational message, and exits the program gracefully.
+    
+    Parameters:
+        old_terminal_settings: The terminal settings to restore before exiting.
+        message (str): The message to display before exiting. Defaults to "Monitoring stopped."
+    """
     restore_terminal(old_terminal_settings)
     print_themed(f"\n\n{message}", style="info")
     sys.exit(0)
 
 
 def handle_error_and_exit(old_terminal_settings, error):
-    """Handle error cleanup and exit."""
+    """
+    Restores the terminal to its previous state, logs and reports the given error, writes the error message to standard error, and re-raises the exception to propagate it.
+    """
     restore_terminal(old_terminal_settings)
     logger.error(f"Terminal error: {error}", exc_info=True)
     sys.stderr.write(f"\n\nError: {error}\n")

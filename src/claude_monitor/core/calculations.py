@@ -18,7 +18,12 @@ class BurnRateCalculator:
     """Calculates burn rates and usage projections for session blocks."""
 
     def calculate_burn_rate(self, block: Any) -> Optional["BurnRate"]:
-        """Calculate current consumption rate for active blocks."""
+        """
+        Calculates the current token consumption rate and cost per hour for an active session block.
+        
+        Returns:
+            BurnRate: An object containing the tokens consumed per minute and the projected cost per hour, or None if the block is inactive, too short, or has zero tokens.
+        """
         if not block.is_active or block.duration_minutes < 1:
             return None
 
@@ -43,7 +48,12 @@ class BurnRateCalculator:
         )
 
     def project_block_usage(self, block: Any) -> Optional["UsageProjection"]:
-        """Project total usage if current rate continues."""
+        """
+        Projects the total token usage and cost for a session block if the current burn rate continues until the block's scheduled end time.
+        
+        Returns:
+            UsageProjection: An object containing the projected total tokens, projected total cost, and remaining minutes, or None if the burn rate cannot be determined or the block has already ended.
+        """
         burn_rate = self.calculate_burn_rate(block)
         if not burn_rate:
             return None
@@ -78,7 +88,16 @@ class BurnRateCalculator:
 
 
 def calculate_hourly_burn_rate(blocks: Any, current_time: datetime) -> float:
-    """Calculate burn rate based on all sessions in the last hour."""
+    """
+    Calculates the average token burn rate per minute over the last hour across multiple session blocks.
+    
+    Parameters:
+        blocks: A collection of session blocks to analyze.
+        current_time (datetime): The reference time for calculating the last hour window.
+    
+    Returns:
+        float: The average number of tokens consumed per minute in the last hour, or 0.0 if no tokens were used.
+    """
     if not blocks:
         return 0.0
 
@@ -91,7 +110,17 @@ def calculate_hourly_burn_rate(blocks: Any, current_time: datetime) -> float:
 def _calculate_total_tokens_in_hour(
     blocks: Any, one_hour_ago: datetime, current_time: datetime
 ) -> float:
-    """Calculate total tokens for all blocks in the last hour."""
+    """
+    Calculates the total number of tokens consumed across all session blocks within the last hour.
+    
+    Parameters:
+        blocks: An iterable of session block objects to process.
+        one_hour_ago (datetime): The start of the one-hour window.
+        current_time (datetime): The current time used as the end of the window.
+    
+    Returns:
+        float: The sum of tokens used in all blocks during the last hour.
+    """
     total_tokens = 0.0
     for block in blocks:
         total_tokens += _process_block_for_burn_rate(block, one_hour_ago, current_time)
@@ -101,7 +130,12 @@ def _calculate_total_tokens_in_hour(
 def _process_block_for_burn_rate(
     block: Any, one_hour_ago: datetime, current_time: datetime
 ) -> float:
-    """Process a single block for burn rate calculation."""
+    """
+    Calculates the number of tokens used by a single session block within the last hour.
+    
+    Returns:
+        The number of tokens attributed to the block during the last hour window. Returns 0 if the block is a gap, has an invalid start time, or ended before the last hour.
+    """
     start_time = _parse_block_start_time(block)
     if not start_time or block.get("isGap", False):
         return 0
@@ -116,7 +150,12 @@ def _process_block_for_burn_rate(
 
 
 def _parse_block_start_time(block: Any) -> Optional[datetime]:
-    """Parse start time from block with error handling."""
+    """
+    Parses the start time from a session block and converts it to UTC.
+    
+    Returns:
+        A UTC datetime object representing the block's start time, or None if parsing fails or the start time is missing.
+    """
     start_time_str = block.get("startTime")
     if not start_time_str:
         return None
@@ -131,7 +170,11 @@ def _parse_block_start_time(block: Any) -> Optional[datetime]:
 
 
 def _determine_session_end_time(block: Any, current_time: datetime) -> datetime:
-    """Determine session end time based on block status."""
+    """
+    Determines the session end time for a block, returning the current time if the block is active or if the actual end time is missing or invalid.
+    
+    If the block is inactive and a valid actual end time is provided, returns the parsed UTC end time. Otherwise, defaults to the current time.
+    """
     if block.get("isActive", False):
         return current_time
 
@@ -153,7 +196,19 @@ def _calculate_tokens_in_hour(
     one_hour_ago: datetime,
     current_time: datetime,
 ) -> float:
-    """Calculate tokens used within the last hour for this session."""
+    """
+    Calculates the proportion of tokens from a session block that were used within the last hour.
+    
+    Parameters:
+        block (Any): The session block containing token usage data.
+        start_time (datetime): The UTC start time of the session.
+        session_actual_end (datetime): The UTC end time of the session.
+        one_hour_ago (datetime): The UTC timestamp representing one hour before the current time.
+        current_time (datetime): The current UTC time.
+    
+    Returns:
+        float: The estimated number of tokens used by the session within the last hour. Returns 0 if the session does not overlap with the last hour or has zero duration.
+    """
     session_start_in_hour = max(start_time, one_hour_ago)
     session_end_in_hour = min(session_actual_end, current_time)
 
@@ -172,7 +227,9 @@ def _calculate_tokens_in_hour(
 def _log_timestamp_error(
     exception: Exception, timestamp_str: str, block_id: str, timestamp_type: str
 ) -> None:
-    """Log timestamp parsing errors with context."""
+    """
+    Logs and reports errors encountered during timestamp parsing for a session block, including contextual information such as the timestamp string, block ID, and type of timestamp.
+    """
     logging.debug(f"Failed to parse {timestamp_type} '{timestamp_str}': {exception}")
     report_error(
         exception=exception,

@@ -30,18 +30,21 @@ from claude_monitor.ui.display_controller import DisplayController
 
 
 def get_standard_claude_paths() -> List[str]:
-    """Get list of standard Claude data directory paths to check."""
+    """
+    Return a list of standard directory paths where Claude project data is typically stored.
+    """
     return ["~/.claude/projects", "~/.config/claude/projects"]
 
 
 def discover_claude_data_paths(custom_paths: List[str] = None) -> List[Path]:
-    """Discover all available Claude data directories.
-
-    Args:
-        custom_paths: Optional list of custom paths to check instead of standard ones
-
+    """
+    Discovers and returns existing Claude data directories from either provided custom paths or standard locations.
+    
+    Parameters:
+    	custom_paths (List[str], optional): Specific directory paths to check. If not provided, standard Claude data paths are used.
+    
     Returns:
-        List of Path objects for existing Claude data directories
+    	List[Path]: Paths to directories that exist and are valid Claude data directories.
     """
     if custom_paths:
         paths_to_check = custom_paths
@@ -59,7 +62,14 @@ def discover_claude_data_paths(custom_paths: List[str] = None) -> List[Path]:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    """Main entry point with direct pydantic-settings integration."""
+    """
+    CLI entry point for the claude-monitor application.
+    
+    Parses command-line arguments, handles version display, loads configuration using pydantic-settings, sets up the environment, logging, and timezone, and initiates the monitoring process. Handles graceful shutdown on keyboard interrupt and logs errors on failure.
+    
+    Returns:
+        int: Exit code (0 for success, 1 for error).
+    """
     if argv is None:
         argv = sys.argv[1:]
 
@@ -97,7 +107,11 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 
 def _run_monitoring(args):
-    """Main monitoring implementation without facade."""
+    """
+    Runs the core monitoring loop, initializing the terminal, live display, and monitoring orchestrator, and manages data updates and session events.
+    
+    This function sets up the themed console, discovers Claude data directories, configures the live display, and starts the monitoring orchestrator. It registers callbacks to update the display with new monitoring data and to log session changes. The function manages terminal state and ensures proper cleanup on exit or error, including restoring terminal settings and stopping the orchestrator.
+    """
     if hasattr(args, "theme") and args.theme:
         console = get_themed_console(force_theme=args.theme.lower())
     else:
@@ -155,7 +169,11 @@ def _run_monitoring(args):
 
             # Setup monitoring callback
             def on_data_update(monitoring_data):
-                """Handle data updates from orchestrator."""
+                """
+                Processes new monitoring data by updating the live display with the latest information.
+                
+                If an error occurs during the update, logs the error and reports it for further analysis.
+                """
                 try:
                     data = monitoring_data.get("data", {})
 
@@ -190,7 +208,14 @@ def _run_monitoring(args):
 
             # Optional: Register session change callback
             def on_session_change(event_type, session_id, session_data):
-                """Handle session changes."""
+                """
+                Handles session start and end events by logging session activity.
+                
+                Parameters:
+                    event_type (str): The type of session event, either "session_start" or "session_end".
+                    session_id: The identifier of the session.
+                    session_data: Additional data associated with the session event.
+                """
                 if event_type == "session_start":
                     logger.info(f"New session detected: {session_id}")
                 elif event_type == "session_end":
@@ -244,7 +269,17 @@ def _run_monitoring(args):
 
 
 def _get_initial_token_limit(args, data_path: str) -> int:
-    """Get initial token limit for the plan."""
+    """
+    Determines the initial token limit for monitoring based on the selected plan and recent usage data.
+    
+    For custom plans, returns an explicitly provided custom token limit if available. Otherwise, analyzes the last 24 hours of usage data to calculate a 90th percentile (P90) session token limit, falling back to a default if analysis fails. For standard plans, returns the predefined token limit for the selected plan.
+    
+    Parameters:
+        data_path (str): Path to the directory containing usage data.
+    
+    Returns:
+        int: The initial token limit to use for monitoring.
+    """
     logger = logging.getLogger(__name__)
     plan = getattr(args, "plan", PlanType.PRO.value)
 

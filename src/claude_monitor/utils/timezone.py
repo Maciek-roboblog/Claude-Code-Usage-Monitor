@@ -14,56 +14,59 @@ logger = logging.getLogger(__name__)
 
 
 def _detect_timezone_time_preference(args=None) -> bool:
-    """Detect timezone and time preference.
-
-    This is a backward compatibility function that delegates to the new
-    time format detection system.
-
-    Args:
-        args: Arguments object or None
-
+    """
+    Determine whether the preferred time format is 12-hour or 24-hour based on the provided arguments.
+    
+    Parameters:
+        args: Optional arguments object used to infer the user's time format preference.
+    
     Returns:
-        True for 12-hour format, False for 24-hour format
+        bool: True if 12-hour format is preferred, False if 24-hour format is preferred.
     """
     return get_time_format_preference(args)
 
 
 def parse_timestamp(timestamp_str: str, default_tz: str = "UTC") -> Optional[datetime]:
-    """Parse timestamp string with timezone handling.
-
-    Args:
-        timestamp_str: Timestamp string to parse
-        default_tz: Default timezone if not specified in timestamp
-
+    """
+    Parses a timestamp string into a timezone-aware datetime object.
+    
+    If the timestamp string does not include timezone information, the specified default timezone is assumed. Returns `None` if parsing fails.
+    
+    Parameters:
+        timestamp_str (str): The timestamp string to parse.
+        default_tz (str): The timezone to assume if the timestamp is naive. Defaults to "UTC".
+    
     Returns:
-        Parsed datetime object or None if parsing fails
+        Optional[datetime]: The parsed datetime object with timezone information, or `None` if parsing fails.
     """
     handler = TimezoneHandler(default_tz)
     return handler.parse_timestamp(timestamp_str)
 
 
 def ensure_utc(dt: datetime, default_tz: str = "UTC") -> datetime:
-    """Convert datetime to UTC.
-
-    Args:
-        dt: Datetime object to convert
-        default_tz: Default timezone for naive datetime objects
-
+    """
+    Converts a datetime object to UTC, assuming a default timezone if the input is naive.
+    
+    Parameters:
+    	dt (datetime): The datetime object to convert.
+    	default_tz (str): Timezone to assume if `dt` is naive. Defaults to "UTC".
+    
     Returns:
-        UTC datetime object
+    	datetime: The converted UTC datetime object.
     """
     handler = TimezoneHandler(default_tz)
     return handler.ensure_utc(dt)
 
 
 def validate_timezone(tz_name: str) -> bool:
-    """Check if timezone name is valid.
-
-    Args:
-        tz_name: Timezone name to validate
-
+    """
+    Validate whether the given timezone name is recognized.
+    
+    Parameters:
+    	tz_name (str): The name of the timezone to validate.
+    
     Returns:
-        True if valid, False otherwise
+    	bool: True if the timezone name is valid, False otherwise.
     """
     handler = TimezoneHandler()
     return handler.validate_timezone(tz_name)
@@ -72,15 +75,18 @@ def validate_timezone(tz_name: str) -> bool:
 def convert_to_timezone(
     dt: datetime, tz_name: str, default_tz: str = "UTC"
 ) -> datetime:
-    """Convert datetime to specific timezone.
-
-    Args:
-        dt: Datetime object to convert
-        tz_name: Target timezone name
-        default_tz: Default timezone for naive datetime objects
-
+    """
+    Convert a datetime object to the specified timezone.
+    
+    If the input datetime is naive, it is first localized to the default timezone before conversion.
+    
+    Parameters:
+        dt (datetime): The datetime object to convert.
+        tz_name (str): The target timezone name.
+        default_tz (str): The timezone to assume for naive datetime objects.
+    
     Returns:
-        Converted datetime object
+        datetime: The converted datetime object in the specified timezone.
     """
     handler = TimezoneHandler(default_tz)
     return handler.convert_to_timezone(dt, tz_name)

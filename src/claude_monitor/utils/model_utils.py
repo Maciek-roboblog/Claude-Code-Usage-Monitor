@@ -10,15 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 def normalize_model_name(model: str) -> str:
-    """Normalize model name to a standard format.
-
-    This function delegates to the implementation in core.models.
-
-    Args:
-        model: Model name to normalize
-
+    """
+    Normalize a Claude model name to a standard canonical format.
+    
+    Parameters:
+        model (str): The model name to normalize.
+    
     Returns:
-        Normalized model name
+        str: The normalized model name.
     """
     from claude_monitor.core.models import normalize_model_name as _normalize_model_name
 
@@ -26,13 +25,10 @@ def normalize_model_name(model: str) -> str:
 
 
 def get_model_display_name(model: str) -> str:
-    """Get a display-friendly model name.
-
-    Args:
-        model: Model name to get display name for
-
-    Returns:
-        Display-friendly model name
+    """
+    Return a user-friendly display name for a given Claude model.
+    
+    If the model matches a known Claude model, returns its human-readable name; otherwise, returns the normalized model name in title case.
     """
     normalized = normalize_model_name(model)
 
@@ -48,26 +44,25 @@ def get_model_display_name(model: str) -> str:
 
 
 def is_claude_model(model: str) -> bool:
-    """Check if a model is a Claude model.
-
-    Args:
-        model: Model name to check
-
+    """
+    Determine whether the given model name corresponds to a Claude model.
+    
     Returns:
-        True if it's a Claude model, False otherwise
+        bool: True if the normalized model name starts with "claude-", otherwise False.
     """
     normalized = normalize_model_name(model)
     return normalized.startswith("claude-")
 
 
 def get_model_generation(model: str) -> str:
-    """Get the generation/version of a Claude model.
-
-    Args:
-        model: Model name
-
+    """
+    Determine the generation or version of a Claude model from its name.
+    
+    Parameters:
+        model (str): The model name to analyze.
+    
     Returns:
-        Generation string (e.g., '3', '3.5') or 'unknown'
+        str: The generation string (e.g., "3", "3.5", "2", "1") if recognized, or "unknown" if the version cannot be determined.
     """
     if not model:
         return "unknown"

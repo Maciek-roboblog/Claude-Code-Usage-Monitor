@@ -20,12 +20,20 @@ class LastUsedParams:
     """Manages last used parameters persistence (moved from last_used.py)."""
 
     def __init__(self, config_dir: Optional[Path] = None):
-        """Initialize with config directory."""
+        """
+        Initialize a LastUsedParams instance with the specified configuration directory.
+        
+        If no directory is provided, defaults to ~/.claude-monitor.
+        """
         self.config_dir = config_dir or Path.home() / ".claude-monitor"
         self.params_file = self.config_dir / "last_used.json"
 
     def save(self, settings) -> None:
-        """Save current settings as last used."""
+        """
+        Persist selected settings parameters to a JSON file as the last used configuration.
+        
+        Only specific fields (theme, timezone, time format, refresh rate, reset hour, and optionally custom token limit) are saved, along with a timestamp. The operation is atomic to prevent partial writes.
+        """
         try:
             params = {
                 "theme": settings.theme,
@@ -52,7 +60,12 @@ class LastUsedParams:
             logger.warning(f"Failed to save last used params: {e}")
 
     def load(self) -> Dict[str, Any]:
-        """Load last used parameters."""
+        """
+        Load the last used parameters from the JSON file.
+        
+        Returns:
+            dict: A dictionary of the last used parameters, excluding the timestamp. Returns an empty dictionary if the file does not exist or cannot be loaded.
+        """
         if not self.params_file.exists():
             return {}
 
@@ -70,7 +83,11 @@ class LastUsedParams:
             return {}
 
     def clear(self) -> None:
-        """Clear last used parameters."""
+        """
+        Deletes the file storing the last used parameters if it exists.
+        
+        Removes the persisted parameters file from disk, logging a warning if the operation fails.
+        """
         try:
             if self.params_file.exists():
                 self.params_file.unlink()
@@ -79,7 +96,9 @@ class LastUsedParams:
             logger.warning(f"Failed to clear last used params: {e}")
 
     def exists(self) -> bool:
-        """Check if last used params exist."""
+        """
+        Return True if the last used parameters file exists, otherwise False.
+        """
         return self.params_file.exists()
 
 
@@ -105,14 +124,24 @@ class Settings(BaseSettings):
 
     @staticmethod
     def _get_system_timezone():
-        """Lazy import to avoid circular dependencies."""
+        """
+        Return the system's current timezone as detected by the environment.
+        
+        Returns:
+            str: The system timezone name.
+        """
         from claude_monitor.utils.time_utils import get_system_timezone
 
         return get_system_timezone()
 
     @staticmethod
     def _get_system_time_format():
-        """Lazy import to avoid circular dependencies."""
+        """
+        Detect and return the system's preferred time format (e.g., "12h" or "24h").
+        
+        Returns:
+            str: The system's time format as determined by platform settings.
+        """
         from claude_monitor.utils.time_utils import get_system_time_format
 
         return get_system_time_format()
@@ -167,7 +196,18 @@ class Settings(BaseSettings):
     @field_validator("plan", mode="before")
     @classmethod
     def validate_plan(cls, v):
-        """Validate and normalize plan value."""
+        """
+        Validates and normalizes the plan value to ensure it matches one of the allowed options.
+        
+        Parameters:
+            v: The input value for the plan field.
+        
+        Returns:
+            The normalized plan value as a lowercase string if valid.
+        
+        Raises:
+            ValueError: If the input is not one of the allowed plan options.
+        """
         if isinstance(v, str):
             v_lower = v.lower()
             valid_plans = ["pro", "max5", "max20", "custom"]
@@ -181,7 +221,18 @@ class Settings(BaseSettings):
     @field_validator("theme", mode="before")
     @classmethod
     def validate_theme(cls, v):
-        """Validate and normalize theme value."""
+        """
+        Validates and normalizes the theme value to ensure it is one of the allowed options.
+        
+        Parameters:
+            v: The input theme value to validate.
+        
+        Returns:
+            The normalized theme string in lowercase if valid.
+        
+        Raises:
+            ValueError: If the provided theme is not one of "light", "dark", "classic", or "auto".
+        """
         if isinstance(v, str):
             v_lower = v.lower()
             valid_themes = ["light", "dark", "classic", "auto"]
@@ -195,7 +246,12 @@ class Settings(BaseSettings):
     @field_validator("timezone")
     @classmethod
     def validate_timezone(cls, v: str) -> str:
-        """Validate timezone."""
+        """
+        Validates that the provided timezone is either "local", "auto", or a recognized timezone name.
+        
+        Raises:
+            ValueError: If the timezone is not valid.
+        """
         if v not in ["local", "auto"] and v not in pytz.all_timezones:
             raise ValueError(f"Invalid timezone: {v}")
         return v
@@ -203,7 +259,12 @@ class Settings(BaseSettings):
     @field_validator("time_format")
     @classmethod
     def validate_time_format(cls, v: str) -> str:
-        """Validate time format."""
+        """
+        Validates that the time format is one of '12h', '24h', or 'auto'.
+        
+        Raises:
+            ValueError: If the provided value is not a supported time format.
+        """
         if v not in ["12h", "24h", "auto"]:
             raise ValueError(
                 f"Invalid time format: {v}. Must be '12h', '24h', or 'auto'"
@@ -213,7 +274,18 @@ class Settings(BaseSettings):
     @field_validator("log_level")
     @classmethod
     def validate_log_level(cls, v: str) -> str:
-        """Validate log level."""
+        """
+        Validates that the provided log level is one of the accepted values.
+        
+        Parameters:
+            v (str): The log level to validate.
+        
+        Returns:
+            str: The validated log level in uppercase.
+        
+        Raises:
+            ValueError: If the log level is not one of "DEBUG", "INFO", "WARNING", "ERROR", or "CRITICAL".
+        """
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         v_upper = v.upper()
         if v_upper not in valid_levels:
@@ -229,7 +301,12 @@ class Settings(BaseSettings):
         dotenv_settings,
         file_secret_settings,
     ):
-        """Custom sources - only init and last used."""
+        """
+        Customize the settings sources to use only initialization arguments, ignoring environment variables, dotenv files, and secret files.
+        
+        Returns:
+            A tuple containing only the initialization settings source.
+        """
         _ = (
             settings_cls,
             env_settings,
@@ -240,7 +317,17 @@ class Settings(BaseSettings):
 
     @classmethod
     def load_with_last_used(cls, argv: Optional[List[str]] = None) -> "Settings":
-        """Load settings with last used params support (default behavior)."""
+        """
+        Load settings by merging command-line arguments with previously saved parameters, supporting version display and clearing of saved configuration.
+        
+        If the `--version` flag is present, prints the application version and exits. If `--clear` is specified, clears any saved parameters and loads settings from the command line only. Otherwise, loads the last used parameters from disk, merges them with current CLI arguments (giving precedence to CLI), and resolves any "auto" values for timezone, time format, and theme using system or terminal detection. Updates the saved parameters unless clearing.
+        
+        Parameters:
+            argv (Optional[List[str]]): List of command-line arguments to parse. If None, uses sys.argv.
+        
+        Returns:
+            Settings: An instance of the Settings class with merged configuration.
+        """
         if argv and "--version" in argv:
             print(f"claude-monitor {__version__}")
             import sys
@@ -315,7 +402,12 @@ class Settings(BaseSettings):
         return settings
 
     def to_namespace(self):
-        """Convert to argparse.Namespace for compatibility."""
+        """
+        Convert the settings instance to an argparse.Namespace object.
+        
+        Returns:
+            argparse.Namespace: An object containing the settings fields for CLI compatibility.
+        """
         args = argparse.Namespace()
 
         args.plan = self.plan
