@@ -11,7 +11,7 @@ from claude_monitor.monitoring.orchestrator import MonitoringOrchestrator
 
 
 @pytest.fixture
-def mock_data_manager():
+def mock_data_manager() -> Mock:
     """Mock DataManager for testing."""
     mock = Mock()
     mock.get_data.return_value = {
@@ -29,7 +29,7 @@ def mock_data_manager():
 
 
 @pytest.fixture
-def mock_session_monitor():
+def mock_session_monitor() -> Mock:
     """Mock SessionMonitor for testing."""
     mock = Mock()
     mock.update.return_value = (True, [])  # (is_valid, errors)
@@ -39,7 +39,9 @@ def mock_session_monitor():
 
 
 @pytest.fixture
-def orchestrator(mock_data_manager, mock_session_monitor):
+def orchestrator(
+    mock_data_manager: Mock, mock_session_monitor: Mock
+) -> MonitoringOrchestrator:
     """Create orchestrator with mocked dependencies."""
     with (
         patch(
@@ -57,7 +59,7 @@ def orchestrator(mock_data_manager, mock_session_monitor):
 class TestMonitoringOrchestratorInit:
     """Test orchestrator initialization."""
 
-    def test_init_with_defaults(self):
+    def test_init_with_defaults(self) -> None:
         """Test initialization with default parameters."""
         with (
             patch("claude_monitor.monitoring.orchestrator.DataManager") as mock_dm,
@@ -75,7 +77,7 @@ class TestMonitoringOrchestratorInit:
             mock_dm.assert_called_once_with(cache_ttl=5, data_path=None)
             mock_sm.assert_called_once()
 
-    def test_init_with_custom_params(self):
+    def test_init_with_custom_params(self) -> None:
         """Test initialization with custom parameters."""
         with (
             patch("claude_monitor.monitoring.orchestrator.DataManager") as mock_dm,
@@ -92,7 +94,7 @@ class TestMonitoringOrchestratorInit:
 class TestMonitoringOrchestratorLifecycle:
     """Test orchestrator start/stop lifecycle."""
 
-    def test_start_monitoring(self, orchestrator):
+    def test_start_monitoring(self, orchestrator: MonitoringOrchestrator) -> None:
         """Test starting monitoring creates thread."""
         assert not orchestrator._monitoring
 
@@ -106,7 +108,9 @@ class TestMonitoringOrchestratorLifecycle:
 
         orchestrator.stop()
 
-    def test_start_monitoring_already_running(self, orchestrator):
+    def test_start_monitoring_already_running(
+        self, orchestrator: MonitoringOrchestrator
+    ) -> None:
         """Test starting monitoring when already running."""
         orchestrator._monitoring = True
 
@@ -115,7 +119,7 @@ class TestMonitoringOrchestratorLifecycle:
 
             mock_logger.warning.assert_called_once_with("Monitoring already running")
 
-    def test_stop_monitoring(self, orchestrator):
+    def test_stop_monitoring(self, orchestrator: MonitoringOrchestrator) -> None:
         """Test stopping monitoring."""
         orchestrator.start()
         assert orchestrator._monitoring
@@ -125,7 +129,9 @@ class TestMonitoringOrchestratorLifecycle:
         assert not orchestrator._monitoring
         assert orchestrator._monitor_thread is None
 
-    def test_stop_monitoring_not_running(self, orchestrator):
+    def test_stop_monitoring_not_running(
+        self, orchestrator: MonitoringOrchestrator
+    ) -> None:
         """Test stopping monitoring when not running."""
         assert not orchestrator._monitoring
 
@@ -133,7 +139,9 @@ class TestMonitoringOrchestratorLifecycle:
 
         assert not orchestrator._monitoring
 
-    def test_stop_monitoring_with_timeout(self, orchestrator):
+    def test_stop_monitoring_with_timeout(
+        self, orchestrator: MonitoringOrchestrator
+    ) -> None:
         """Test stopping monitoring handles thread join timeout."""
         orchestrator.start()
 
@@ -150,7 +158,9 @@ class TestMonitoringOrchestratorLifecycle:
 class TestMonitoringOrchestratorCallbacks:
     """Test callback registration and handling."""
 
-    def test_register_update_callback(self, orchestrator):
+    def test_register_update_callback(
+        self, orchestrator: MonitoringOrchestrator
+    ) -> None:
         """Test registering update callback."""
         callback = Mock()
 
@@ -158,7 +168,9 @@ class TestMonitoringOrchestratorCallbacks:
 
         assert callback in orchestrator._update_callbacks
 
-    def test_register_duplicate_callback(self, orchestrator):
+    def test_register_duplicate_callback(
+        self, orchestrator: MonitoringOrchestrator
+    ) -> None:
         """Test registering same callback twice only adds once."""
         callback = Mock()
 
@@ -167,7 +179,9 @@ class TestMonitoringOrchestratorCallbacks:
 
         assert orchestrator._update_callbacks.count(callback) == 1
 
-    def test_register_session_callback(self, orchestrator):
+    def test_register_session_callback(
+        self, orchestrator: MonitoringOrchestrator
+    ) -> None:
         """Test registering session callback delegates to session monitor."""
         callback = Mock()
 
@@ -179,7 +193,7 @@ class TestMonitoringOrchestratorCallbacks:
 class TestMonitoringOrchestratorDataProcessing:
     """Test data fetching and processing."""
 
-    def test_force_refresh(self, orchestrator):
+    def test_force_refresh(self, orchestrator: MonitoringOrchestrator) -> None:
         """Test force refresh calls data manager."""
         expected_data = {"blocks": [{"id": "test"}]}
         orchestrator.data_manager.get_data.return_value = expected_data
@@ -191,7 +205,7 @@ class TestMonitoringOrchestratorDataProcessing:
         assert result["data"] == expected_data
         orchestrator.data_manager.get_data.assert_called_once_with(force_refresh=True)
 
-    def test_force_refresh_no_data(self, orchestrator):
+    def test_force_refresh_no_data(self, orchestrator: MonitoringOrchestrator) -> None:
         """Test force refresh when no data available."""
         orchestrator.data_manager.get_data.return_value = None
 
@@ -199,7 +213,7 @@ class TestMonitoringOrchestratorDataProcessing:
 
         assert result is None
 
-    def test_set_args(self, orchestrator):
+    def test_set_args(self, orchestrator: MonitoringOrchestrator) -> None:
         """Test setting command line arguments."""
         args = Mock()
         args.plan = "pro"
@@ -208,7 +222,9 @@ class TestMonitoringOrchestratorDataProcessing:
 
         assert orchestrator._args == args
 
-    def test_wait_for_initial_data_success(self, orchestrator):
+    def test_wait_for_initial_data_success(
+        self, orchestrator: MonitoringOrchestrator
+    ) -> None:
         """Test waiting for initial data returns True when data received."""
         # Start monitoring which will trigger initial data
         orchestrator.start()
@@ -221,7 +237,9 @@ class TestMonitoringOrchestratorDataProcessing:
         assert result is True
         orchestrator.stop()
 
-    def test_wait_for_initial_data_timeout(self, orchestrator):
+    def test_wait_for_initial_data_timeout(
+        self, orchestrator: MonitoringOrchestrator
+    ) -> None:
         """Test waiting for initial data returns False on timeout."""
         # Don't start monitoring, so no data will be received
         result = orchestrator.wait_for_initial_data(timeout=0.1)
@@ -232,7 +250,9 @@ class TestMonitoringOrchestratorDataProcessing:
 class TestMonitoringOrchestratorMonitoringLoop:
     """Test the monitoring loop behavior."""
 
-    def test_monitoring_loop_initial_fetch(self, orchestrator):
+    def test_monitoring_loop_initial_fetch(
+        self, orchestrator: MonitoringOrchestrator
+    ) -> None:
         """Test monitoring loop performs initial fetch."""
         with patch.object(orchestrator, "_fetch_and_process_data") as mock_fetch:
             mock_fetch.return_value = {"test": "data"}
@@ -742,8 +762,8 @@ class TestSessionMonitor:
 
         monitor = SessionMonitor()
 
-        assert monitor._current_session_id is None
-        assert monitor._session_callbacks == []
+        assert monitor.current_session_id is None
+        assert monitor._callbacks == []
         assert monitor._session_history == []
 
     def test_session_monitor_update_valid_data(self):
@@ -776,7 +796,7 @@ class TestSessionMonitor:
         monitor = SessionMonitor()
 
         # Test with None data
-        is_valid, errors = monitor.update(None)
+        is_valid, errors = monitor.update({})
         assert is_valid is False
         assert len(errors) > 0
 
@@ -824,7 +844,7 @@ class TestSessionMonitor:
 
         monitor.register_callback(callback)
 
-        assert callback in monitor._session_callbacks
+        assert callback in monitor._callbacks
 
     def test_session_monitor_callback_execution(self):
         """Test that callbacks are executed on session change."""
@@ -851,7 +871,7 @@ class TestSessionMonitor:
 
         # Callback may or may not be called depending on implementation
         # Just verify the structure is maintained
-        assert isinstance(monitor._session_callbacks, list)
+        assert isinstance(monitor._callbacks, list)
 
     def test_session_monitor_session_history(self):
         """Test session history tracking."""
@@ -897,7 +917,7 @@ class TestSessionMonitor:
         monitor.update(data)
 
         # Current session ID may be set depending on implementation
-        assert isinstance(monitor._current_session_id, (str, type(None)))
+        assert isinstance(monitor.current_session_id, (str, type(None)))
 
     def test_session_monitor_multiple_blocks(self):
         """Test session monitor with multiple blocks."""

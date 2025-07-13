@@ -1,6 +1,7 @@
 """Tests for CLI main module."""
 
 from pathlib import Path
+from typing import Any, Callable
 from unittest.mock import Mock, patch
 
 import pytest
@@ -12,7 +13,7 @@ from claude_monitor.core.plans import Plans
 class TestMain:
     """Test cases for main function."""
 
-    def test_version_flag(self):
+    def test_version_flag(self) -> None:
         """Test --version flag returns 0 and prints version."""
         with patch("builtins.print") as mock_print:
             result = main(["--version"])
@@ -20,7 +21,7 @@ class TestMain:
             mock_print.assert_called_once()
             assert "claude-monitor" in mock_print.call_args[0][0]
 
-    def test_v_flag(self):
+    def test_v_flag(self) -> None:
         """Test -v flag returns 0 and prints version."""
         with patch("builtins.print") as mock_print:
             result = main(["-v"])
@@ -36,13 +37,13 @@ class TestMain:
     @patch("claude_monitor.cli.main._run_monitoring")
     def test_successful_main_execution(
         self,
-        mock_run_monitoring,
-        mock_init_timezone,
-        mock_setup_logging,
-        mock_ensure_directories,
-        mock_setup_environment,
-        mock_load_settings,
-    ):
+        mock_run_monitoring: Any,
+        mock_init_timezone: Any,
+        mock_setup_logging: Any,
+        mock_ensure_directories: Any,
+        mock_setup_environment: Any,
+        mock_load_settings: Any,
+    ) -> None:
         """Test successful main execution."""
         mock_settings = Mock()
         mock_settings.log_file = None
@@ -68,13 +69,13 @@ class TestMain:
     @patch("claude_monitor.cli.main._run_monitoring")
     def test_main_with_log_file(
         self,
-        mock_run_monitoring,
-        mock_init_timezone,
-        mock_setup_logging,
-        mock_ensure_directories,
-        mock_setup_environment,
-        mock_load_settings,
-    ):
+        mock_run_monitoring: Any,
+        mock_init_timezone: Any,
+        mock_setup_logging: Any,
+        mock_ensure_directories: Any,
+        mock_setup_environment: Any,
+        mock_load_settings: Any,
+    ) -> None:
         """Test main execution with log file."""
         mock_settings = Mock()
         mock_settings.log_file = "/tmp/test.log"
@@ -90,7 +91,7 @@ class TestMain:
             "DEBUG", "/tmp/test.log", disable_console=True
         )
 
-    def test_keyboard_interrupt_handling(self):
+    def test_keyboard_interrupt_handling(self) -> None:
         """Test keyboard interrupt returns 0."""
         with patch("claude_monitor.cli.main.Settings.load_with_last_used") as mock_load:
             mock_load.side_effect = KeyboardInterrupt()
@@ -100,7 +101,7 @@ class TestMain:
                 mock_print.assert_called_once_with("\n\nMonitoring stopped by user.")
 
     @patch("claude_monitor.cli.main.Settings.load_with_last_used")
-    def test_exception_handling(self, mock_load_settings):
+    def test_exception_handling(self, mock_load_settings: Any) -> None:
         """Test exception handling returns 1."""
         mock_load_settings.side_effect = Exception("Test error")
 
@@ -113,14 +114,14 @@ class TestGetInitialTokenLimit:
     """Test cases for _get_initial_token_limit function."""
 
     @pytest.fixture
-    def mock_args_pro(self):
+    def mock_args_pro(self) -> Any:
         """Mock args for pro plan."""
         args = Mock()
         args.plan = "pro"
         return args
 
     @pytest.fixture
-    def mock_args_custom_with_limit(self):
+    def mock_args_custom_with_limit(self) -> Any:
         """Mock args for custom plan with explicit limit."""
         args = Mock()
         args.plan = "custom"
@@ -128,7 +129,7 @@ class TestGetInitialTokenLimit:
         return args
 
     @pytest.fixture
-    def mock_args_custom_no_limit(self):
+    def mock_args_custom_no_limit(self) -> Any:
         """Mock args for custom plan without explicit limit."""
         args = Mock()
         args.plan = "custom"
@@ -136,7 +137,9 @@ class TestGetInitialTokenLimit:
         return args
 
     @patch("claude_monitor.cli.main.get_token_limit")
-    def test_pro_plan_token_limit(self, mock_get_token_limit, mock_args_pro):
+    def test_pro_plan_token_limit(
+        self, mock_get_token_limit: Any, mock_args_pro: Any
+    ) -> None:
         """Test token limit for pro plan."""
         mock_get_token_limit.return_value = 200000
 
@@ -147,8 +150,8 @@ class TestGetInitialTokenLimit:
 
     @patch("claude_monitor.cli.main.print_themed")
     def test_custom_plan_with_explicit_limit(
-        self, mock_print_themed, mock_args_custom_with_limit
-    ):
+        self, mock_print_themed: Any, mock_args_custom_with_limit: Any
+    ) -> None:
         """Test custom plan with explicit token limit."""
         result = _get_initial_token_limit(mock_args_custom_with_limit, "/test/path")
 
@@ -162,11 +165,11 @@ class TestGetInitialTokenLimit:
     @patch("claude_monitor.cli.main.print_themed")
     def test_custom_plan_p90_calculation_success(
         self,
-        mock_print_themed,
-        mock_get_token_limit,
-        mock_analyze_usage,
-        mock_args_custom_no_limit,
-    ):
+        mock_print_themed: Any,
+        mock_get_token_limit: Any,
+        mock_analyze_usage: Any,
+        mock_args_custom_no_limit: Any,
+    ) -> None:
         """Test custom plan P90 calculation success."""
         mock_usage_data = {"blocks": [{"totalTokens": 150000}]}
         mock_analyze_usage.return_value = mock_usage_data
@@ -185,8 +188,11 @@ class TestGetInitialTokenLimit:
     @patch("claude_monitor.cli.main.analyze_usage")
     @patch("claude_monitor.cli.main.print_themed")
     def test_custom_plan_p90_calculation_failure(
-        self, mock_print_themed, mock_analyze_usage, mock_args_custom_no_limit
-    ):
+        self,
+        mock_print_themed: Any,
+        mock_analyze_usage: Any,
+        mock_args_custom_no_limit: Any,
+    ) -> None:
         """Test custom plan P90 calculation failure fallback."""
         mock_analyze_usage.side_effect = Exception("Analysis failed")
 
@@ -202,8 +208,11 @@ class TestGetInitialTokenLimit:
     @patch("claude_monitor.cli.main.analyze_usage")
     @patch("claude_monitor.cli.main.print_themed")
     def test_custom_plan_no_usage_data(
-        self, mock_print_themed, mock_analyze_usage, mock_args_custom_no_limit
-    ):
+        self,
+        mock_print_themed: Any,
+        mock_analyze_usage: Any,
+        mock_args_custom_no_limit: Any,
+    ) -> None:
         """Test custom plan with no usage data fallback."""
         mock_analyze_usage.return_value = None
 
@@ -216,7 +225,7 @@ class TestRunMonitoring:
     """Test cases for _run_monitoring function."""
 
     @pytest.fixture
-    def mock_args(self):
+    def mock_args(self) -> Any:
         """Mock args for monitoring."""
         args = Mock()
         args.theme = None
@@ -229,8 +238,8 @@ class TestRunMonitoring:
     @patch("claude_monitor.cli.main.discover_claude_data_paths")
     @patch("claude_monitor.cli.main.print_themed")
     def test_no_data_paths_found(
-        self, mock_print_themed, mock_discover_paths, mock_args
-    ):
+        self, mock_print_themed: Any, mock_discover_paths: Any, mock_args: Any
+    ) -> None:
         """Test behavior when no Claude data paths are found."""
         mock_discover_paths.return_value = []
 
@@ -252,16 +261,16 @@ class TestRunMonitoring:
     @patch("claude_monitor.cli.main.restore_terminal")
     def test_successful_monitoring_setup(
         self,
-        mock_restore_terminal,
-        mock_orchestrator_class,
-        mock_enter_screen,
-        mock_display_controller_class,
-        mock_setup_terminal,
-        mock_get_console,
-        mock_get_token_limit,
-        mock_discover_paths,
-        mock_args,
-    ):
+        mock_restore_terminal: Any,
+        mock_orchestrator_class: Any,
+        mock_enter_screen: Any,
+        mock_display_controller_class: Any,
+        mock_setup_terminal: Any,
+        mock_get_console: Any,
+        mock_get_token_limit: Any,
+        mock_discover_paths: Any,
+        mock_args: Any,
+    ) -> None:
         """Test successful monitoring setup."""
         # Setup mocks
         mock_discover_paths.return_value = [Path("/test/claude/data")]
@@ -307,13 +316,13 @@ class TestRunMonitoring:
     @patch("claude_monitor.cli.main.handle_cleanup_and_exit")
     def test_keyboard_interrupt_handling(
         self,
-        mock_handle_cleanup,
-        mock_setup_terminal,
-        mock_get_console,
-        mock_get_token_limit,
-        mock_discover_paths,
-        mock_args,
-    ):
+        mock_handle_cleanup: Any,
+        mock_setup_terminal: Any,
+        mock_get_console: Any,
+        mock_get_token_limit: Any,
+        mock_discover_paths: Any,
+        mock_args: Any,
+    ) -> None:
         """Test keyboard interrupt handling in monitoring."""
         mock_discover_paths.return_value = [Path("/test/claude/data")]
         mock_get_token_limit.return_value = 200000
@@ -345,7 +354,7 @@ class TestRunMonitoring:
 
                     mock_handle_cleanup.assert_called_once_with(mock_old_settings)
 
-    def test_themed_console_with_theme_arg(self, mock_args):
+    def test_themed_console_with_theme_arg(self, mock_args: Any) -> None:
         """Test themed console selection with theme argument."""
         mock_args.theme = "DARK"
 
@@ -373,15 +382,15 @@ class TestMonitoringCallbacks:
     @patch("claude_monitor.cli.main.restore_terminal")
     def test_data_update_callback(
         self,
-        mock_restore_terminal,
-        mock_orchestrator_class,
-        mock_enter_screen,
-        mock_display_controller_class,
-        mock_setup_terminal,
-        mock_get_console,
-        mock_get_token_limit,
-        mock_discover_paths,
-    ):
+        mock_restore_terminal: Any,
+        mock_orchestrator_class: Any,
+        mock_enter_screen: Any,
+        mock_display_controller_class: Any,
+        mock_setup_terminal: Any,
+        mock_get_console: Any,
+        mock_get_token_limit: Any,
+        mock_discover_paths: Any,
+    ) -> None:
         """Test data update callback functionality."""
         # Setup basic mocks
         mock_args = Mock()
@@ -412,7 +421,7 @@ class TestMonitoringCallbacks:
 
         update_callback = None
 
-        def capture_callback(callback):
+        def capture_callback(callback: Callable[[Any], None]) -> None:
             nonlocal update_callback
             update_callback = callback
 

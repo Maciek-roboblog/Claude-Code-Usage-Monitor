@@ -141,7 +141,7 @@ def _is_limit_in_block_timerange(limit_info: Any, block: Any) -> bool:
     if limit_timestamp.tzinfo is None:
         limit_timestamp = limit_timestamp.replace(tzinfo=timezone.utc)
 
-    return block.start_time <= limit_timestamp <= block.end_time
+    return bool(block.start_time <= limit_timestamp <= block.end_time)
 
 
 def _format_limit_info(limit_info: Any) -> Dict[str, Any]:

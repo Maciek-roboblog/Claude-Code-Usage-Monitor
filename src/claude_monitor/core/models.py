@@ -1,11 +1,16 @@
 """Data models for Claude Monitor.
-Core data structures for usage tracking, session management, and token calculations.
+Core data structures for usage tracking, session management, and token calculations
+with high-precision financial data types using Decimal arithmetic.
 """
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TypeAlias
+
+# Financial type aliases for consistency
+CurrencyAmount: TypeAlias = Decimal
 
 
 class CostMode(Enum):
@@ -18,14 +23,14 @@ class CostMode(Enum):
 
 @dataclass
 class UsageEntry:
-    """Individual usage record from Claude usage data."""
+    """Individual usage record from Claude usage data with financial precision."""
 
     timestamp: datetime
     input_tokens: int
     output_tokens: int
     cache_creation_tokens: int = 0
     cache_read_tokens: int = 0
-    cost_usd: float = 0.0
+    cost_usd: CurrencyAmount = Decimal("0.000000")
     model: str = ""
     message_id: str = ""
     request_id: str = ""
@@ -53,24 +58,24 @@ class TokenCounts:
 
 @dataclass
 class BurnRate:
-    """Token consumption rate metrics."""
+    """Token consumption rate metrics with financial precision."""
 
     tokens_per_minute: float
-    cost_per_hour: float
+    cost_per_hour: CurrencyAmount
 
 
 @dataclass
 class UsageProjection:
-    """Usage projection calculations for active blocks."""
+    """Usage projection calculations for active blocks with financial precision."""
 
     projected_total_tokens: int
-    projected_total_cost: float
+    projected_total_cost: CurrencyAmount
     remaining_minutes: float
 
 
 @dataclass
 class SessionBlock:
-    """Aggregated session block representing a 5-hour period."""
+    """Aggregated session block representing a 5-hour period with financial precision."""
 
     id: str
     start_time: datetime
@@ -84,7 +89,7 @@ class SessionBlock:
     per_model_stats: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     models: List[str] = field(default_factory=list)
     sent_messages_count: int = 0
-    cost_usd: float = 0.0
+    cost_usd: CurrencyAmount = Decimal("0.000000")
     limit_messages: List[Dict[str, Any]] = field(default_factory=list)
     projection_data: Optional[Dict[str, Any]] = None
     burn_rate_snapshot: Optional[BurnRate] = None
@@ -95,8 +100,8 @@ class SessionBlock:
         return self.token_counts.total_tokens
 
     @property
-    def total_cost(self) -> float:
-        """Get total cost - alias for cost_usd."""
+    def total_cost(self) -> CurrencyAmount:
+        """Get total cost with financial precision - alias for cost_usd."""
         return self.cost_usd
 
     @property

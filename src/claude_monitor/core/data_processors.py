@@ -5,19 +5,76 @@ code duplication across different components.
 """
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Protocol, TypedDict, Union
 
 from claude_monitor.utils.time_utils import TimezoneHandler
+
+# Type definitions for data processing pipeline
+TimestampInput = Union[str, int, float, datetime, None]
+TokenCount = int
+ModelName = str
+
+
+class TokenData(TypedDict, total=False):
+    """Typed dictionary for standardized token information."""
+
+    input_tokens: TokenCount
+    output_tokens: TokenCount
+    cache_creation_tokens: TokenCount
+    cache_read_tokens: TokenCount
+    total_tokens: TokenCount
+
+
+class UsageData(TypedDict, total=False):
+    """Typed dictionary for usage information extraction."""
+
+    input_tokens: TokenCount
+    inputTokens: TokenCount
+    prompt_tokens: TokenCount
+    output_tokens: TokenCount
+    outputTokens: TokenCount
+    completion_tokens: TokenCount
+    cache_creation_tokens: TokenCount
+    cache_creation_input_tokens: TokenCount
+    cacheCreationInputTokens: TokenCount
+    cache_read_input_tokens: TokenCount
+    cache_read_tokens: TokenCount
+    cacheReadInputTokens: TokenCount
+
+
+class MessageData(TypedDict, total=False):
+    """Typed dictionary for message data structure."""
+
+    type: str
+    model: ModelName
+    usage: UsageData
+    message: Dict[str, Any]
+
+
+class DataProcessor(Protocol):
+    """Protocol for data processing operations."""
+
+    def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process input data and return processed result."""
+        ...
+
+
+class Serializable(Protocol):
+    """Protocol for serializable objects."""
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert object to dictionary representation."""
+        ...
 
 
 class TimestampProcessor:
     """Unified timestamp parsing and processing utilities."""
 
-    def __init__(self, timezone_handler: Optional[TimezoneHandler] = None):
+    def __init__(self, timezone_handler: Optional[TimezoneHandler] = None) -> None:
         """Initialize with optional timezone handler."""
-        self.timezone_handler = timezone_handler or TimezoneHandler()
+        self.timezone_handler: TimezoneHandler = timezone_handler or TimezoneHandler()
 
-    def parse_timestamp(self, timestamp_value: Any) -> Optional[datetime]:
+    def parse_timestamp(self, timestamp_value: TimestampInput) -> Optional[datetime]:
         """Parse timestamp from various formats to UTC datetime.
 
         Args:
@@ -64,20 +121,20 @@ class TokenExtractor:
     """Unified token extraction utilities."""
 
     @staticmethod
-    def extract_tokens(data: Dict[str, Any]) -> Dict[str, int]:
+    def extract_tokens(data: Dict[str, Any]) -> TokenData:
         """Extract token counts from data in standardized format.
 
         Args:
             data: Data dictionary with token information
 
         Returns:
-            Dictionary with standardized token keys and counts
+            TokenData with standardized token keys and counts
         """
         import logging
 
         logger = logging.getLogger(__name__)
 
-        tokens = {
+        tokens: TokenData = {
             "input_tokens": 0,
             "output_tokens": 0,
             "cache_creation_tokens": 0,
@@ -85,9 +142,9 @@ class TokenExtractor:
             "total_tokens": 0,
         }
 
-        token_sources = []
+        token_sources: List[Any] = []
 
-        is_assistant = data.get("type") == "assistant"
+        is_assistant: bool = data.get("type") == "assistant"
 
         if is_assistant:
             if (
@@ -116,28 +173,28 @@ class TokenExtractor:
             if not isinstance(source, dict):
                 continue
 
-            input_tokens = (
+            input_tokens: TokenCount = (
                 source.get("input_tokens", 0)
                 or source.get("inputTokens", 0)
                 or source.get("prompt_tokens", 0)
                 or 0
             )
 
-            output_tokens = (
+            output_tokens: TokenCount = (
                 source.get("output_tokens", 0)
                 or source.get("outputTokens", 0)
                 or source.get("completion_tokens", 0)
                 or 0
             )
 
-            cache_creation = (
+            cache_creation: TokenCount = (
                 source.get("cache_creation_tokens", 0)
                 or source.get("cache_creation_input_tokens", 0)
                 or source.get("cacheCreationInputTokens", 0)
                 or 0
             )
 
-            cache_read = (
+            cache_read: TokenCount = (
                 source.get("cache_read_input_tokens", 0)
                 or source.get("cache_read_tokens", 0)
                 or source.get("cacheReadInputTokens", 0)
@@ -157,12 +214,17 @@ class TokenExtractor:
                     }
                 )
                 logger.debug(
-                    f"TokenExtractor: Found tokens - input={input_tokens}, output={output_tokens}, cache_creation={cache_creation}, cache_read={cache_read}"
+                    "TokenExtractor: Found tokens - input=%d, output=%d, cache_creation=%d, cache_read=%d",
+                    input_tokens,
+                    output_tokens,
+                    cache_creation,
+                    cache_read,
                 )
                 break
-            logger.debug(
-                f"TokenExtractor: No valid tokens in source: {list(source.keys()) if isinstance(source, dict) else 'not a dict'}"
+            source_info: str = (
+                str(list(source.keys())) if isinstance(source, dict) else "not a dict"
             )
+            logger.debug("TokenExtractor: No valid tokens in source: %s", source_info)
 
         return tokens
 
@@ -181,13 +243,16 @@ class DataConverter:
         Returns:
             Flattened dictionary
         """
-        result = {}
+        result: Dict[str, Any] = {}
 
         for key, value in data.items():
-            new_key = f"{prefix}.{key}" if prefix else key
+            new_key: str = f"{prefix}.{key}" if prefix else key
 
             if isinstance(value, dict):
-                result.update(DataConverter.flatten_nested_dict(value, new_key))
+                nested_result: Dict[str, Any] = DataConverter.flatten_nested_dict(
+                    value, new_key
+                )
+                result.update(nested_result)
             else:
                 result[new_key] = value
 
@@ -195,8 +260,8 @@ class DataConverter:
 
     @staticmethod
     def extract_model_name(
-        data: Dict[str, Any], default: str = "claude-3-5-sonnet"
-    ) -> str:
+        data: Dict[str, Any], default: ModelName = "claude-3-5-sonnet"
+    ) -> ModelName:
         """Extract model name from various data sources.
 
         Args:
@@ -206,22 +271,26 @@ class DataConverter:
         Returns:
             Extracted model name
         """
-        model_candidates = [
-            data.get("message", {}).get("model"),
+        message_dict: Dict[str, Any] = data.get("message", {})
+        usage_dict: Dict[str, Any] = data.get("usage", {})
+        request_dict: Dict[str, Any] = data.get("request", {})
+
+        model_candidates: List[Any] = [
+            message_dict.get("model"),
             data.get("model"),
             data.get("Model"),
-            data.get("usage", {}).get("model"),
-            data.get("request", {}).get("model"),
+            usage_dict.get("model"),
+            request_dict.get("model"),
         ]
 
         for candidate in model_candidates:
             if candidate and isinstance(candidate, str):
-                return candidate
+                return str(candidate)
 
         return default
 
     @staticmethod
-    def to_serializable(obj: Any) -> Any:
+    def to_serializable(obj: Any) -> Union[str, Dict[str, Any], List[Any], Any]:
         """Convert object to JSON-serializable format.
 
         Args:
@@ -233,7 +302,13 @@ class DataConverter:
         if isinstance(obj, datetime):
             return obj.isoformat()
         if isinstance(obj, dict):
-            return {k: DataConverter.to_serializable(v) for k, v in obj.items()}
+            serialized_dict: Dict[str, Any] = {
+                k: DataConverter.to_serializable(v) for k, v in obj.items()
+            }
+            return serialized_dict
         if isinstance(obj, (list, tuple)):
-            return [DataConverter.to_serializable(item) for item in obj]
+            serialized_list: List[Any] = [
+                DataConverter.to_serializable(item) for item in obj
+            ]
+            return serialized_list
         return obj

@@ -5,9 +5,14 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union, cast
 
-import pytz
+if TYPE_CHECKING:
+    from pydantic_settings.sources import (
+        PydanticBaseSettingsSource,
+    )
+
+import pytz  # type: ignore[import-untyped]
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -24,10 +29,10 @@ class LastUsedParams:
         self.config_dir = config_dir or Path.home() / ".claude-monitor"
         self.params_file = self.config_dir / "last_used.json"
 
-    def save(self, settings) -> None:
+    def save(self, settings: "Settings") -> None:
         """Save current settings as last used."""
         try:
-            params = {
+            params: Dict[str, Union[str, int, None]] = {
                 "theme": settings.theme,
                 "timezone": settings.timezone,
                 "time_format": settings.time_format,
@@ -51,19 +56,20 @@ class LastUsedParams:
         except Exception as e:
             logger.warning(f"Failed to save last used params: {e}")
 
-    def load(self) -> Dict[str, Any]:
+    def load(self) -> Dict[str, Union[str, int, None]]:
         """Load last used parameters."""
         if not self.params_file.exists():
             return {}
 
         try:
             with open(self.params_file) as f:
-                params = json.load(f)
+                raw_params = cast(Dict[str, Union[str, int, None]], json.load(f))
 
-            params.pop("timestamp", None)
+            # Remove timestamp if present
+            raw_params.pop("timestamp", None)
 
             logger.debug(f"Loaded last used params from {self.params_file}")
-            return params
+            return raw_params
 
         except Exception as e:
             logger.warning(f"Failed to load last used params: {e}")
@@ -104,14 +110,14 @@ class Settings(BaseSettings):
     )
 
     @staticmethod
-    def _get_system_timezone():
+    def _get_system_timezone() -> str:
         """Lazy import to avoid circular dependencies."""
         from claude_monitor.utils.time_utils import get_system_timezone
 
         return get_system_timezone()
 
     @staticmethod
-    def _get_system_time_format():
+    def _get_system_time_format() -> str:
         """Lazy import to avoid circular dependencies."""
         from claude_monitor.utils.time_utils import get_system_time_format
 
@@ -166,7 +172,7 @@ class Settings(BaseSettings):
 
     @field_validator("plan", mode="before")
     @classmethod
-    def validate_plan(cls, v):
+    def validate_plan(cls, v: Union[str, int, float, bool]) -> str:
         """Validate and normalize plan value."""
         if isinstance(v, str):
             v_lower = v.lower()
@@ -176,11 +182,11 @@ class Settings(BaseSettings):
             raise ValueError(
                 f"Invalid plan: {v}. Must be one of: {', '.join(valid_plans)}"
             )
-        return v
+        return str(v)
 
     @field_validator("theme", mode="before")
     @classmethod
-    def validate_theme(cls, v):
+    def validate_theme(cls, v: Union[str, int, float, bool]) -> str:
         """Validate and normalize theme value."""
         if isinstance(v, str):
             v_lower = v.lower()
@@ -190,13 +196,15 @@ class Settings(BaseSettings):
             raise ValueError(
                 f"Invalid theme: {v}. Must be one of: {', '.join(valid_themes)}"
             )
-        return v
+        return str(v)
 
     @field_validator("timezone")
     @classmethod
     def validate_timezone(cls, v: str) -> str:
         """Validate timezone."""
-        if v not in ["local", "auto"] and v not in pytz.all_timezones:
+        # Cast pytz.all_timezones to set for type safety
+        all_timezones = cast(set[str], pytz.all_timezones)
+        if v not in ["local", "auto"] and v not in all_timezones:
             raise ValueError(f"Invalid timezone: {v}")
         return v
 
@@ -223,19 +231,15 @@ class Settings(BaseSettings):
     @classmethod
     def settings_customise_sources(
         cls,
-        settings_cls,
-        init_settings,
-        env_settings,
-        dotenv_settings,
-        file_secret_settings,
-    ):
+        settings_cls: type["BaseSettings"],
+        init_settings: "PydanticBaseSettingsSource",
+        env_settings: "PydanticBaseSettingsSource",
+        dotenv_settings: "PydanticBaseSettingsSource",
+        file_secret_settings: "PydanticBaseSettingsSource",
+    ) -> Tuple["PydanticBaseSettingsSource", ...]:
         """Custom sources - only init and last used."""
-        _ = (
-            settings_cls,
-            env_settings,
-            dotenv_settings,
-            file_secret_settings,
-        )
+        # Explicitly mark unused parameters as intentionally ignored
+        del settings_cls, env_settings, dotenv_settings, file_secret_settings
         return (init_settings,)
 
     @classmethod
@@ -252,20 +256,22 @@ class Settings(BaseSettings):
         if clear_config:
             last_used = LastUsedParams()
             last_used.clear()
-            settings = cls(_cli_parse_args=argv)
+            settings = cls(_cli_parse_args=argv)  # type: ignore[call-arg]
         else:
             last_used = LastUsedParams()
             last_params = last_used.load()
 
-            settings = cls(_cli_parse_args=argv)
+            settings = cls(_cli_parse_args=argv)  # type: ignore[call-arg]
 
-            cli_provided_fields = set()
+            cli_provided_fields: set[str] = set()
             if argv:
                 for i, arg in enumerate(argv):
                     if arg.startswith("--"):
                         field_name = arg[2:].replace("-", "_")
                         if field_name in cls.model_fields:
                             cli_provided_fields.add(field_name)
+                # Mark unused loop variable as intentionally ignored
+                del i
 
             for key, value in last_params.items():
                 if key == "plan":
@@ -273,7 +279,9 @@ class Settings(BaseSettings):
                 if not hasattr(settings, key):
                     continue
                 if key not in cli_provided_fields:
-                    setattr(settings, key, value)
+                    # Type-safe attribute setting
+                    if isinstance(value, (str, int, type(None))):
+                        setattr(settings, key, value)
 
             if (
                 "plan" in cli_provided_fields
@@ -290,9 +298,11 @@ class Settings(BaseSettings):
         if settings.debug:
             settings.log_level = "DEBUG"
 
-        if settings.theme == "auto" or (
+        # Auto-detect theme if not explicitly set or if theme is auto
+        should_detect_theme = settings.theme == "auto" or (
             "theme" not in cli_provided_fields and not clear_config
-        ):
+        )
+        if should_detect_theme:
             from claude_monitor.terminal.themes import (
                 BackgroundDetector,
                 BackgroundType,
@@ -314,7 +324,7 @@ class Settings(BaseSettings):
 
         return settings
 
-    def to_namespace(self):
+    def to_namespace(self) -> argparse.Namespace:
         """Convert to argparse.Namespace for compatibility."""
         args = argparse.Namespace()
 

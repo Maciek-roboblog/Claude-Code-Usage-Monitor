@@ -7,8 +7,11 @@ from typing import Any, Callable, Dict, List, Optional
 
 from claude_monitor.core.plans import DEFAULT_TOKEN_LIMIT, get_token_limit
 from claude_monitor.error_handling import report_error
-from claude_monitor.monitoring.data_manager import DataManager
-from claude_monitor.monitoring.session_monitor import SessionMonitor
+from claude_monitor.monitoring.data_manager import AnalysisResult, DataManager
+from claude_monitor.monitoring.session_monitor import (
+    SessionCallbackProtocol,
+    SessionMonitor,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +36,7 @@ class MonitoringOrchestrator:
         self._stop_event = threading.Event()
         self._update_callbacks: List[Callable[[Dict[str, Any]], None]] = []
         self._last_valid_data: Optional[Dict[str, Any]] = None
-        self._args = None
+        self._args: Optional[Any] = None
         self._first_data_event = threading.Event()
 
     def start(self) -> None:
@@ -87,13 +90,11 @@ class MonitoringOrchestrator:
             self._update_callbacks.append(callback)
             logger.debug("Registered update callback")
 
-    def register_session_callback(
-        self, callback: Callable[[str, str, Any], None]
-    ) -> None:
+    def register_session_callback(self, callback: SessionCallbackProtocol) -> None:
         """Register callback for session changes.
 
         Args:
-            callback: Function(event_type, session_id, session_data)
+            callback: Type-safe session callback function
         """
         self.session_monitor.register_callback(callback)
 
@@ -202,11 +203,11 @@ class MonitoringOrchestrator:
             )
             return None
 
-    def _calculate_token_limit(self, data: Dict[str, Any]) -> int:
+    def _calculate_token_limit(self, data: AnalysisResult) -> int:
         """Calculate token limit based on plan and data.
 
         Args:
-            data: Monitoring data
+            data: Analysis result data
 
         Returns:
             Token limit
@@ -218,7 +219,10 @@ class MonitoringOrchestrator:
 
         try:
             if plan == "custom":
-                return get_token_limit(plan, data.get("blocks", []))
+                # Convert SessionBlockDict list to Dict[str, Any] list for compatibility
+                blocks = data.get("blocks", [])
+                dict_blocks = [dict(block) for block in blocks]
+                return get_token_limit(plan, dict_blocks)
             return get_token_limit(plan)
         except Exception as e:
             logger.error(f"Error calculating token limit: {e}")

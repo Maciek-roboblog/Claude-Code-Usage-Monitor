@@ -7,7 +7,17 @@ import sys
 import threading
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Union
+from typing import (
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Protocol,
+    Tuple,
+    TypedDict,
+    Union,
+    runtime_checkable,
+)
 
 try:
     import select
@@ -19,7 +29,105 @@ except ImportError:
     HAS_TERMIOS = False
 
 from rich.console import Console
+from rich.style import Style
 from rich.theme import Theme
+
+# Advanced typing definitions for Rich library integration
+ThemeStyleName = Literal[
+    "header",
+    "info",
+    "warning",
+    "error",
+    "success",
+    "value",
+    "dim",
+    "separator",
+    "progress_bar",
+    "highlight",
+    "cost.low",
+    "cost.medium",
+    "cost.high",
+    "table.border",
+    "table.header",
+    "table.row",
+    "table.row.alt",
+    "progress.bar.fill",
+    "progress.bar.empty",
+    "progress.percentage",
+    "chart.bar",
+    "chart.line",
+    "chart.point",
+    "chart.axis",
+    "chart.label",
+    "status.active",
+    "status.inactive",
+    "status.warning",
+    "status.error",
+    "time.elapsed",
+    "time.remaining",
+    "time.duration",
+    "model.opus",
+    "model.sonnet",
+    "model.haiku",
+    "model.unknown",
+    "plan.pro",
+    "plan.max5",
+    "plan.max20",
+    "plan.custom",
+]
+
+ThemeName = Literal["light", "dark", "classic", "auto"]
+
+RichStyleDefinition = Union[str, Style]
+
+
+class ThemeStyleDict(TypedDict, total=False):
+    """Typed dictionary for Rich theme style definitions."""
+
+    header: RichStyleDefinition
+    info: RichStyleDefinition
+    warning: RichStyleDefinition
+    error: RichStyleDefinition
+    success: RichStyleDefinition
+    value: RichStyleDefinition
+    dim: RichStyleDefinition
+    separator: RichStyleDefinition
+    progress_bar: RichStyleDefinition
+    highlight: RichStyleDefinition
+
+
+class SymbolDefinition(TypedDict, total=False):
+    """Typed dictionary for theme symbol definitions."""
+
+    progress_empty: str
+    progress_full: str
+    bullet: str
+    arrow: str
+    check: str
+    cross: str
+    spinner: List[str]
+
+
+@runtime_checkable
+class ThemeProvider(Protocol):
+    """Protocol for theme providers with Rich integration."""
+
+    def get_rich_theme(self) -> Theme:
+        """Return a Rich Theme object."""
+        ...
+
+    def get_symbols(self) -> Dict[str, Union[str, List[str]]]:
+        """Return theme-specific symbols."""
+        ...
+
+
+@runtime_checkable
+class BackgroundDetectable(Protocol):
+    """Protocol for background detection capabilities."""
+
+    def detect_background(self) -> "BackgroundType":
+        """Detect terminal background type."""
+        ...
 
 
 class BackgroundType(Enum):
@@ -32,16 +140,26 @@ class BackgroundType(Enum):
 
 @dataclass
 class ThemeConfig:
-    """Theme configuration."""
+    """Advanced theme configuration with Rich library integration."""
 
-    name: str
-    colors: Dict[str, str]
-    symbols: Dict[str, Union[str, List[str]]]
+    name: ThemeName
+    colors: Dict[str, str]  # Legacy color mapping - deprecated in favor of rich_theme
+    symbols: SymbolDefinition
     rich_theme: Theme
 
     def get_color(self, key: str, default: str = "default") -> str:
-        """Get color for key with fallback."""
+        """Get color for key with fallback (legacy method)."""
         return self.colors.get(key, default)
+
+    def get_style(self, style_name: ThemeStyleName) -> Optional[RichStyleDefinition]:
+        """Get Rich style definition for a theme style name."""
+        if hasattr(self.rich_theme, "styles") and self.rich_theme.styles:
+            return self.rich_theme.styles.get(style_name)
+        return None
+
+    def has_style(self, style_name: ThemeStyleName) -> bool:
+        """Check if theme has a specific style defined."""
+        return self.get_style(style_name) is not None
 
 
 class AdaptiveColorScheme:
@@ -49,6 +167,8 @@ class AdaptiveColorScheme:
 
     IMPORTANT: This only changes FONT/FOREGROUND colors, never background colors.
     The terminal's background remains unchanged - we adapt text colors for readability.
+
+    Implements ThemeProvider protocol for advanced theme management.
     """
 
     @staticmethod
@@ -221,7 +341,10 @@ class AdaptiveColorScheme:
 
 
 class BackgroundDetector:
-    """Detects terminal background type using multiple methods."""
+    """Detects terminal background type using multiple methods.
+
+    Implements BackgroundDetectable protocol for cross-platform compatibility.
+    """
 
     @staticmethod
     def detect_background() -> BackgroundType:
@@ -355,17 +478,24 @@ class BackgroundDetector:
 
 
 class ThemeManager:
-    """Manages themes with auto-detection and thread safety."""
+    """Advanced theme manager with auto-detection, thread safety, and Rich integration.
+
+    Provides centralized theme management with support for:
+    - Automatic background detection
+    - Thread-safe theme switching
+    - Rich library integration
+    - Cross-platform terminal compatibility
+    """
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._current_theme: Optional[ThemeConfig] = None
-        self._forced_theme: Optional[str] = None
-        self.themes = self._load_themes()
+        self._forced_theme: Optional[ThemeName] = None
+        self.themes: Dict[ThemeName, ThemeConfig] = self._load_themes()
 
-    def _load_themes(self) -> Dict[str, ThemeConfig]:
+    def _load_themes(self) -> Dict[ThemeName, ThemeConfig]:
         """Load all available themes."""
-        themes = {}
+        themes: Dict[ThemeName, ThemeConfig] = {}
 
         # Load themes with Rich theme objects
         light_rich = AdaptiveColorScheme.get_light_background_theme()
@@ -395,9 +525,7 @@ class ThemeManager:
 
         return themes
 
-    def _get_symbols_for_theme(
-        self, theme_name: str
-    ) -> Dict[str, Union[str, List[str]]]:
+    def _get_symbols_for_theme(self, theme_name: ThemeName) -> SymbolDefinition:
         """Get symbols based on theme."""
         if theme_name == "classic":
             return {
@@ -419,7 +547,7 @@ class ThemeManager:
             "spinner": ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
         }
 
-    def auto_detect_theme(self) -> str:
+    def auto_detect_theme(self) -> ThemeName:
         """Auto-detect appropriate theme based on terminal."""
         background = BackgroundDetector.detect_background()
 
@@ -431,7 +559,7 @@ class ThemeManager:
         return "dark"
 
     def get_theme(
-        self, name: Optional[str] = None, force_detection: bool = False
+        self, name: Optional[ThemeName] = None, force_detection: bool = False
     ) -> ThemeConfig:
         """Get theme by name or auto-detect."""
         with self._lock:
@@ -451,7 +579,7 @@ class ThemeManager:
             return theme
 
     def get_console(
-        self, theme_name: Optional[str] = None, force_detection: bool = False
+        self, theme_name: Optional[ThemeName] = None, force_detection: bool = False
     ) -> Console:
         """Get themed console instance."""
         theme = self.get_theme(theme_name, force_detection)
@@ -476,8 +604,20 @@ COST_THRESHOLDS: List[Tuple[float, str]] = [
     (0.0, COST_STYLES["low"]),
 ]
 
+# Advanced typing for velocity indicators
+VelocityLevel = Literal["slow", "normal", "fast", "very_fast"]
+
+
+class VelocityIndicator(TypedDict):
+    """Typed dictionary for velocity indicator data."""
+
+    emoji: str
+    label: str
+    threshold: float
+
+
 # Velocity/burn rate emojis and labels
-VELOCITY_INDICATORS: Dict[str, Dict[str, Union[str, float]]] = {
+VELOCITY_INDICATORS: Dict[VelocityLevel, VelocityIndicator] = {
     "slow": {"emoji": "🐌", "label": "Slow", "threshold": 50},
     "normal": {"emoji": "➡️", "label": "Normal", "threshold": 150},
     "fast": {"emoji": "🚀", "label": "Fast", "threshold": 300},
@@ -494,11 +634,11 @@ def get_cost_style(cost: float) -> str:
     return COST_STYLES["low"]
 
 
-def get_velocity_indicator(burn_rate: float) -> Dict[str, Union[str, float]]:
+def get_velocity_indicator(burn_rate: float) -> VelocityIndicator:
     """Get velocity indicator based on burn rate."""
     for key, indicator in VELOCITY_INDICATORS.items():
-        if burn_rate < float(indicator["threshold"]):
-            return {"emoji": indicator["emoji"], "label": indicator["label"]}
+        if burn_rate < indicator["threshold"]:
+            return indicator
     return VELOCITY_INDICATORS["very_fast"]
 
 
@@ -506,14 +646,14 @@ def get_velocity_indicator(burn_rate: float) -> Dict[str, Union[str, float]]:
 _theme_manager = ThemeManager()
 
 
-def get_themed_console(force_theme: Optional[str] = None) -> Console:
+def get_themed_console(force_theme: Optional[ThemeName] = None) -> Console:
     """Get themed console - backward compatibility wrapper."""
     if force_theme and isinstance(force_theme, str):
         return _theme_manager.get_console(force_theme)
     return _theme_manager.get_console(force_theme)
 
 
-def print_themed(text: str, style: str = "info") -> None:
+def print_themed(text: str, style: ThemeStyleName = "info") -> None:
     """Print text with themed styling - backward compatibility."""
     console = _theme_manager.get_console()
     console.print(f"[{style}]{text}[/]")

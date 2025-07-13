@@ -6,10 +6,10 @@ Orchestrates UI components and coordinates display updates.
 import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
-import pytz
-from rich.console import Console, Group
+import pytz  # type: ignore[import-untyped]
+from rich.console import Console, Group, RenderableType
 from rich.live import Live
 from rich.text import Text
 
@@ -18,8 +18,12 @@ from claude_monitor.core.models import normalize_model_name
 from claude_monitor.core.plans import Plans
 from claude_monitor.ui.components import (
     AdvancedCustomLimitDisplay,
+    AdvancedCustomLimitProps,
     ErrorDisplayComponent,
+    ErrorDisplayProps,
     LoadingScreenComponent,
+    LoadingScreenProps,
+    get_component_registry,
 )
 from claude_monitor.ui.layouts import ScreenManager
 from claude_monitor.ui.session_display import SessionDisplayComponent
@@ -35,21 +39,33 @@ from claude_monitor.utils.time_utils import (
 class DisplayController:
     """Main controller for coordinating UI display operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize display controller with components."""
         self.session_display = SessionDisplayComponent()
-        self.loading_screen = LoadingScreenComponent()
-        self.error_display = ErrorDisplayComponent()
+
+        # Initialize components with proper props
+        loading_props = LoadingScreenProps(
+            id="main-loading", plan="pro", timezone="Europe/Warsaw"
+        )
+        self.loading_screen = LoadingScreenComponent(loading_props)
+
+        error_props = ErrorDisplayProps(
+            id="main-error", plan="pro", timezone="Europe/Warsaw"
+        )
+        self.error_display = ErrorDisplayComponent(error_props)
+
         self.screen_manager = ScreenManager()
         self.live_manager = LiveDisplayManager()
-        self.advanced_custom_display = None
+        self.advanced_custom_display: Optional[AdvancedCustomLimitDisplay] = None
         self.buffer_manager = ScreenBufferManager()
         self.session_calculator = SessionCalculator()
+        self.component_registry = get_component_registry()
+
         config_dir = Path.home() / ".claude" / "config"
         config_dir.mkdir(parents=True, exist_ok=True)
         self.notification_manager = NotificationManager(config_dir)
 
-    def _extract_session_data(self, active_block: dict) -> dict:
+    def _extract_session_data(self, active_block: Dict[str, Any]) -> Dict[str, Any]:
         """Extract basic session data from active block."""
         return {
             "tokens_used": active_block.get("totalTokens", 0),
@@ -61,7 +77,7 @@ class DisplayController:
             "end_time_str": active_block.get("endTime"),
         }
 
-    def _calculate_token_limits(self, args, token_limit: int) -> tuple:
+    def _calculate_token_limits(self, args: Any, token_limit: int) -> tuple[int, int]:
         """Calculate token limits based on plan and arguments."""
         if (
             args.plan == "custom"
@@ -71,13 +87,19 @@ class DisplayController:
             return args.custom_limit_tokens, args.custom_limit_tokens
         return token_limit, token_limit
 
-    def _calculate_time_data(self, session_data: dict, current_time: datetime) -> dict:
+    def _calculate_time_data(
+        self, session_data: Dict[str, Any], current_time: datetime
+    ) -> Dict[str, Any]:
         """Calculate time-related data for the session."""
         return self.session_calculator.calculate_time_data(session_data, current_time)
 
     def _calculate_cost_predictions(
-        self, session_data: dict, time_data: dict, args, cost_limit_p90: Optional[float]
-    ) -> dict:
+        self,
+        session_data: Dict[str, Any],
+        time_data: Dict[str, Any],
+        args: Any,
+        cost_limit_p90: Optional[float],
+    ) -> Dict[str, Any]:
         """Calculate cost-related predictions."""
         # Determine cost limit based on plan
         if Plans.is_valid_plan(args.plan) and cost_limit_p90 is not None:
@@ -97,7 +119,7 @@ class DisplayController:
         cost_limit: float,
         predicted_end_time: datetime,
         reset_time: datetime,
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """Check and update notification states."""
         notifications = {}
 
@@ -144,11 +166,11 @@ class DisplayController:
 
     def _format_display_times(
         self,
-        args,
+        args: Any,
         current_time: datetime,
         predicted_end_time: datetime,
         reset_time: datetime,
-    ) -> dict:
+    ) -> Dict[str, str]:
         """Format times for display."""
         tz_handler = TimezoneHandler(default_tz="Europe/Warsaw")
         timezone_to_use = (
@@ -191,7 +213,7 @@ class DisplayController:
 
     def create_data_display(
         self, data: Dict[str, Any], args: Any, token_limit: int
-    ) -> Any:
+    ) -> RenderableType:
         """Create display renderable from data.
 
         Args:
@@ -203,10 +225,10 @@ class DisplayController:
             Rich renderable for display
         """
         if not data or "blocks" not in data:
-            screen_buffer = self.error_display.format_error_screen(
+            screen_buffer_list = self.error_display.format_error_screen(
                 args.plan, args.timezone
             )
-            return self.buffer_manager.create_screen_renderable(screen_buffer)
+            return self.buffer_manager.create_screen_renderable(screen_buffer_list)
 
         # Find the active block
         active_block = None
@@ -219,16 +241,24 @@ class DisplayController:
         current_time = datetime.now(pytz.UTC)
 
         if not active_block:
-            screen_buffer = self.session_display.format_no_active_session_screen(
+            screen_buffer_result = self.session_display.format_no_active_session_screen(
                 args.plan, args.timezone, token_limit, current_time, args
             )
-            return self.buffer_manager.create_screen_renderable(screen_buffer)
+            # Convert to list of strings for consistent typing
+            screen_buffer_list = [str(item) for item in screen_buffer_result]
+            return self.buffer_manager.create_screen_renderable(screen_buffer_list)
 
         cost_limit_p90 = None
         messages_limit_p90 = None
 
         if args.plan == "custom":
-            temp_display = AdvancedCustomLimitDisplay(None)
+            # Create advanced custom limit display with proper props
+            advanced_props = AdvancedCustomLimitProps(
+                id="temp-custom-display",
+                blocks=data["blocks"],
+                show_detailed_analysis=False,
+            )
+            temp_display = AdvancedCustomLimitDisplay(advanced_props)
             session_data = temp_display._collect_session_data(data["blocks"])
             percentiles = temp_display._calculate_session_percentiles(
                 session_data["limit_sessions"]
@@ -252,10 +282,10 @@ class DisplayController:
             # Log the error and show error screen
             logger = logging.getLogger(__name__)
             logger.error(f"Error processing active session data: {e}", exc_info=True)
-            screen_buffer = self.error_display.format_error_screen(
+            screen_buffer_list = self.error_display.format_error_screen(
                 args.plan, args.timezone
             )
-            return self.buffer_manager.create_screen_renderable(screen_buffer)
+            return self.buffer_manager.create_screen_renderable(screen_buffer_list)
 
         # Add P90 limits to processed data for display
         if Plans.is_valid_plan(args.plan):
@@ -263,9 +293,12 @@ class DisplayController:
             processed_data["messages_limit_p90"] = messages_limit_p90
 
         try:
-            screen_buffer = self.session_display.format_active_session_screen(
+            screen_buffer_result = self.session_display.format_active_session_screen(
                 **processed_data
             )
+            # Ensure we have a list of strings for the buffer manager
+            if isinstance(screen_buffer_result, list):
+                screen_buffer_list = [str(item) for item in screen_buffer_result]
         except Exception as e:
             # Log the error with more details
             logger = logging.getLogger(__name__)
@@ -288,12 +321,12 @@ class DisplayController:
                         )
                     else:
                         logger.error(f"  {key}: {type(value).__name__} = {value}")
-            screen_buffer = self.error_display.format_error_screen(
+            screen_buffer_list = self.error_display.format_error_screen(
                 args.plan, args.timezone
             )
-            return self.buffer_manager.create_screen_renderable(screen_buffer)
+            return self.buffer_manager.create_screen_renderable(screen_buffer_list)
 
-        return self.buffer_manager.create_screen_renderable(screen_buffer)
+        return self.buffer_manager.create_screen_renderable(screen_buffer_list)
 
     def _process_active_session_data(
         self,
@@ -401,7 +434,7 @@ class DisplayController:
             return {}
 
         # Calculate total tokens per model for THIS SESSION ONLY
-        model_tokens = {}
+        model_tokens: Dict[str, int] = {}
         for model, stats in raw_per_model_stats.items():
             if isinstance(stats, dict):
                 # Normalize model name
@@ -433,8 +466,8 @@ class DisplayController:
         self,
         plan: str = "pro",
         timezone: str = "Europe/Warsaw",
-        custom_message: str = None,
-    ) -> Any:
+        custom_message: Optional[str] = None,
+    ) -> RenderableType:
         """Create loading screen display.
 
         Args:
@@ -444,13 +477,14 @@ class DisplayController:
         Returns:
             Rich renderable for loading screen
         """
-        return self.loading_screen.create_loading_screen_renderable(
+        renderable = self.loading_screen.create_loading_screen_renderable(
             plan, timezone, custom_message
         )
+        return cast(RenderableType, renderable)
 
     def create_error_display(
         self, plan: str = "pro", timezone: str = "Europe/Warsaw"
-    ) -> Any:
+    ) -> RenderableType:
         """Create error screen display.
 
         Args:
@@ -460,10 +494,10 @@ class DisplayController:
         Returns:
             Rich renderable for error screen
         """
-        screen_buffer = self.error_display.format_error_screen(plan, timezone)
-        return self.buffer_manager.create_screen_renderable(screen_buffer)
+        screen_buffer_list = self.error_display.format_error_screen(plan, timezone)
+        return self.buffer_manager.create_screen_renderable(screen_buffer_list)
 
-    def create_live_context(self):
+    def create_live_context(self) -> Live:
         """Create live display context manager.
 
         Returns:
@@ -484,15 +518,15 @@ class DisplayController:
 class LiveDisplayManager:
     """Manager for Rich Live display operations."""
 
-    def __init__(self, console: Optional[Console] = None):
+    def __init__(self, console: Optional[Console] = None) -> None:
         """Initialize live display manager.
 
         Args:
             console: Optional Rich console instance
         """
         self._console = console
-        self._live_context = None
-        self._current_renderable = None
+        self._live_context: Optional[Live] = None
+        self._current_renderable: Optional[RenderableType] = None
 
     def create_live_display(
         self,
@@ -512,24 +546,25 @@ class LiveDisplayManager:
         """
         display_console = console or self._console
 
-        self._live_context = Live(
+        live_context = Live(
             console=display_console,
             refresh_per_second=refresh_per_second,
             auto_refresh=auto_refresh,
             vertical_overflow="visible",  # Prevent screen scrolling
         )
+        self._live_context = live_context
 
-        return self._live_context
+        return live_context
 
 
 class ScreenBufferManager:
     """Manager for screen buffer operations and rendering."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize screen buffer manager."""
-        self.console = None
+        self.console: Optional[Console] = None
 
-    def create_screen_renderable(self, screen_buffer: List[str]):
+    def create_screen_renderable(self, screen_buffer: List[str]) -> RenderableType:
         """Create Rich renderable from screen buffer.
 
         Args:
@@ -543,20 +578,17 @@ class ScreenBufferManager:
         if self.console is None:
             self.console = get_themed_console()
 
-        text_objects = []
+        text_objects: List[RenderableType] = []
         for line in screen_buffer:
-            if isinstance(line, str):
-                # Use console to render markup properly
-                text_obj = Text.from_markup(line)
-                text_objects.append(text_obj)
-            else:
-                text_objects.append(line)
+            # Use console to render markup properly
+            text_obj = Text.from_markup(line)
+            text_objects.append(text_obj)
 
         return Group(*text_objects)
 
 
 # Legacy functions for backward compatibility
-def create_screen_renderable(screen_buffer: List[str]):
+def create_screen_renderable(screen_buffer: List[str]) -> RenderableType:
     """Legacy function - create screen renderable.
 
     Maintained for backward compatibility.
@@ -569,11 +601,13 @@ class SessionCalculator:
     """Handles session-related calculations for display purposes.
     (Moved from ui/calculators.py)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize session calculator."""
         self.tz_handler = TimezoneHandler()
 
-    def calculate_time_data(self, session_data: dict, current_time: datetime) -> dict:
+    def calculate_time_data(
+        self, session_data: Dict[str, Any], current_time: datetime
+    ) -> Dict[str, Any]:
         """Calculate time-related data for the session.
 
         Args:
@@ -587,12 +621,22 @@ class SessionCalculator:
         start_time = None
         if session_data.get("start_time_str"):
             start_time = self.tz_handler.parse_timestamp(session_data["start_time_str"])
-            start_time = self.tz_handler.ensure_utc(start_time)
+            if start_time is not None:
+                start_time = self.tz_handler.ensure_utc(start_time)
 
         # Calculate reset time
         if session_data.get("end_time_str"):
-            reset_time = self.tz_handler.parse_timestamp(session_data["end_time_str"])
-            reset_time = self.tz_handler.ensure_utc(reset_time)
+            parsed_reset_time = self.tz_handler.parse_timestamp(
+                session_data["end_time_str"]
+            )
+            if parsed_reset_time is not None:
+                reset_time = self.tz_handler.ensure_utc(parsed_reset_time)
+            else:
+                reset_time = (
+                    start_time + timedelta(hours=5)
+                    if start_time
+                    else current_time + timedelta(hours=5)
+                )
         else:
             reset_time = (
                 start_time + timedelta(hours=5)  # Default session duration
@@ -621,8 +665,11 @@ class SessionCalculator:
         }
 
     def calculate_cost_predictions(
-        self, session_data: dict, time_data: dict, cost_limit: Optional[float] = None
-    ) -> dict:
+        self,
+        session_data: Dict[str, Any],
+        time_data: Dict[str, Any],
+        cost_limit: Optional[float] = None,
+    ) -> Dict[str, Any]:
         """Calculate cost-related predictions.
 
         Args:

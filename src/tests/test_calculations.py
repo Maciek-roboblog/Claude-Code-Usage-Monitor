@@ -1,6 +1,7 @@
 """Tests for calculations module."""
 
 from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List
 from unittest.mock import Mock, patch
 
 import pytest
@@ -18,12 +19,12 @@ class TestBurnRateCalculator:
     """Test cases for BurnRateCalculator."""
 
     @pytest.fixture
-    def calculator(self):
+    def calculator(self) -> BurnRateCalculator:
         """Create a BurnRateCalculator instance."""
         return BurnRateCalculator()
 
     @pytest.fixture
-    def mock_active_block(self):
+    def mock_active_block(self) -> Any:
         """Create a mock active block for testing."""
         block = Mock()
         block.is_active = True
@@ -39,7 +40,7 @@ class TestBurnRateCalculator:
         return block
 
     @pytest.fixture
-    def mock_inactive_block(self):
+    def mock_inactive_block(self) -> Any:
         """Create a mock inactive block for testing."""
         block = Mock()
         block.is_active = False
@@ -48,7 +49,9 @@ class TestBurnRateCalculator:
         block.cost_usd = 0.5
         return block
 
-    def test_calculate_burn_rate_active_block(self, calculator, mock_active_block):
+    def test_calculate_burn_rate_active_block(
+        self, calculator: BurnRateCalculator, mock_active_block: Any
+    ) -> None:
         """Test burn rate calculation for active block."""
         burn_rate = calculator.calculate_burn_rate(mock_active_block)
 
@@ -59,18 +62,24 @@ class TestBurnRateCalculator:
 
         assert burn_rate.cost_per_hour == 1.0
 
-    def test_calculate_burn_rate_inactive_block(self, calculator, mock_inactive_block):
+    def test_calculate_burn_rate_inactive_block(
+        self, calculator: BurnRateCalculator, mock_inactive_block: Any
+    ) -> None:
         """Test burn rate calculation for inactive block returns None."""
         burn_rate = calculator.calculate_burn_rate(mock_inactive_block)
         assert burn_rate is None
 
-    def test_calculate_burn_rate_zero_duration(self, calculator, mock_active_block):
+    def test_calculate_burn_rate_zero_duration(
+        self, calculator: BurnRateCalculator, mock_active_block: Any
+    ) -> None:
         """Test burn rate calculation with zero duration returns None."""
         mock_active_block.duration_minutes = 0
         burn_rate = calculator.calculate_burn_rate(mock_active_block)
         assert burn_rate is None
 
-    def test_calculate_burn_rate_no_tokens(self, calculator, mock_active_block):
+    def test_calculate_burn_rate_no_tokens(
+        self, calculator: BurnRateCalculator, mock_active_block: Any
+    ) -> None:
         """Test burn rate calculation with no tokens returns None."""
         mock_active_block.token_counts = TokenCounts(
             input_tokens=0,
@@ -82,8 +91,8 @@ class TestBurnRateCalculator:
         assert burn_rate is None
 
     def test_calculate_burn_rate_edge_case_small_duration(
-        self, calculator, mock_active_block
-    ):
+        self, calculator: BurnRateCalculator, mock_active_block: Any
+    ) -> None:
         """Test burn rate calculation with very small duration."""
         mock_active_block.duration_minutes = 1  # 1 minute minimum for active check
         burn_rate = calculator.calculate_burn_rate(mock_active_block)
@@ -93,8 +102,8 @@ class TestBurnRateCalculator:
 
     @patch("claude_monitor.core.calculations.datetime")
     def test_project_block_usage_success(
-        self, mock_datetime, calculator, mock_active_block
-    ):
+        self, mock_datetime: Any, calculator: BurnRateCalculator, mock_active_block: Any
+    ) -> None:
         """Test successful usage projection."""
         # Mock current time
         mock_now = datetime(2024, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
@@ -115,8 +124,8 @@ class TestBurnRateCalculator:
 
     @patch("claude_monitor.core.calculations.datetime")
     def test_project_block_usage_no_remaining_time(
-        self, mock_datetime, calculator, mock_active_block
-    ):
+        self, mock_datetime: Any, calculator: BurnRateCalculator, mock_active_block: Any
+    ) -> None:
         """Test projection when block has already ended."""
         # Mock current time to be after block end time
         mock_now = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
@@ -127,7 +136,9 @@ class TestBurnRateCalculator:
         projection = calculator.project_block_usage(mock_active_block)
         assert projection is None
 
-    def test_project_block_usage_no_burn_rate(self, calculator, mock_inactive_block):
+    def test_project_block_usage_no_burn_rate(
+        self, calculator: BurnRateCalculator, mock_inactive_block: Any
+    ) -> None:
         """Test projection when burn rate cannot be calculated."""
         projection = calculator.project_block_usage(mock_inactive_block)
         assert projection is None
@@ -137,12 +148,12 @@ class TestHourlyBurnRateCalculation:
     """Test cases for hourly burn rate functions."""
 
     @pytest.fixture
-    def current_time(self):
+    def current_time(self) -> datetime:
         """Current time for testing."""
         return datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
     @pytest.fixture
-    def mock_blocks(self):
+    def mock_blocks(self) -> List[Dict[str, Any]]:
         """Create mock blocks for testing."""
         block1 = {
             "start_time": "2024-01-01T11:30:00Z",
@@ -167,18 +178,24 @@ class TestHourlyBurnRateCalculation:
 
         return [block1, block2, block3]
 
-    def test_calculate_hourly_burn_rate_empty_blocks(self, current_time):
+    def test_calculate_hourly_burn_rate_empty_blocks(
+        self, current_time: datetime
+    ) -> None:
         """Test hourly burn rate with empty blocks."""
         burn_rate = calculate_hourly_burn_rate([], current_time)
         assert burn_rate == 0.0
 
-    def test_calculate_hourly_burn_rate_none_blocks(self, current_time):
+    def test_calculate_hourly_burn_rate_none_blocks(
+        self, current_time: datetime
+    ) -> None:
         """Test hourly burn rate with None blocks."""
         burn_rate = calculate_hourly_burn_rate(None, current_time)
         assert burn_rate == 0.0
 
     @patch("claude_monitor.core.calculations._calculate_total_tokens_in_hour")
-    def test_calculate_hourly_burn_rate_success(self, mock_calc_tokens, current_time):
+    def test_calculate_hourly_burn_rate_success(
+        self, mock_calc_tokens: Any, current_time: datetime
+    ) -> None:
         """Test successful hourly burn rate calculation."""
         mock_calc_tokens.return_value = 180.0  # Total tokens in hour
 
@@ -188,12 +205,18 @@ class TestHourlyBurnRateCalculation:
         assert burn_rate == 3.0
 
         one_hour_ago = current_time - timedelta(hours=1)
-        mock_calc_tokens.assert_called_once_with(blocks, one_hour_ago, current_time)
+        # The function now includes MathematicalPrecision parameter
+        args, kwargs = mock_calc_tokens.call_args
+        assert args[0] == blocks
+        assert args[1] == one_hour_ago
+        assert args[2] == current_time
+        # Fourth argument is MathematicalPrecision instance - just verify it exists
+        assert len(args) == 4
 
     @patch("claude_monitor.core.calculations._calculate_total_tokens_in_hour")
     def test_calculate_hourly_burn_rate_zero_tokens(
-        self, mock_calc_tokens, current_time
-    ):
+        self, mock_calc_tokens: Any, current_time: datetime
+    ) -> None:
         """Test hourly burn rate calculation with zero tokens."""
         mock_calc_tokens.return_value = 0.0
 
@@ -203,7 +226,9 @@ class TestHourlyBurnRateCalculation:
         assert burn_rate == 0.0
 
     @patch("claude_monitor.core.calculations._process_block_for_burn_rate")
-    def test_calculate_total_tokens_in_hour(self, mock_process_block, current_time):
+    def test_calculate_total_tokens_in_hour(
+        self, mock_process_block: Any, current_time: datetime
+    ) -> None:
         """Test total tokens calculation for hour."""
         # Mock returns different token counts for each block
         mock_process_block.side_effect = [150.0, 0.0, 0.0]
@@ -218,7 +243,9 @@ class TestHourlyBurnRateCalculation:
         assert total_tokens == 150.0
         assert mock_process_block.call_count == 3
 
-    def test_process_block_for_burn_rate_gap_block(self, current_time):
+    def test_process_block_for_burn_rate_gap_block(
+        self, current_time: datetime
+    ) -> None:
         """Test processing gap block returns zero."""
         gap_block = {"isGap": True, "start_time": "2024-01-01T11:30:00Z"}
         one_hour_ago = current_time - timedelta(hours=1)
@@ -228,8 +255,8 @@ class TestHourlyBurnRateCalculation:
 
     @patch("claude_monitor.core.calculations._parse_block_start_time")
     def test_process_block_for_burn_rate_invalid_start_time(
-        self, mock_parse_time, current_time
-    ):
+        self, mock_parse_time: Any, current_time: datetime
+    ) -> None:
         """Test processing block with invalid start time returns zero."""
         mock_parse_time.return_value = None
 
@@ -242,8 +269,8 @@ class TestHourlyBurnRateCalculation:
     @patch("claude_monitor.core.calculations._determine_session_end_time")
     @patch("claude_monitor.core.calculations._parse_block_start_time")
     def test_process_block_for_burn_rate_old_session(
-        self, mock_parse_time, mock_end_time, current_time
-    ):
+        self, mock_parse_time: Any, mock_end_time: Any, current_time: datetime
+    ) -> None:
         """Test processing block that ended before the hour window."""
         one_hour_ago = current_time - timedelta(hours=1)
         old_time = one_hour_ago - timedelta(minutes=30)
@@ -260,7 +287,7 @@ class TestHourlyBurnRateCalculation:
 class TestCalculationEdgeCases:
     """Test edge cases and error conditions."""
 
-    def test_burn_rate_with_negative_duration(self):
+    def test_burn_rate_with_negative_duration(self) -> None:
         """Test burn rate calculation with negative duration."""
         calculator = BurnRateCalculator()
 
@@ -273,7 +300,7 @@ class TestCalculationEdgeCases:
         burn_rate = calculator.calculate_burn_rate(block)
         assert burn_rate is None
 
-    def test_projection_with_zero_cost(self):
+    def test_projection_with_zero_cost(self) -> None:
         """Test projection calculation with zero cost."""
         calculator = BurnRateCalculator()
 
@@ -289,7 +316,7 @@ class TestCalculationEdgeCases:
         assert projection is not None
         assert projection.projected_total_cost == 0.0
 
-    def test_very_large_token_counts(self):
+    def test_very_large_token_counts(self) -> None:
         """Test calculations with very large token counts."""
         calculator = BurnRateCalculator()
 
@@ -315,7 +342,7 @@ class TestCalculationEdgeCases:
 class TestP90Calculator:
     """Test cases for P90Calculator."""
 
-    def test_p90_config_creation(self):
+    def test_p90_config_creation(self) -> None:
         """Test P90Config dataclass creation."""
         from claude_monitor.core.p90_calculator import P90Config
 
@@ -331,7 +358,7 @@ class TestP90Calculator:
         assert config.default_min_limit == 5000
         assert config.cache_ttl_seconds == 300
 
-    def test_did_hit_limit_true(self):
+    def test_did_hit_limit_true(self) -> None:
         """Test _did_hit_limit returns True when limit is hit."""
         from claude_monitor.core.p90_calculator import _did_hit_limit
 
@@ -343,7 +370,7 @@ class TestP90Calculator:
         result = _did_hit_limit(45000, [10000, 50000], 0.9)
         assert result is True
 
-    def test_did_hit_limit_false(self):
+    def test_did_hit_limit_false(self) -> None:
         """Test _did_hit_limit returns False when limit is not hit."""
         from claude_monitor.core.p90_calculator import _did_hit_limit
 
@@ -355,11 +382,11 @@ class TestP90Calculator:
         result = _did_hit_limit(1000, [10000, 50000], 0.9)
         assert result is False
 
-    def test_extract_sessions_basic(self):
+    def test_extract_sessions_basic(self) -> None:
         """Test _extract_sessions with basic filtering."""
         from claude_monitor.core.p90_calculator import _extract_sessions
 
-        blocks = [
+        blocks: List[Dict[str, Any]] = [
             {"totalTokens": 1000, "isGap": False},
             {"totalTokens": 2000, "isGap": True},
             {"totalTokens": 3000, "isGap": False},
@@ -368,32 +395,32 @@ class TestP90Calculator:
         ]
 
         # Filter function that excludes gaps
-        def filter_fn(b):
+        def filter_fn(b: Dict[str, Any]) -> bool:
             return not b.get("isGap", False)
 
         result = _extract_sessions(blocks, filter_fn)
 
         assert result == [1000, 3000]
 
-    def test_extract_sessions_complex_filter(self):
+    def test_extract_sessions_complex_filter(self) -> None:
         """Test _extract_sessions with complex filtering."""
         from claude_monitor.core.p90_calculator import _extract_sessions
 
-        blocks = [
+        blocks: List[Dict[str, Any]] = [
             {"totalTokens": 1000, "isGap": False, "isActive": False},
             {"totalTokens": 2000, "isGap": False, "isActive": True},
             {"totalTokens": 3000, "isGap": True, "isActive": False},
             {"totalTokens": 4000, "isGap": False, "isActive": False},
         ]
 
-        def filter_fn(b):
+        def filter_fn(b: Dict[str, Any]) -> bool:
             return not b.get("isGap", False) and not b.get("isActive", False)
 
         result = _extract_sessions(blocks, filter_fn)
 
         assert result == [1000, 4000]
 
-    def test_calculate_p90_from_blocks_with_hits(self):
+    def test_calculate_p90_from_blocks_with_hits(self) -> None:
         """Test _calculate_p90_from_blocks when limit hits are found."""
         from claude_monitor.core.p90_calculator import (
             P90Config,
@@ -420,7 +447,7 @@ class TestP90Calculator:
         assert isinstance(result, int)
         assert result > 0
 
-    def test_calculate_p90_from_blocks_no_hits(self):
+    def test_calculate_p90_from_blocks_no_hits(self) -> None:
         """Test _calculate_p90_from_blocks when no limit hits are found."""
         from claude_monitor.core.p90_calculator import (
             P90Config,
@@ -447,7 +474,7 @@ class TestP90Calculator:
         assert isinstance(result, int)
         assert result > 0
 
-    def test_calculate_p90_from_blocks_empty(self):
+    def test_calculate_p90_from_blocks_empty(self) -> None:
         """Test _calculate_p90_from_blocks with empty or invalid blocks."""
         from claude_monitor.core.p90_calculator import (
             P90Config,
@@ -464,7 +491,7 @@ class TestP90Calculator:
         result = _calculate_p90_from_blocks([], config)
         assert result == config.default_min_limit
 
-        blocks = [
+        blocks: List[Dict[str, Any]] = [
             {"isGap": True, "isActive": False},
             {"totalTokens": 0, "isGap": False, "isActive": False},
         ]
@@ -472,7 +499,7 @@ class TestP90Calculator:
         result = _calculate_p90_from_blocks(blocks, config)
         assert result == config.default_min_limit
 
-    def test_p90_calculator_init(self):
+    def test_p90_calculator_init(self) -> None:
         """Test P90Calculator initialization."""
         from claude_monitor.core.p90_calculator import P90Calculator
 
@@ -483,7 +510,7 @@ class TestP90Calculator:
         assert calculator._cfg.limit_threshold > 0
         assert calculator._cfg.default_min_limit > 0
 
-    def test_p90_calculator_custom_config(self):
+    def test_p90_calculator_custom_config(self) -> None:
         """Test P90Calculator with custom configuration."""
         from claude_monitor.core.p90_calculator import P90Calculator, P90Config
 
@@ -500,7 +527,7 @@ class TestP90Calculator:
         assert calculator._cfg.limit_threshold == 0.8
         assert calculator._cfg.default_min_limit == 3000
 
-    def test_p90_calculator_calculate_basic(self):
+    def test_p90_calculator_calculate_basic(self) -> None:
         """Test P90Calculator.calculate with basic blocks."""
         from claude_monitor.core.p90_calculator import P90Calculator
 
@@ -517,7 +544,7 @@ class TestP90Calculator:
         assert isinstance(result, int)
         assert result > 0
 
-    def test_p90_calculator_calculate_empty(self):
+    def test_p90_calculator_calculate_empty(self) -> None:
         """Test P90Calculator.calculate with empty blocks."""
         from claude_monitor.core.p90_calculator import P90Calculator
 
@@ -527,7 +554,7 @@ class TestP90Calculator:
 
         assert result is None
 
-    def test_p90_calculator_caching(self):
+    def test_p90_calculator_caching(self) -> None:
         """Test P90Calculator caching behavior."""
         from claude_monitor.core.p90_calculator import P90Calculator
 
@@ -546,7 +573,7 @@ class TestP90Calculator:
 
         assert result1 == result2
 
-    def test_p90_calculation_edge_cases(self):
+    def test_p90_calculation_edge_cases(self) -> None:
         """Test P90 calculation with edge cases."""
         from claude_monitor.core.p90_calculator import (
             P90Config,
@@ -574,7 +601,7 @@ class TestP90Calculator:
         result = _calculate_p90_from_blocks(blocks, config)
         assert result > 0
 
-    def test_p90_quantiles_calculation(self):
+    def test_p90_quantiles_calculation(self) -> None:
         """Test that P90 uses proper quantiles calculation."""
         from claude_monitor.core.p90_calculator import (
             P90Config,

@@ -5,9 +5,11 @@ Handles formatting of active session screens and session data display.
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Protocol, Union
 
-import pytz
+import pytz  # type: ignore[import-untyped]
+from rich.console import RenderableType
+from rich.text import Text
 
 from claude_monitor.ui.components import CostIndicator, VelocityIndicator
 from claude_monitor.ui.layouts import HeaderManager
@@ -22,12 +24,46 @@ from claude_monitor.utils.time_utils import (
     percentage,
 )
 
+# Type aliases for Rich rendering and display components
+DisplayLine = Union[str, Text, RenderableType]
+ProgressBarStyle = str
+ModelStats = Dict[str, Dict[str, Union[int, float]]]
+SessionEntries = List[Dict[str, Any]]
+
+
+class DisplayComponentProtocol(Protocol):
+    """Protocol for display components that render UI elements."""
+
+    def render(self, *args: Any, **kwargs: Any) -> str:
+        """Render the component to a string representation."""
+        ...
+
+
+class ProgressBarProtocol(Protocol):
+    """Protocol for progress bar components."""
+
+    def render(self, *args: Any, **kwargs: Any) -> str:
+        """Render the progress bar."""
+        ...
+
+    def _render_bar(
+        self,
+        filled: int,
+        filled_char: str = "█",
+        empty_char: str = "░",
+        filled_style: Optional[str] = None,
+        empty_style: Optional[str] = None,
+    ) -> str:
+        """Render the actual progress bar."""
+        ...
+
 
 @dataclass
 class SessionDisplayData:
-    """Data container for session display information.
+    """Strongly typed data container for session display information.
 
-    This replaces the 21 parameters in format_active_session_screen method.
+    This replaces the 21 parameters in format_active_session_screen method
+    with proper Rich-aware typing for UI components.
     """
 
     plan: str
@@ -40,9 +76,9 @@ class SessionDisplayData:
     total_session_minutes: float
     burn_rate: float
     session_cost: float
-    per_model_stats: Dict[str, Any]
+    per_model_stats: ModelStats
     sent_messages: int
-    entries: List[Dict]
+    entries: SessionEntries
     predicted_end_str: str
     reset_time_str: str
     current_time_str: str
@@ -53,22 +89,28 @@ class SessionDisplayData:
 
 
 class SessionDisplayComponent:
-    """Main component for displaying active session information."""
+    """Main component for displaying active session information.
 
-    def __init__(self):
-        """Initialize session display component with sub-components."""
-        self.token_progress = TokenProgressBar()
-        self.time_progress = TimeProgressBar()
-        self.model_usage = ModelUsageBar()
+    Implements advanced Rich UI patterns for real-time session monitoring
+    with type-safe display rendering and dynamic content updates.
+    """
+
+    def __init__(self) -> None:
+        """Initialize session display component with typed sub-components."""
+        self.token_progress: ProgressBarProtocol = TokenProgressBar()
+        self.time_progress: ProgressBarProtocol = TimeProgressBar()
+        self.model_usage: ProgressBarProtocol = ModelUsageBar()
+        self._style_cache: Dict[str, str] = {}
+        self._component_cache: Dict[str, DisplayLine] = {}
 
     def _render_wide_progress_bar(self, percentage: float) -> str:
-        """Render a wide progress bar (50 chars) using centralized progress bar logic.
+        """Render a wide progress bar (50 chars) with Rich-aware styling.
 
         Args:
             percentage: Progress percentage (can be > 100)
 
         Returns:
-            Formatted progress bar string
+            Formatted progress bar string with Rich markup
         """
         from claude_monitor.terminal.themes import get_cost_style
 
@@ -94,16 +136,18 @@ class SessionDisplayComponent:
 
         return f"{color} [{filled_bar}]"
 
-    def format_active_session_screen_v2(self, data: SessionDisplayData) -> List[str]:
-        """Format complete active session screen using data class.
+    def format_active_session_screen_v2(
+        self, data: SessionDisplayData
+    ) -> List[DisplayLine]:
+        """Format complete active session screen using strongly typed data class.
 
-        This is the refactored version using SessionDisplayData.
+        This is the refactored version using SessionDisplayData with Rich-aware typing.
 
         Args:
             data: SessionDisplayData object containing all display information
 
         Returns:
-            List of formatted lines for display
+            List of formatted lines for Rich display rendering
         """
         return self.format_active_session_screen(
             plan=data.plan,
@@ -140,9 +184,9 @@ class SessionDisplayComponent:
         total_session_minutes: float,
         burn_rate: float,
         session_cost: float,
-        per_model_stats: Dict[str, Any],
+        per_model_stats: ModelStats,
         sent_messages: int,
-        entries: List[Dict],
+        entries: SessionEntries,
         predicted_end_str: str,
         reset_time_str: str,
         current_time_str: str,
@@ -150,9 +194,9 @@ class SessionDisplayComponent:
         show_exceed_notification: bool = False,
         show_tokens_will_run_out: bool = False,
         original_limit: int = 0,
-        **kwargs,
-    ) -> List[str]:
-        """Format complete active session screen.
+        **kwargs: Any,
+    ) -> List[DisplayLine]:
+        """Format complete active session screen with Rich-aware display components.
 
         Args:
             plan: Current plan name
@@ -165,9 +209,9 @@ class SessionDisplayComponent:
             total_session_minutes: Total session duration
             burn_rate: Current burn rate
             session_cost: Session cost in USD
-            per_model_stats: Model usage statistics
+            per_model_stats: Strongly typed model usage statistics
             sent_messages: Number of messages sent
-            entries: Session entries
+            entries: Strongly typed session entries
             predicted_end_str: Predicted end time string
             reset_time_str: Reset time string
             current_time_str: Current time string
@@ -177,10 +221,10 @@ class SessionDisplayComponent:
             original_limit: Original plan limit
 
         Returns:
-            List of formatted screen lines
+            List of formatted screen lines for Rich rendering
         """
 
-        screen_buffer = []
+        screen_buffer: List[DisplayLine] = []
 
         header_manager = HeaderManager()
         screen_buffer.extend(header_manager.create_header(plan, timezone))
@@ -335,17 +379,17 @@ class SessionDisplayComponent:
 
     def _add_notifications(
         self,
-        screen_buffer: List[str],
+        screen_buffer: List[DisplayLine],
         show_switch_notification: bool,
         show_exceed_notification: bool,
         show_tokens_will_run_out: bool,
         original_limit: int,
         token_limit: int,
     ) -> None:
-        """Add notification messages to screen buffer.
+        """Add notification messages to screen buffer with Rich formatting.
 
         Args:
-            screen_buffer: Screen buffer to append to
+            screen_buffer: Typed screen buffer to append to
             show_switch_notification: Show plan switch notification
             show_exceed_notification: Show exceed limit notification
             show_tokens_will_run_out: Show token depletion warning
@@ -382,8 +426,8 @@ class SessionDisplayComponent:
         token_limit: int,
         current_time: Optional[datetime] = None,
         args: Optional[Any] = None,
-    ) -> List[str]:
-        """Format screen for no active session state.
+    ) -> List[DisplayLine]:
+        """Format screen for no active session state with Rich components.
 
         Args:
             plan: Current plan name
@@ -393,10 +437,10 @@ class SessionDisplayComponent:
             args: Command line arguments
 
         Returns:
-            List of formatted screen lines
+            List of Rich-formatted screen lines
         """
 
-        screen_buffer = []
+        screen_buffer: List[DisplayLine] = []
 
         header_manager = HeaderManager()
         screen_buffer.extend(header_manager.create_header(plan, timezone))
@@ -439,3 +483,57 @@ class SessionDisplayComponent:
             )
 
         return screen_buffer
+
+    def _create_styled_line(
+        self, content: str, style: Optional[str] = None, use_markup: bool = True
+    ) -> DisplayLine:
+        """Create a styled display line with Rich formatting.
+
+        Args:
+            content: The text content to display
+            style: Optional Rich style to apply
+            use_markup: Whether to parse Rich markup in content
+
+        Returns:
+            Properly typed display line for Rich rendering
+        """
+        if use_markup:
+            text_obj = Text.from_markup(content)
+        else:
+            text_obj = Text(content)
+
+        if style:
+            text_obj.stylize(style)
+
+        return text_obj
+
+    def _cache_component_render(
+        self,
+        component_key: str,
+        render_func: Callable[..., Any],
+        *args: Any,
+        **kwargs: Any,
+    ) -> DisplayLine:
+        """Cache component rendering for performance optimization.
+
+        Args:
+            component_key: Unique key for caching
+            render_func: Function to call for rendering
+            *args: Arguments for render function
+            **kwargs: Keyword arguments for render function
+
+        Returns:
+            Cached or freshly rendered display line
+        """
+        cache_key = f"{component_key}_{hash((args, tuple(kwargs.items())))}"
+
+        if cache_key not in self._component_cache:
+            result = render_func(*args, **kwargs)
+            self._component_cache[cache_key] = result
+
+        return self._component_cache[cache_key]
+
+    def clear_component_cache(self) -> None:
+        """Clear the component rendering cache for memory management."""
+        self._component_cache.clear()
+        self._style_cache.clear()

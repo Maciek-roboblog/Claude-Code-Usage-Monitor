@@ -4,7 +4,7 @@ import logging
 import sys
 import traceback
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional, Protocol
 
 from claude_monitor import __version__
 from claude_monitor.cli.bootstrap import (
@@ -27,6 +27,29 @@ from claude_monitor.terminal.manager import (
 )
 from claude_monitor.terminal.themes import get_themed_console, print_themed
 from claude_monitor.ui.display_controller import DisplayController
+
+
+class NamespaceProtocol(Protocol):
+    """Protocol defining the expected interface for CLI arguments namespace.
+
+    This protocol ensures type safety for CLI argument handling while maintaining
+    flexibility with different argument sources (argparse, pydantic-settings, etc.).
+    """
+
+    plan: str
+    timezone: str
+    refresh_rate: int
+    refresh_per_second: float
+    custom_limit_tokens: Optional[int]
+    theme: Optional[Literal["light", "dark", "classic", "auto"]]
+    log_level: str
+    log_file: Optional[str]
+
+
+# Type aliases for better type safety and documentation
+DataUpdateCallback = Callable[[Dict[str, Any]], None]
+SessionChangeCallback = Callable[[str, str, Any], None]
+ExitCode = int
 
 
 def get_standard_claude_paths() -> List[str]:
@@ -58,7 +81,7 @@ def discover_claude_data_paths(custom_paths: Optional[List[str]] = None) -> List
     return discovered_paths
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: Optional[List[str]] = None) -> ExitCode:
     """Main entry point with direct pydantic-settings integration."""
     if argv is None:
         argv = sys.argv[1:]
@@ -80,7 +103,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         init_timezone(settings.timezone)
 
-        args = settings.to_namespace()  # type: ignore
+        args = settings.to_namespace()
 
         _run_monitoring(args)
 
@@ -96,14 +119,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 1
 
 
-def _run_monitoring(args: Any) -> None:
+def _run_monitoring(args: NamespaceProtocol) -> None:
     """Main monitoring implementation without facade."""
     if hasattr(args, "theme") and args.theme:
-        console = get_themed_console(force_theme=args.theme.lower())
+        console = get_themed_console(force_theme=args.theme)
     else:
         console = get_themed_console()
 
-    old_terminal_settings = setup_terminal()  # type: ignore
+    old_terminal_settings = setup_terminal()
     live_display_active = False
 
     try:
@@ -118,7 +141,7 @@ def _run_monitoring(args: Any) -> None:
 
         token_limit = _get_initial_token_limit(args, str(data_path))
 
-        display_controller = DisplayController()  # type: ignore
+        display_controller = DisplayController()
         display_controller.live_manager._console = console
 
         refresh_per_second = getattr(args, "refresh_per_second", 0.75)
@@ -135,7 +158,7 @@ def _run_monitoring(args: Any) -> None:
             args.plan, args.timezone
         )
 
-        enter_alternate_screen()  # type: ignore
+        enter_alternate_screen()
 
         live_display_active = False
 
@@ -232,7 +255,7 @@ def _run_monitoring(args: Any) -> None:
                 live_display.__exit__(None, None, None)
             except Exception:
                 pass
-        handle_cleanup_and_exit(old_terminal_settings)  # type: ignore
+        handle_cleanup_and_exit(old_terminal_settings)
     except Exception as e:
         # Clean exit from live display if it's active
         if "live_display" in locals():
@@ -240,12 +263,12 @@ def _run_monitoring(args: Any) -> None:
                 live_display.__exit__(None, None, None)
             except Exception:
                 pass
-        handle_error_and_exit(old_terminal_settings, e)  # type: ignore
+        handle_error_and_exit(old_terminal_settings, e)
     finally:
-        restore_terminal(old_terminal_settings)  # type: ignore
+        restore_terminal(old_terminal_settings)
 
 
-def _get_initial_token_limit(args: Any, data_path: str) -> int:
+def _get_initial_token_limit(args: NamespaceProtocol, data_path: str) -> int:
     """Get initial token limit for the plan."""
     logger = logging.getLogger(__name__)
     plan = getattr(args, "plan", PlanType.PRO.value)

@@ -1,5 +1,8 @@
 """Comprehensive tests for PricingCalculator class."""
 
+from decimal import Decimal
+from typing import Any, Dict
+
 import pytest
 
 from claude_monitor.core.models import CostMode, TokenCounts
@@ -10,12 +13,12 @@ class TestPricingCalculator:
     """Test suite for PricingCalculator class."""
 
     @pytest.fixture
-    def calculator(self):
+    def calculator(self) -> PricingCalculator:
         """Create a PricingCalculator with default pricing."""
         return PricingCalculator()
 
     @pytest.fixture
-    def custom_pricing(self):
+    def custom_pricing(self) -> Dict[str, Any]:
         """Custom pricing configuration for testing."""
         return {
             "test-model": {
@@ -27,12 +30,12 @@ class TestPricingCalculator:
         }
 
     @pytest.fixture
-    def custom_calculator(self, custom_pricing):
+    def custom_calculator(self, custom_pricing: Dict[str, Any]) -> PricingCalculator:
         """Create a PricingCalculator with custom pricing."""
         return PricingCalculator(custom_pricing)
 
     @pytest.fixture
-    def sample_entry_data(self):
+    def sample_entry_data(self) -> Dict[str, Any]:
         """Sample entry data for testing."""
         return {
             "model": "claude-3-haiku",
@@ -44,7 +47,7 @@ class TestPricingCalculator:
         }
 
     @pytest.fixture
-    def token_counts(self):
+    def token_counts(self) -> TokenCounts:
         """Sample TokenCounts object."""
         return TokenCounts(
             input_tokens=1000,
@@ -53,7 +56,7 @@ class TestPricingCalculator:
             cache_read_tokens=50,
         )
 
-    def test_init_default_pricing(self, calculator):
+    def test_init_default_pricing(self, calculator: PricingCalculator) -> None:
         """Test initialization with default pricing."""
         assert calculator.pricing is not None
         assert "claude-3-opus" in calculator.pricing
@@ -62,12 +65,14 @@ class TestPricingCalculator:
         assert "claude-3-5-sonnet" in calculator.pricing
         assert calculator._cost_cache == {}
 
-    def test_init_custom_pricing(self, custom_calculator, custom_pricing):
+    def test_init_custom_pricing(
+        self, custom_calculator: PricingCalculator, custom_pricing: Dict[str, Any]
+    ) -> None:
         """Test initialization with custom pricing."""
         assert custom_calculator.pricing == custom_pricing
         assert custom_calculator._cost_cache == {}
 
-    def test_fallback_pricing_structure(self, calculator):
+    def test_fallback_pricing_structure(self, calculator: PricingCalculator) -> None:
         """Test that fallback pricing has correct structure."""
         fallback = PricingCalculator.FALLBACK_PRICING
 
@@ -87,17 +92,21 @@ class TestPricingCalculator:
             )  # Cache creation costs more
             assert pricing["cache_read"] < pricing["input"]  # Cache read costs less
 
-    def test_calculate_cost_claude_3_haiku_basic(self, calculator):
+    def test_calculate_cost_claude_3_haiku_basic(
+        self, calculator: PricingCalculator
+    ) -> None:
         """Test cost calculation for Claude 3 Haiku with basic tokens."""
         cost = calculator.calculate_cost(
             model="claude-3-haiku", input_tokens=1000, output_tokens=500
         )
 
         # Expected: (1000 * 0.25 + 500 * 1.25) / 1000000
-        expected = (1000 * 0.25 + 500 * 1.25) / 1000000
-        assert abs(cost - expected) < 1e-6
+        expected = Decimal((1000 * 0.25 + 500 * 1.25) / 1000000)
+        assert abs(cost - expected) < Decimal("1e-6")
 
-    def test_calculate_cost_claude_3_opus_with_cache(self, calculator):
+    def test_calculate_cost_claude_3_opus_with_cache(
+        self, calculator: PricingCalculator
+    ) -> None:
         """Test cost calculation for Claude 3 Opus with cache tokens."""
         cost = calculator.calculate_cost(
             model="claude-3-opus",
@@ -114,7 +123,7 @@ class TestPricingCalculator:
             + 100 * 18.75  # cache creation
             + 50 * 1.5  # cache read
         ) / 1000000
-        assert abs(cost - expected) < 1e-6
+        assert abs(cost - expected) < Decimal("1e-6")
 
     def test_calculate_cost_claude_3_sonnet(self, calculator):
         """Test cost calculation for Claude 3 Sonnet."""
@@ -122,8 +131,8 @@ class TestPricingCalculator:
             model="claude-3-sonnet", input_tokens=2000, output_tokens=1000
         )
 
-        expected = (2000 * 3.0 + 1000 * 15.0) / 1000000
-        assert abs(cost - expected) < 1e-6
+        expected = Decimal((2000 * 3.0 + 1000 * 15.0) / 1000000)
+        assert abs(cost - expected) < Decimal("1e-6")
 
     def test_calculate_cost_claude_3_5_sonnet(self, calculator):
         """Test cost calculation for Claude 3.5 Sonnet (should use sonnet pricing)."""
@@ -131,20 +140,23 @@ class TestPricingCalculator:
             model="claude-3-5-sonnet", input_tokens=1000, output_tokens=500
         )
 
-        expected = (1000 * 3.0 + 500 * 15.0) / 1000000
-        assert abs(cost - expected) < 1e-6
+        expected = Decimal((1000 * 3.0 + 500 * 15.0) / 1000000)
+        assert abs(cost - expected) < Decimal("1e-6")
 
     def test_calculate_cost_with_token_counts_object(self, calculator, token_counts):
         """Test cost calculation using TokenCounts object."""
         cost = calculator.calculate_cost(model="claude-3-haiku", tokens=token_counts)
 
-        expected = (
-            1000 * 0.25  # input
-            + 500 * 1.25  # output
-            + 100 * 0.3  # cache creation
-            + 50 * 0.03  # cache read
-        ) / 1000000
-        assert abs(cost - expected) < 1e-6
+        expected = Decimal(
+            (
+                1000 * 0.25  # input
+                + 500 * 1.25  # output
+                + 100 * 0.3  # cache creation
+                + 50 * 0.03  # cache read
+            )
+            / 1000000
+        )
+        assert abs(cost - expected) < Decimal("1e-6")
 
     def test_calculate_cost_token_counts_overrides_individual_params(
         self, calculator, token_counts
@@ -158,13 +170,16 @@ class TestPricingCalculator:
         )
 
         # Should use values from token_counts, not the individual parameters
-        expected = (
-            1000 * 0.25  # from token_counts
-            + 500 * 1.25  # from token_counts
-            + 100 * 0.3  # from token_counts
-            + 50 * 0.03  # from token_counts
-        ) / 1000000
-        assert abs(cost - expected) < 1e-6
+        expected = Decimal(
+            (
+                1000 * 0.25  # from token_counts
+                + 500 * 1.25  # from token_counts
+                + 100 * 0.3  # from token_counts
+                + 50 * 0.03  # from token_counts
+            )
+            / 1000000
+        )
+        assert abs(cost - expected) < Decimal("1e-6")
 
     def test_calculate_cost_synthetic_model(self, calculator):
         """Test that synthetic model returns zero cost."""
@@ -191,13 +206,16 @@ class TestPricingCalculator:
         """Test calculate_cost_for_entry with AUTO mode."""
         cost = calculator.calculate_cost_for_entry(sample_entry_data, CostMode.AUTO)
 
-        expected = (
-            1000 * 0.25  # input
-            + 500 * 1.25  # output
-            + 100 * 0.3  # cache creation
-            + 50 * 0.03  # cache read
-        ) / 1000000
-        assert abs(cost - expected) < 1e-6
+        expected = Decimal(
+            (
+                1000 * 0.25  # input
+                + 500 * 1.25  # output
+                + 100 * 0.3  # cache creation
+                + 50 * 0.03  # cache read
+            )
+            / 1000000
+        )
+        assert abs(cost - expected) < Decimal("1e-6")
 
     def test_calculate_cost_for_entry_cached_mode_with_existing_cost(self, calculator):
         """Test calculate_cost_for_entry with CACHED mode and existing cost."""
@@ -218,8 +236,8 @@ class TestPricingCalculator:
         cost = calculator.calculate_cost_for_entry(sample_entry_data, CostMode.CACHED)
 
         # Should fall back to calculation since no existing cost
-        expected = (1000 * 0.25 + 500 * 1.25 + 100 * 0.3 + 50 * 0.03) / 1000000
-        assert abs(cost - expected) < 1e-6
+        expected = Decimal((1000 * 0.25 + 500 * 1.25 + 100 * 0.3 + 50 * 0.03) / 1000000)
+        assert abs(cost - expected) < Decimal("1e-6")
 
     def test_calculate_cost_for_entry_calculated_mode(self, calculator):
         """Test calculate_cost_for_entry with CALCULATED mode."""
@@ -233,8 +251,8 @@ class TestPricingCalculator:
         cost = calculator.calculate_cost_for_entry(entry_data, CostMode.CALCULATED)
 
         # Should calculate cost regardless of existing cost_usd
-        expected = (500 * 15.0 + 250 * 75.0) / 1000000
-        assert abs(cost - expected) < 1e-6
+        expected = Decimal((500 * 15.0 + 250 * 75.0) / 1000000)
+        assert abs(cost - expected) < Decimal("1e-6")
 
     def test_calculate_cost_for_entry_missing_model(self, calculator):
         """Test calculate_cost_for_entry with missing model."""
@@ -263,8 +281,8 @@ class TestPricingCalculator:
             model="test-model", input_tokens=1000, output_tokens=500
         )
 
-        expected = (1000 * 1.0 + 500 * 2.0) / 1000000
-        assert abs(cost - expected) < 1e-6
+        expected = Decimal((1000 * 1.0 + 500 * 2.0) / 1000000)
+        assert abs(cost - expected) < Decimal("1e-6")
 
     def test_cost_calculation_precision(self, calculator):
         """Test that cost calculations maintain proper precision."""
@@ -273,8 +291,8 @@ class TestPricingCalculator:
             model="claude-3-haiku", input_tokens=1, output_tokens=1
         )
 
-        expected = (1 * 0.25 + 1 * 1.25) / 1000000
-        assert abs(cost - expected) < 1e-6
+        expected = Decimal((1 * 0.25 + 1 * 1.25) / 1000000)
+        assert abs(cost - expected) < Decimal("1e-6")
 
     def test_cost_calculation_large_numbers(self, calculator):
         """Test cost calculation with large token counts."""
@@ -284,8 +302,8 @@ class TestPricingCalculator:
             output_tokens=500000,  # 500k tokens
         )
 
-        expected = (1000000 * 15.0 + 500000 * 75.0) / 1000000
-        assert abs(cost - expected) < 1e-6
+        expected = Decimal((1000000 * 15.0 + 500000 * 75.0) / 1000000)
+        assert abs(cost - expected) < Decimal("1e-6")
 
     def test_all_supported_models(self, calculator):
         """Test that all supported models can calculate costs."""

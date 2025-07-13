@@ -7,7 +7,7 @@ import pytest
 from claude_monitor._version import _get_version_from_pyproject, get_version
 
 
-def test_get_version_from_metadata():
+def test_get_version_from_metadata() -> None:
     """Test getting version from package metadata."""
     with patch("importlib.metadata.version") as mock_version:
         mock_version.return_value = "3.0.0"
@@ -16,7 +16,7 @@ def test_get_version_from_metadata():
         mock_version.assert_called_once_with("claude-monitor")
 
 
-def test_get_version_fallback_to_pyproject():
+def test_get_version_fallback_to_pyproject() -> None:
     """Test fallback to pyproject.toml when package not installed."""
     mock_toml_content = """
 [project]
@@ -41,7 +41,7 @@ version = "3.0.0"
                     assert version == "3.0.0"
 
 
-def test_get_version_fallback_unknown():
+def test_get_version_fallback_unknown() -> None:
     """Test fallback to 'unknown' when everything fails."""
     with patch("importlib.metadata.version") as mock_version:
         mock_version.side_effect = ImportError("Package not found")
@@ -51,7 +51,7 @@ def test_get_version_fallback_unknown():
             assert version == "unknown"
 
 
-def test_version_import_from_main_module():
+def test_version_import_from_main_module() -> None:
     """Test that version can be imported from main module."""
     from claude_monitor import __version__
 
@@ -59,7 +59,7 @@ def test_version_import_from_main_module():
     assert len(__version__) > 0
 
 
-def test_version_format():
+def test_version_format() -> None:
     """Test that version follows expected format."""
     from claude_monitor import __version__
 
@@ -75,7 +75,7 @@ def test_version_format():
         assert parts[1].isdigit(), f"Minor version should be numeric, got: {parts[1]}"
 
 
-def test_version_consistency():
+def test_version_consistency() -> None:
     """Test that version is consistent across imports."""
     from claude_monitor import __version__ as version1
     from claude_monitor._version import __version__ as version2
@@ -84,17 +84,17 @@ def test_version_consistency():
 
 
 @pytest.mark.integration
-def test_version_matches_pyproject():
+def test_version_matches_pyproject() -> None:
     """Integration test: verify version matches pyproject.toml."""
     from pathlib import Path
 
     try:
         # Python 3.11+
-        import tomllib
+        import tomllib  # type: ignore[import-not-found]
     except ImportError:
         try:
             # Python < 3.11 fallback
-            import tomli as tomllib  # type: ignore
+            import tomli as tomllib  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("No TOML library available")
 

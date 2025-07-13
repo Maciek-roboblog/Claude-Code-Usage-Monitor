@@ -4,37 +4,35 @@ from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
 import pytest
-import pytz
+import pytz  # type: ignore[import-untyped]
 
-from claude_monitor.utils.timezone import (
-    TimezoneHandler,
-    _detect_timezone_time_preference,
-)
+from claude_monitor.utils.time_utils import TimezoneHandler
+from claude_monitor.utils.timezone import _detect_timezone_time_preference
 
 
 class TestTimezoneHandler:
     """Test suite for TimezoneHandler class."""
 
     @pytest.fixture
-    def handler(self):
+    def handler(self) -> TimezoneHandler:
         """Create a TimezoneHandler with default settings."""
         return TimezoneHandler()
 
     @pytest.fixture
-    def custom_handler(self):
+    def custom_handler(self) -> TimezoneHandler:
         """Create a TimezoneHandler with custom timezone."""
         return TimezoneHandler(default_tz="America/New_York")
 
-    def test_init_default_timezone(self, handler):
+    def test_init_default_timezone(self, handler: TimezoneHandler) -> None:
         """Test initialization with default timezone."""
         assert handler.default_tz == pytz.UTC
         assert hasattr(handler, "default_tz")
 
-    def test_init_custom_timezone(self, custom_handler):
+    def test_init_custom_timezone(self, custom_handler: TimezoneHandler) -> None:
         """Test initialization with custom timezone."""
         assert custom_handler.default_tz.zone == "America/New_York"
 
-    def test_init_invalid_timezone_fallback(self):
+    def test_init_invalid_timezone_fallback(self) -> None:
         """Test initialization with invalid timezone falls back to UTC."""
         with patch("claude_monitor.utils.time_utils.logger") as mock_logger:
             handler = TimezoneHandler(default_tz="Invalid/Timezone")
@@ -42,7 +40,7 @@ class TestTimezoneHandler:
             assert handler.default_tz == pytz.UTC
             mock_logger.warning.assert_called_once()
 
-    def test_validate_timezone_valid_timezones(self, handler):
+    def test_validate_timezone_valid_timezones(self, handler: TimezoneHandler) -> None:
         """Test timezone validation with valid timezones."""
         valid_timezones = [
             "UTC",
@@ -55,7 +53,9 @@ class TestTimezoneHandler:
         for tz in valid_timezones:
             assert handler.validate_timezone(tz) is True
 
-    def test_validate_timezone_invalid_timezones(self, handler):
+    def test_validate_timezone_invalid_timezones(
+        self, handler: TimezoneHandler
+    ) -> None:
         """Test timezone validation with invalid timezones."""
         invalid_timezones = ["", "Invalid/Timezone", "Not_A_Timezone", None, 123]
 
@@ -63,7 +63,7 @@ class TestTimezoneHandler:
             if tz is None or isinstance(tz, int):
                 # These will cause errors due to type conversion
                 try:
-                    result = handler.validate_timezone(tz)
+                    result = handler.validate_timezone(tz)  # type: ignore[arg-type]
                     assert result is False
                 except (TypeError, AttributeError):
                     # Expected for None and int types
@@ -71,7 +71,7 @@ class TestTimezoneHandler:
             else:
                 assert handler.validate_timezone(tz) is False
 
-    def test_parse_timestamp_iso_format_with_z(self, handler):
+    def test_parse_timestamp_iso_format_with_z(self, handler: TimezoneHandler) -> None:
         """Test parsing ISO format timestamp with Z suffix."""
         timestamp_str = "2024-01-15T10:30:45Z"
         result = handler.parse_timestamp(timestamp_str)
@@ -79,7 +79,9 @@ class TestTimezoneHandler:
         expected = datetime(2024, 1, 15, 10, 30, 45, tzinfo=timezone.utc)
         assert result == expected
 
-    def test_parse_timestamp_iso_format_with_offset(self, handler):
+    def test_parse_timestamp_iso_format_with_offset(
+        self, handler: TimezoneHandler
+    ) -> None:
         """Test parsing ISO format timestamp with timezone offset."""
         timestamp_str = "2024-01-15T10:30:45+05:00"
         result = handler.parse_timestamp(timestamp_str)
@@ -88,7 +90,9 @@ class TestTimezoneHandler:
         expected = datetime(2024, 1, 15, 5, 30, 45, tzinfo=timezone.utc)
         assert result == expected
 
-    def test_parse_timestamp_iso_format_without_timezone(self, handler):
+    def test_parse_timestamp_iso_format_without_timezone(
+        self, handler: TimezoneHandler
+    ) -> None:
         """Test parsing ISO format timestamp without timezone info."""
         timestamp_str = "2024-01-15T10:30:45"
         result = handler.parse_timestamp(timestamp_str)
@@ -97,7 +101,7 @@ class TestTimezoneHandler:
         expected = datetime(2024, 1, 15, 10, 30, 45, tzinfo=timezone.utc)
         assert result == expected
 
-    def test_parse_timestamp_with_microseconds(self, handler):
+    def test_parse_timestamp_with_microseconds(self, handler: TimezoneHandler) -> None:
         """Test parsing timestamp with microseconds."""
         timestamp_str = "2024-01-15T10:30:45.123456Z"
         result = handler.parse_timestamp(timestamp_str)
@@ -105,7 +109,9 @@ class TestTimezoneHandler:
         expected = datetime(2024, 1, 15, 10, 30, 45, 123456, tzinfo=timezone.utc)
         assert result == expected
 
-    def test_parse_timestamp_unix_timestamp_string(self, handler):
+    def test_parse_timestamp_unix_timestamp_string(
+        self, handler: TimezoneHandler
+    ) -> None:
         """Test parsing unix timestamp as string - not supported by current implementation."""
         # Current implementation doesn't parse unix timestamps
         timestamp_str = "1705316645"
@@ -114,7 +120,9 @@ class TestTimezoneHandler:
         # Should return None for unsupported format
         assert result is None
 
-    def test_parse_timestamp_unix_timestamp_with_milliseconds(self, handler):
+    def test_parse_timestamp_unix_timestamp_with_milliseconds(
+        self, handler: TimezoneHandler
+    ) -> None:
         """Test parsing unix timestamp with milliseconds - not supported by current implementation."""
         # Current implementation doesn't parse unix timestamps
         timestamp_str = "1705316645123"
@@ -123,17 +131,17 @@ class TestTimezoneHandler:
         # Should return None for unsupported format
         assert result is None
 
-    def test_parse_timestamp_invalid_format(self, handler):
+    def test_parse_timestamp_invalid_format(self, handler: TimezoneHandler) -> None:
         """Test parsing invalid timestamp format."""
         result = handler.parse_timestamp("invalid-timestamp")
         assert result is None
 
-    def test_parse_timestamp_empty_string(self, handler):
+    def test_parse_timestamp_empty_string(self, handler: TimezoneHandler) -> None:
         """Test parsing empty timestamp string."""
         result = handler.parse_timestamp("")
         assert result is None
 
-    def test_ensure_utc_with_utc_datetime(self, handler):
+    def test_ensure_utc_with_utc_datetime(self, handler: TimezoneHandler) -> None:
         """Test ensure_utc with datetime already in UTC."""
         dt = datetime(2024, 1, 15, 10, 30, 45, tzinfo=pytz.UTC)
         result = handler.ensure_utc(dt)
@@ -141,7 +149,7 @@ class TestTimezoneHandler:
         assert result == dt
         assert result.tzinfo == pytz.UTC
 
-    def test_ensure_utc_with_naive_datetime(self, handler):
+    def test_ensure_utc_with_naive_datetime(self, handler: TimezoneHandler) -> None:
         """Test ensure_utc with naive datetime (assumes UTC)."""
         dt = datetime(2024, 1, 15, 10, 30, 45)  # No timezone
         result = handler.ensure_utc(dt)
@@ -149,7 +157,7 @@ class TestTimezoneHandler:
         expected = pytz.UTC.localize(datetime(2024, 1, 15, 10, 30, 45))
         assert result == expected
 
-    def test_ensure_utc_with_different_timezone(self, handler):
+    def test_ensure_utc_with_different_timezone(self, handler: TimezoneHandler) -> None:
         """Test ensure_utc with datetime in different timezone."""
         # Create datetime in EST (UTC-5)
         est = pytz.timezone("America/New_York")
@@ -161,7 +169,7 @@ class TestTimezoneHandler:
         expected = datetime(2024, 1, 15, 10, 30, 45, tzinfo=pytz.UTC)
         assert result == expected
 
-    def test_ensure_timezone_utc_to_est(self, handler):
+    def test_ensure_timezone_utc_to_est(self, handler: TimezoneHandler) -> None:
         """Test ensure_timezone conversion from UTC to EST."""
         dt = datetime(2024, 1, 15, 10, 30, 45, tzinfo=pytz.UTC)
         result = handler.ensure_timezone(dt)
@@ -169,7 +177,9 @@ class TestTimezoneHandler:
         # Should remain in UTC since that's the default
         assert result == dt
 
-    def test_ensure_timezone_with_custom_timezone(self, custom_handler):
+    def test_ensure_timezone_with_custom_timezone(
+        self, custom_handler: TimezoneHandler
+    ) -> None:
         """Test ensure_timezone with custom default timezone."""
         dt = datetime(2024, 1, 15, 10, 30, 45, tzinfo=pytz.UTC)
         result = custom_handler.ensure_timezone(dt)
@@ -177,7 +187,9 @@ class TestTimezoneHandler:
         # Should remain unchanged since it already has timezone
         assert result == dt
 
-    def test_ensure_timezone_with_naive_datetime(self, handler):
+    def test_ensure_timezone_with_naive_datetime(
+        self, handler: TimezoneHandler
+    ) -> None:
         """Test ensure_timezone with naive datetime."""
         dt = datetime(2024, 1, 15, 10, 30, 45)  # No timezone
         result = handler.ensure_timezone(dt)
@@ -186,7 +198,7 @@ class TestTimezoneHandler:
         expected = pytz.UTC.localize(datetime(2024, 1, 15, 10, 30, 45))
         assert result == expected
 
-    def test_to_utc_from_different_timezone(self, handler):
+    def test_to_utc_from_different_timezone(self, handler: TimezoneHandler) -> None:
         """Test to_utc conversion from different timezone."""
         # Create datetime in JST (UTC+9)
         jst = pytz.timezone("Asia/Tokyo")
@@ -198,7 +210,7 @@ class TestTimezoneHandler:
         expected = datetime(2024, 1, 15, 10, 30, 45, tzinfo=pytz.UTC)
         assert result == expected
 
-    def test_to_utc_with_naive_datetime(self, handler):
+    def test_to_utc_with_naive_datetime(self, handler: TimezoneHandler) -> None:
         """Test to_utc with naive datetime."""
         dt = datetime(2024, 1, 15, 10, 30, 45)
         result = handler.to_utc(dt)
@@ -207,7 +219,9 @@ class TestTimezoneHandler:
         expected = datetime(2024, 1, 15, 10, 30, 45, tzinfo=pytz.UTC)
         assert result == expected
 
-    def test_to_utc_with_custom_default_timezone(self, custom_handler):
+    def test_to_utc_with_custom_default_timezone(
+        self, custom_handler: TimezoneHandler
+    ) -> None:
         """Test to_utc with custom default timezone."""
         dt = datetime(2024, 1, 15, 5, 30, 45)  # Naive datetime
         result = custom_handler.to_utc(dt)
@@ -217,7 +231,7 @@ class TestTimezoneHandler:
         expected_hour = 10  # 5 AM EST = 10 AM UTC (standard time)
         assert result.hour == expected_hour or result.hour == 9  # Account for DST
 
-    def test_to_timezone_conversion(self, handler):
+    def test_to_timezone_conversion(self, handler: TimezoneHandler) -> None:
         """Test to_timezone conversion."""
         dt = datetime(2024, 1, 15, 10, 30, 45, tzinfo=timezone.utc)
         result = handler.to_timezone(dt, "Asia/Tokyo")
@@ -225,7 +239,7 @@ class TestTimezoneHandler:
         # Should be converted to JST (UTC+9)
         assert result.hour == 19  # 10 AM UTC = 7 PM JST
 
-    def test_to_timezone_with_default(self, custom_handler):
+    def test_to_timezone_with_default(self, custom_handler: TimezoneHandler) -> None:
         """Test to_timezone using default timezone."""
         dt = datetime(2024, 1, 15, 10, 30, 45, tzinfo=timezone.utc)
         result = custom_handler.to_timezone(dt)
@@ -234,13 +248,15 @@ class TestTimezoneHandler:
         expected_hour = 5  # 10 AM UTC = 5 AM EST (standard time)
         assert result.hour == expected_hour or result.hour == 6  # Account for DST
 
-    def test_error_handling_integration(self, handler):
+    def test_error_handling_integration(self, handler: TimezoneHandler) -> None:
         """Test error handling integration."""
         # Test that invalid timestamps return None gracefully
         result = handler.parse_timestamp("completely-invalid-timestamp")
         assert result is None
 
-    def test_format_datetime_with_timezone_preference(self, handler):
+    def test_format_datetime_with_timezone_preference(
+        self, handler: TimezoneHandler
+    ) -> None:
         """Test format_datetime with timezone preference."""
         dt = datetime(2024, 1, 15, 14, 30, 45, tzinfo=pytz.UTC)
 
@@ -252,7 +268,9 @@ class TestTimezoneHandler:
         result_12h = handler.format_datetime(dt, use_12_hour=True)
         assert "2:30:45 PM" in result_12h or "02:30:45 PM" in result_12h
 
-    def test_detect_timezone_preference_integration(self, handler):
+    def test_detect_timezone_preference_integration(
+        self, handler: TimezoneHandler
+    ) -> None:
         """Test integration with timezone preference detection."""
         # Test US timezone (should prefer 12-hour)
         us_handler = TimezoneHandler("America/New_York")
@@ -263,7 +281,7 @@ class TestTimezoneHandler:
         assert isinstance(result, str)
         assert "2024" in result
 
-    def test_comprehensive_timestamp_parsing(self, handler):
+    def test_comprehensive_timestamp_parsing(self, handler: TimezoneHandler) -> None:
         """Test comprehensive timestamp parsing with various formats."""
         test_cases = [
             "2024-01-15T10:30:45Z",
@@ -286,7 +304,7 @@ class TestTimezoneHandler:
 class TestTimezonePreferenceDetection:
     """Test suite for timezone preference detection functions."""
 
-    def test_detect_timezone_time_preference_delegation(self):
+    def test_detect_timezone_time_preference_delegation(self) -> None:
         """Test that _detect_timezone_time_preference delegates correctly."""
         # This function delegates to get_time_format_preference
         with patch(
@@ -296,7 +314,7 @@ class TestTimezonePreferenceDetection:
             result = _detect_timezone_time_preference()
             assert result is True
 
-    def test_detect_timezone_time_preference_with_args(self):
+    def test_detect_timezone_time_preference_with_args(self) -> None:
         """Test timezone preference detection with args."""
         mock_args = Mock()
         mock_args.time_format = "24h"

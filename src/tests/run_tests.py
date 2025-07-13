@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 
-def run_tests():
+def run_tests() -> int:
     """Run all tests with pytest."""
     test_dir = Path(__file__).parent
     src_dir = test_dir.parent.parent.parent

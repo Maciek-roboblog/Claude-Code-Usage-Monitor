@@ -5,7 +5,7 @@ This module provides formatting functions for currency, time, and display output
 
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from claude_monitor.utils.time_utils import format_display_time as _format_display_time
 from claude_monitor.utils.time_utils import get_time_format_preference
@@ -70,7 +70,7 @@ def format_display_time(
     return _format_display_time(dt_obj, use_12h_format, include_seconds)
 
 
-def _get_pref(args) -> bool:
+def _get_pref(args: Any) -> bool:
     """Internal helper function for getting time format preference.
 
     Args:
