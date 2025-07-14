@@ -66,13 +66,13 @@ Container-based deployment with optional web dashboard for team environments.
 **🚀 Container Deployment**:
 ```bash
 # Lightweight monitoring
-docker run -e PLAN=max5 maciek/claude-usage-monitor
+docker run -e PLAN=max5 maciek/claude-monitor
 
 # With web dashboard
-docker run -p 8080:8080 maciek/claude-usage-monitor --web-mode
+docker run -p 8080:8080 maciek/claude-monitor --web-mode
 
 # Persistent data
-docker run -v ~/.claude_monitor:/data maciek/claude-usage-monitor
+docker run -v ~/.claude_monitor:/data maciek/claude-monitor
 ```
 
 **📊 Web Dashboard**:

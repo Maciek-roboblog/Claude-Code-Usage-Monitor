@@ -147,7 +147,7 @@ claude-monitor  # or cmonitor, ccmonitor for short
 > **⚠️ Important**: On modern Linux distributions (Ubuntu 23.04+, Debian 12+, Fedora 38+), you may encounter an "externally-managed-environment" error. Instead of using --break-system-packages, we strongly recommend:
 > 1. **Use uv instead** (see above) - it's safer and easier
 > 2. **Use a virtual environment** - python3 -m venv myenv && source myenv/bin/activate
-> 3. **Use pipx** - pipx install claude-usage-monitor
+> 3. **Use pipx** - pipx install claude-monitor
 >
 > See the Troubleshooting section for detailed solutions.
 
@@ -202,12 +202,12 @@ claude-monitor --help
 
 #### Plan Options
 
-| Plan | Token Limit | Cost Limit | Description |
-|------|-------------|------------|-------------|
-| pro | 19,000 | $18.00 | Claude Pro subscription |
-| max5 | 88,000 | $35.00 | Claude Max5 subscription |
-| max20 | 220,000 | $140.00 | Claude Max20 subscription |
-| custom | P90-based | $200.00 | Auto-detection with ML analysis |
+| Plan | Token Limit | Cost Limit       | Description |
+|------|-------------|------------------|-------------|
+| pro | 19,000 | $18.00           | Claude Pro subscription |
+| max5 | 88,000 | $35.00           | Claude Max5 subscription |
+| max20 | 220,000 | $140.00          | Claude Max20 subscription |
+| custom | P90-based | (default) $50.00 | Auto-detection with ML analysis |
 
 #### Command Aliases
 
@@ -508,12 +508,12 @@ The monitor calculates burn rate using sophisticated analysis:
 
 #### v3.0.0 Updated Plan Limits
 
-| Plan | Limit (Tokens) | Cost Limit | Messages | Algorithm |
-|------|----------------|------------|----------|-----------|
-| **Claude Pro** | 19,000         | $18.00 | 250 | Fixed limit |
-| **Claude Max5** | 88,000         | $35.00 | 1,000 | Fixed limit |
-| **Claude Max20** | 220,000        | $140.00 | 2,000 | Fixed limit |
-| **Custom** | P90-based      | $200.00 | 250+ | Machine learning |
+| Plan | Limit (Tokens) | Cost Limit       | Messages | Algorithm |
+|------|----------------|------------------|----------|-----------|
+| **Claude Pro** | 19,000         | $18.00           | 250 | Fixed limit |
+| **Claude Max5** | 88,000         | $35.00           | 1,000 | Fixed limit |
+| **Claude Max20** | 220,000        | $140.00          | 2,000 | Fixed limit |
+| **Custom** | P90-based      | (default) $50.00 | 250+ | Machine learning |
 
 #### Advanced Limit Detection
 

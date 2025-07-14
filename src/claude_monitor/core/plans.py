@@ -65,7 +65,7 @@ PLAN_LIMITS: Dict[PlanType, Dict[str, Any]] = {
     },
     PlanType.CUSTOM: {
         "token_limit": 44_000,
-        "cost_limit": 200.0,
+        "cost_limit": 50.0,
         "message_limit": 250,
         "display_name": "Custom",
     },
