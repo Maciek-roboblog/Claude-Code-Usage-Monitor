@@ -368,33 +368,64 @@ class BackgroundDetector:
             # Wait for response with timeout
             ready_streams: List[Any] = select.select([sys.stdin], [], [], 0.1)[0]
             if ready_streams:
-                response: str = sys.stdin.read(50)  # Read up to 50 chars
+                # Read available data without blocking
+                response: str = ""
+                try:
+                    # Read character by character with timeout to avoid blocking
+                    import fcntl
+                    import os
+                    
+                    # Set stdin to non-blocking mode
+                    fd = sys.stdin.fileno()
+                    fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+                    fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+                    
+                    # Read up to 50 chars with timeout
+                    for _ in range(50):
+                        ready = select.select([sys.stdin], [], [], 0.01)[0]
+                        if not ready:
+                            break
+                        char = sys.stdin.read(1)
+                        if not char:
+                            break
+                        response += char
+                        # Stop if we get the expected terminator
+                        if response.endswith('\033\\'):
+                            break
+                    
+                    # Restore blocking mode
+                    fcntl.fcntl(fd, fcntl.F_SETFL, fl)
+                    
+                except (OSError, ImportError):
+                    # Fallback to simple read if fcntl is not available
+                    response = sys.stdin.read(50)
 
                 # Parse response: \033]11;rgb:rrrr/gggg/bbbb\033\\
-                rgb_match = re.search(
-                    r"rgb:([0-9a-f]+)/([0-9a-f]+)/([0-9a-f]+)", response
-                )
-                if rgb_match:
-                    r: str
-                    g: str
-                    b: str
-                    r, g, b = rgb_match.groups()
-                    # Convert hex to int and calculate brightness
-                    red: int = int(r[:2], 16) if len(r) >= 2 else 0
-                    green: int = int(g[:2], 16) if len(g) >= 2 else 0
-                    blue: int = int(b[:2], 16) if len(b) >= 2 else 0
-
-                    # Calculate perceived brightness using standard formula
-                    brightness: float = (red * 299 + green * 587 + blue * 114) / 1000
-
-                    # Restore terminal settings
-                    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-
-                    return (
-                        BackgroundType.LIGHT
-                        if brightness > 127
-                        else BackgroundType.DARK
+                if response:  # Only proceed if we got a response
+                    rgb_match = re.search(
+                        r"rgb:([0-9a-f]+)/([0-9a-f]+)/([0-9a-f]+)", response
                     )
+                    if rgb_match:
+                        r: str
+                        g: str
+                        b: str
+                        r, g, b = rgb_match.groups()
+                        # Convert hex to int and calculate brightness
+                        red: int = int(r[:2], 16) if len(r) >= 2 else 0
+                        green: int = int(g[:2], 16) if len(g) >= 2 else 0
+                        blue: int = int(b[:2], 16) if len(b) >= 2 else 0
+
+                        # Calculate perceived brightness using standard formula
+                        brightness: float = (red * 299 + green * 587 + blue * 114) / 1000
+
+                        # Restore terminal settings
+                        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+
+                        return (
+                            BackgroundType.LIGHT
+                            if brightness > 127
+                            else BackgroundType.DARK
+                        )
 
             # Restore terminal settings
             if old_settings is not None:

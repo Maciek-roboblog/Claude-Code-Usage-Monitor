@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "claude-monitor"
-version = "3.0.3"
+version = "3.0.4"
 description = "A real-time terminal monitoring tool for Claude Code token usage with advanced analytics and Rich UI"
 readme = "README.md"
 license = { text = "MIT" }
