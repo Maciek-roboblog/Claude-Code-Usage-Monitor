@@ -374,12 +374,12 @@ class BackgroundDetector:
                     # Read character by character with timeout to avoid blocking
                     import fcntl
                     import os
-                    
+
                     # Set stdin to non-blocking mode
                     fd = sys.stdin.fileno()
                     fl = fcntl.fcntl(fd, fcntl.F_GETFL)
                     fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-                    
+
                     # Read up to 50 chars with timeout
                     for _ in range(50):
                         ready = select.select([sys.stdin], [], [], 0.01)[0]
@@ -390,12 +390,12 @@ class BackgroundDetector:
                             break
                         response += char
                         # Stop if we get the expected terminator
-                        if response.endswith('\033\\'):
+                        if response.endswith("\033\\"):
                             break
-                    
+
                     # Restore blocking mode
                     fcntl.fcntl(fd, fcntl.F_SETFL, fl)
-                    
+
                 except (OSError, ImportError):
                     # Fallback to simple read if fcntl is not available
                     response = sys.stdin.read(50)
@@ -416,7 +416,9 @@ class BackgroundDetector:
                         blue: int = int(b[:2], 16) if len(b) >= 2 else 0
 
                         # Calculate perceived brightness using standard formula
-                        brightness: float = (red * 299 + green * 587 + blue * 114) / 1000
+                        brightness: float = (
+                            red * 299 + green * 587 + blue * 114
+                        ) / 1000
 
                         # Restore terminal settings
                         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
