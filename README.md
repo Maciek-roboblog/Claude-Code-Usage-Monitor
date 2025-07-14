@@ -1128,6 +1128,15 @@ Whether you need help with setup, have feature requests, found a bug, or want to
 Want to contribute? Check out our [Contributing Guide](CONTRIBUTING.md)!
 
 
+## 🙏 Acknowledgments
+
+### Sponsors
+
+A special thanks to our supporters who help keep this project going:
+
+**Ed** - *Buy Me Coffee Supporter*
+> "I appreciate sharing your work with the world. It helps keep me on track with my day. Quality readme, and really good stuff all around!"
+
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=Maciek-roboblog/Claude-Code-Usage-Monitor&type=Date)](https://www.star-history.com/#Maciek-roboblog/Claude-Code-Usage-Monitor&Date)
