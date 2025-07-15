@@ -37,7 +37,19 @@ SessionChangeCallback = Callable[[str, str, Optional[Dict[str, Any]]], None]
 
 def get_standard_claude_paths() -> List[str]:
     """Get list of standard Claude data directory paths to check."""
-    return ["~/.claude/projects", "~/.config/claude/projects"]
+    paths = ["~/.claude/projects", "~/.config/claude/projects"]
+
+    # Add WSL paths if available
+    try:
+        from claude_monitor.utils.wsl_utils import get_wsl_claude_paths
+
+        wsl_paths = get_wsl_claude_paths()
+        paths.extend(str(path) for path in wsl_paths)
+    except Exception:
+        # Ignore WSL detection errors for fallback compatibility
+        pass
+
+    return paths
 
 
 def discover_claude_data_paths(custom_paths: Optional[List[str]] = None) -> List[Path]:
@@ -49,17 +61,57 @@ def discover_claude_data_paths(custom_paths: Optional[List[str]] = None) -> List
     Returns:
         List of Path objects for existing Claude data directories
     """
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    # If no custom paths provided, use the smart resolution logic
+    if not custom_paths:
+        from claude_monitor.data.reader import _resolve_claude_data_path
+
+        logger.debug("Using smart path resolution for Claude data discovery")
+        smart_path = _resolve_claude_data_path()
+        logger.debug(f"Smart resolution returned: {smart_path}")
+        if smart_path.exists():
+            logger.info(f"Using smart-resolved path: {smart_path}")
+            return [smart_path]
+        else:
+            logger.warning(f"Smart-resolved path does not exist: {smart_path}")
+        # Fall back to old logic if smart resolution fails
+
+    logger.debug("Falling back to standard path discovery")
     paths_to_check: List[str] = (
         [str(p) for p in custom_paths] if custom_paths else get_standard_claude_paths()
     )
+    logger.debug(
+        f"Checking {len(paths_to_check)} paths: {paths_to_check[:5]}..."
+    )  # Show first 5
 
     discovered_paths: List[Path] = []
 
     for path_str in paths_to_check:
-        path = Path(path_str).expanduser().resolve()
-        if path.exists() and path.is_dir():
-            discovered_paths.append(path)
+        try:
+            path = Path(path_str).expanduser().resolve()
+            logger.debug(f"Checking path: {path_str} -> {path}")
+            if path.exists() and path.is_dir():
+                # Check if it has JSONL files (including subdirectories)
+                jsonl_files = list(path.rglob("*.jsonl"))
 
+                if jsonl_files:
+                    logger.debug(
+                        f"Found path with {len(jsonl_files)} JSONL files: {path}"
+                    )
+                    discovered_paths.append(path)
+                elif not discovered_paths:  # Keep first existing dir as fallback
+                    logger.debug(f"Found existing directory (no JSONL files): {path}")
+                    discovered_paths.append(path)
+            else:
+                logger.debug(f"Path does not exist or is not a directory: {path}")
+        except Exception as e:
+            logger.debug(f"Error checking path {path_str}: {e}")
+            continue  # Skip invalid paths
+
+    logger.info(f"Discovered {len(discovered_paths)} paths: {discovered_paths}")
     return discovered_paths
 
 

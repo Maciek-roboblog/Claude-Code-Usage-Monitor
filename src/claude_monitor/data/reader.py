@@ -29,6 +29,67 @@ TOKEN_OUTPUT = "output_tokens"
 logger = logging.getLogger(__name__)
 
 
+def _resolve_claude_data_path(data_path: Optional[str] = None) -> Path:
+    """Resolve Claude data path with intelligent WSL support.
+
+    Args:
+        data_path: Custom data path or None for auto-detection
+
+    Returns:
+        Resolved Path object
+    """
+    if data_path:
+        return Path(data_path).expanduser()
+
+    # Standard paths to check
+    candidate_paths: List[Path] = [Path("~/.claude/projects").expanduser()]
+
+    # Add WSL paths if available
+    try:
+        from claude_monitor.utils.wsl_utils import get_wsl_claude_paths
+
+        wsl_paths = get_wsl_claude_paths()
+        candidate_paths.extend(wsl_paths)
+        if wsl_paths:
+            logger.debug(f"Added {len(wsl_paths)} WSL Claude paths")
+    except ImportError:
+        logger.debug("WSL utilities not available")
+    except Exception as e:
+        logger.debug(f"Error getting WSL paths: {e}")
+
+    # Try each candidate path in order
+    logger.debug(f"Checking {len(candidate_paths)} potential Claude data paths")
+
+    for i, path in enumerate(candidate_paths):
+        try:
+            logger.debug(f"Checking path {i + 1}/{len(candidate_paths)}: {path}")
+            if path.exists():
+                logger.debug(f"Path exists: {path}")
+                # Check for JSONL files recursively (Claude stores JSONL in project subdirs)
+                jsonl_files = list(path.rglob("*.jsonl"))
+
+                if jsonl_files:
+                    logger.info(
+                        f"Found Claude data at: {path} (with {len(jsonl_files)} JSONL files)"
+                    )
+                    return path
+                else:
+                    logger.debug(f"Path exists but no JSONL files found: {path}")
+            else:
+                logger.debug(f"Path does not exist: {path}")
+        except (OSError, PermissionError, FileNotFoundError) as e:
+            # Common errors when accessing WSL paths from Windows
+            logger.debug(f"Could not access path {path}: {e}")
+        except Exception as e:
+            # Catch any other unexpected errors
+            logger.debug(f"Unexpected error checking path {path}: {e}")
+
+    # Fall back to default
+    fallback_path = Path("~/.claude/projects").expanduser()
+    logger.warning(f"No valid Claude data path found, falling back to: {fallback_path}")
+    return fallback_path
+
+
 def load_usage_entries(
     data_path: Optional[str] = None,
     hours_back: Optional[int] = None,
@@ -46,7 +107,7 @@ def load_usage_entries(
     Returns:
         Tuple of (usage_entries, raw_data) where raw_data is None unless include_raw=True
     """
-    data_path = Path(data_path if data_path else "~/.claude/projects").expanduser()
+    data_path = _resolve_claude_data_path(data_path)
     timezone_handler = TimezoneHandler()
     pricing_calculator = PricingCalculator()
 
@@ -93,7 +154,7 @@ def load_all_raw_entries(data_path: Optional[str] = None) -> List[Dict[str, Any]
     Returns:
         List of raw JSON dictionaries
     """
-    data_path = Path(data_path if data_path else "~/.claude/projects").expanduser()
+    data_path = _resolve_claude_data_path(data_path)
     jsonl_files = _find_jsonl_files(data_path)
 
     all_raw_entries: List[Dict[str, Any]] = []

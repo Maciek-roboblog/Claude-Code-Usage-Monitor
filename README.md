@@ -1054,6 +1054,62 @@ If claude-monitor command is not found after pip installation:
    python3 -m claude_monitor
    ```
 
+### Windows + WSL Setup
+
+If you have Claude Code installed in WSL but want to run the monitor from Windows:
+
+#### Automatic Detection (Recommended)
+
+The monitor automatically detects WSL Claude installations:
+
+```cmd
+# Install on Windows
+pip install claude-monitor
+
+# Run - it will auto-detect WSL Claude data
+claude-monitor
+```
+
+The monitor intelligently detects:
+- **WSL Availability**: Uses `wsl --list` to detect installed distributions
+- **Active Distributions**: Only checks paths for actually installed WSL distributions
+- **Current User**: Automatically resolves your Windows username for WSL paths
+- **Both Path Formats**: Tries both `\\wsl$\` and `\\wsl.localhost\` access methods
+
+#### Manual Path Specification
+
+If auto-detection doesn't work, specify the WSL path manually:
+
+```cmd
+# Replace {distro} and {username} with your values
+claude-monitor --data-path "\\wsl$\Ubuntu\home\hkirste\.claude\projects"
+
+# Or using wsl.localhost format
+claude-monitor --data-path "\\wsl.localhost\Ubuntu\home\hkirste\.claude\projects"
+```
+
+#### Troubleshooting WSL Access
+
+1. **Verify WSL path access from Windows:**
+   ```cmd
+   dir "\\wsl$\Ubuntu\home\hkirste\.claude\projects"
+   ```
+
+2. **Check WSL distribution name:**
+   ```cmd
+   wsl --list --verbose
+   ```
+
+3. **If access is denied, ensure WSL is running:**
+   ```cmd
+   wsl --distribution Ubuntu
+   ```
+
+4. **Enable debug logging to see path detection:**
+   ```cmd
+   claude-monitor --debug --log-file debug.log
+   ```
+   Then check the log file to see which paths were tried and why they failed.
 
 #### Python Version Conflicts
 
