@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.0.1] - 2025-07-14
+
+### 🔧 WSL Support Enhancement
+- **🐧 Windows + WSL Integration**: Professional WSL detection and support for Claude Code running in WSL
+  - **Smart WSL Detection**: Uses `wsl --list` command to detect actual installed distributions
+  - **Targeted Path Generation**: Only creates paths for confirmed WSL installations
+  - **Dual Path Support**: Automatically tries both `\\wsl$\` and `\\wsl.localhost\` formats
+  - **Intelligent Username Resolution**: Detects current user from Windows environment variables
+- **🔍 Enhanced Path Detection**: Clean, efficient Claude data directory discovery
+  - **Modular Architecture**: Separated WSL utilities into dedicated `wsl_utils.py` module
+  - **Recursive JSONL Search**: Finds Claude data files in project subdirectories
+  - **Graceful Fallbacks**: Robust error handling with sensible defaults
+- **🧪 Comprehensive Testing**: Full test coverage for WSL detection and integration
+- **🛠️ Cross-Platform Compatibility**: Maintains existing functionality for all platforms
+
 ## [3.0.0] - 2025-01-13
 
 ### 🚨 Breaking Changes
