@@ -73,7 +73,7 @@ class TestWSLDetector:
 
         expected_paths = [
             "//wsl$/Ubuntu/home/testuser/.claude/projects",
-            "//wsl.localhost/Ubuntu/home/testuser/.claude/projects"
+            "//wsl.localhost/Ubuntu/home/testuser/.claude/projects",
         ]
 
         path_strs = [str(path) for path in paths]
@@ -100,7 +100,9 @@ class TestWSLUtilityFunctions:
     def test_get_wsl_claude_paths(self, mock_detector_class):
         """Test get_wsl_claude_paths function."""
         mock_detector = Mock()
-        mock_detector.get_claude_paths.return_value = [Path("//wsl$/Ubuntu/home/user/.claude/projects")]
+        mock_detector.get_claude_paths.return_value = [
+            Path("//wsl$/Ubuntu/home/user/.claude/projects")
+        ]
         mock_detector_class.return_value = mock_detector
 
         paths = get_wsl_claude_paths()

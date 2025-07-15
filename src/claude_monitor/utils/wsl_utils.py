@@ -32,10 +32,7 @@ class WSLDetector:
         try:
             # Check if wsl.exe exists and can list distributions
             result = subprocess.run(
-                ["wsl", "--list", "--quiet"],
-                capture_output=True,
-                text=True,
-                timeout=5
+                ["wsl", "--list", "--quiet"], capture_output=True, text=True, timeout=5
             )
             self._wsl_available = result.returncode == 0
         except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
@@ -56,19 +53,16 @@ class WSLDetector:
 
         try:
             result = subprocess.run(
-                ["wsl", "--list", "--quiet"],
-                capture_output=True,
-                text=True,
-                timeout=5
+                ["wsl", "--list", "--quiet"], capture_output=True, text=True, timeout=5
             )
 
             if result.returncode == 0:
                 # Parse distribution names from output
                 distributions = []
-                for line in result.stdout.strip().split('\n'):
+                for line in result.stdout.strip().split("\n"):
                     if line.strip():
                         # Remove BOM and clean up distribution name
-                        distro = line.strip().replace('\x00', '').replace('\ufeff', '')
+                        distro = line.strip().replace("\x00", "").replace("\ufeff", "")
                         if distro:
                             distributions.append(distro)
 
@@ -119,9 +113,13 @@ class WSLDetector:
                                 potential_user = user_dir.name.lower()
                                 if potential_user not in usernames:
                                     usernames.append(potential_user)
-                                    logger.debug(f"Discovered WSL username: {potential_user}")
+                                    logger.debug(
+                                        f"Discovered WSL username: {potential_user}"
+                                    )
                 except Exception as e:
-                    logger.debug(f"Could not scan WSL home directory {wsl_home_path}: {e}")
+                    logger.debug(
+                        f"Could not scan WSL home directory {wsl_home_path}: {e}"
+                    )
 
         if not usernames:
             logger.warning("Could not determine any potential usernames")
@@ -155,7 +153,7 @@ class WSLDetector:
                 # Try both wsl$ and wsl.localhost formats
                 wsl_paths = [
                     f"//wsl$/{distro}/home/{username}/.claude/projects",
-                    f"//wsl.localhost/{distro}/home/{username}/.claude/projects"
+                    f"//wsl.localhost/{distro}/home/{username}/.claude/projects",
                 ]
 
                 for path_str in wsl_paths:
@@ -165,7 +163,9 @@ class WSLDetector:
                     except Exception as e:
                         logger.debug(f"Invalid WSL path {path_str}: {e}")
 
-        logger.debug(f"Generated {len(paths)} WSL Claude paths for {len(usernames)} usernames and {len(distributions)} distributions")
+        logger.debug(
+            f"Generated {len(paths)} WSL Claude paths for {len(usernames)} usernames and {len(distributions)} distributions"
+        )
         return paths
 
 

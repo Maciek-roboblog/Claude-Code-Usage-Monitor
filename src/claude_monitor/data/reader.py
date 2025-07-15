@@ -47,6 +47,7 @@ def _resolve_claude_data_path(data_path: Optional[str] = None) -> Path:
     # Add WSL paths if available
     try:
         from claude_monitor.utils.wsl_utils import get_wsl_claude_paths
+
         wsl_paths = get_wsl_claude_paths()
         candidate_paths.extend(wsl_paths)
         if wsl_paths:
@@ -61,14 +62,16 @@ def _resolve_claude_data_path(data_path: Optional[str] = None) -> Path:
 
     for i, path in enumerate(candidate_paths):
         try:
-            logger.debug(f"Checking path {i+1}/{len(candidate_paths)}: {path}")
+            logger.debug(f"Checking path {i + 1}/{len(candidate_paths)}: {path}")
             if path.exists():
                 logger.debug(f"Path exists: {path}")
                 # Check for JSONL files recursively (Claude stores JSONL in project subdirs)
                 jsonl_files = list(path.rglob("*.jsonl"))
 
                 if jsonl_files:
-                    logger.info(f"Found Claude data at: {path} (with {len(jsonl_files)} JSONL files)")
+                    logger.info(
+                        f"Found Claude data at: {path} (with {len(jsonl_files)} JSONL files)"
+                    )
                     return path
                 else:
                     logger.debug(f"Path exists but no JSONL files found: {path}")

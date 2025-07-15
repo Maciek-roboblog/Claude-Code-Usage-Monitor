@@ -41,7 +41,9 @@ class TestWSLIntegration:
     @patch("claude_monitor.utils.wsl_utils.get_wsl_claude_paths")
     @patch("pathlib.Path.exists")
     @patch("pathlib.Path.rglob")
-    def test_fallback_when_no_jsonl_files(self, mock_rglob, mock_exists, mock_get_wsl_paths):
+    def test_fallback_when_no_jsonl_files(
+        self, mock_rglob, mock_exists, mock_get_wsl_paths
+    ):
         """Test fallback to default when WSL paths have no JSONL files."""
         # Mock WSL path exists but has no JSONL files
         wsl_path = Path("//wsl$/Ubuntu/home/testuser/.claude/projects")

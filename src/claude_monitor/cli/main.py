@@ -42,6 +42,7 @@ def get_standard_claude_paths() -> List[str]:
     # Add WSL paths if available
     try:
         from claude_monitor.utils.wsl_utils import get_wsl_claude_paths
+
         wsl_paths = get_wsl_claude_paths()
         paths.extend(str(path) for path in wsl_paths)
     except Exception:
@@ -61,11 +62,13 @@ def discover_claude_data_paths(custom_paths: Optional[List[str]] = None) -> List
         List of Path objects for existing Claude data directories
     """
     import logging
+
     logger = logging.getLogger(__name__)
 
     # If no custom paths provided, use the smart resolution logic
     if not custom_paths:
         from claude_monitor.data.reader import _resolve_claude_data_path
+
         logger.debug("Using smart path resolution for Claude data discovery")
         smart_path = _resolve_claude_data_path()
         logger.debug(f"Smart resolution returned: {smart_path}")
@@ -80,7 +83,9 @@ def discover_claude_data_paths(custom_paths: Optional[List[str]] = None) -> List
     paths_to_check: List[str] = (
         [str(p) for p in custom_paths] if custom_paths else get_standard_claude_paths()
     )
-    logger.debug(f"Checking {len(paths_to_check)} paths: {paths_to_check[:5]}...")  # Show first 5
+    logger.debug(
+        f"Checking {len(paths_to_check)} paths: {paths_to_check[:5]}..."
+    )  # Show first 5
 
     discovered_paths: List[Path] = []
 
@@ -93,7 +98,9 @@ def discover_claude_data_paths(custom_paths: Optional[List[str]] = None) -> List
                 jsonl_files = list(path.rglob("*.jsonl"))
 
                 if jsonl_files:
-                    logger.debug(f"Found path with {len(jsonl_files)} JSONL files: {path}")
+                    logger.debug(
+                        f"Found path with {len(jsonl_files)} JSONL files: {path}"
+                    )
                     discovered_paths.append(path)
                 elif not discovered_paths:  # Keep first existing dir as fallback
                     logger.debug(f"Found existing directory (no JSONL files): {path}")
