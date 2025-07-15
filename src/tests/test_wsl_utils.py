@@ -1,14 +1,14 @@
 """Test WSL utilities for proper Windows Subsystem for Linux support."""
 
 import os
-import platform
-import subprocess
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-import pytest
-
-from claude_monitor.utils.wsl_utils import WSLDetector, get_wsl_claude_paths, is_wsl_available
+from claude_monitor.utils.wsl_utils import (
+    WSLDetector,
+    get_wsl_claude_paths,
+    is_wsl_available,
+)
 
 
 class TestWSLDetector:
@@ -28,10 +28,10 @@ class TestWSLDetector:
         """Test WSL detection on Windows."""
         mock_platform.return_value = "Windows"
         mock_run.return_value = Mock(returncode=0, stdout="Ubuntu\nDebian\n")
-        
+
         detector = WSLDetector()
         assert detector.is_wsl_available()
-        
+
         distributions = detector.get_distributions()
         assert "Ubuntu" in distributions
         assert "Debian" in distributions
@@ -42,7 +42,7 @@ class TestWSLDetector:
         """Test WSL not available on Windows."""
         mock_platform.return_value = "Windows"
         mock_run.side_effect = FileNotFoundError()
-        
+
         detector = WSLDetector()
         assert not detector.is_wsl_available()
 
@@ -67,15 +67,15 @@ class TestWSLDetector:
         """Test Claude paths are generated correctly."""
         mock_platform.return_value = "Windows"
         mock_run.return_value = Mock(returncode=0, stdout="Ubuntu\n")
-        
+
         detector = WSLDetector()
         paths = detector.get_claude_paths()
-        
+
         expected_paths = [
             "//wsl$/Ubuntu/home/testuser/.claude/projects",
             "//wsl.localhost/Ubuntu/home/testuser/.claude/projects"
         ]
-        
+
         path_strs = [str(path) for path in paths]
         for expected in expected_paths:
             assert expected in path_strs
@@ -86,7 +86,7 @@ class TestWSLDetector:
         """Test behavior when no WSL distributions are found."""
         mock_platform.return_value = "Windows"
         mock_run.return_value = Mock(returncode=0, stdout="")
-        
+
         detector = WSLDetector()
         assert detector.is_wsl_available()  # WSL exists but no distros
         assert detector.get_distributions() == []
@@ -102,7 +102,7 @@ class TestWSLUtilityFunctions:
         mock_detector = Mock()
         mock_detector.get_claude_paths.return_value = [Path("//wsl$/Ubuntu/home/user/.claude/projects")]
         mock_detector_class.return_value = mock_detector
-        
+
         paths = get_wsl_claude_paths()
         assert len(paths) == 1
         assert "Ubuntu" in str(paths[0])
@@ -114,7 +114,7 @@ class TestWSLUtilityFunctions:
         mock_detector.is_wsl_available.return_value = True
         mock_detector.get_distributions.return_value = ["Ubuntu"]
         mock_detector_class.return_value = mock_detector
-        
+
         assert is_wsl_available() is True
 
     @patch("claude_monitor.utils.wsl_utils.WSLDetector")
@@ -124,5 +124,5 @@ class TestWSLUtilityFunctions:
         mock_detector.is_wsl_available.return_value = True
         mock_detector.get_distributions.return_value = []
         mock_detector_class.return_value = mock_detector
-        
+
         assert is_wsl_available() is False

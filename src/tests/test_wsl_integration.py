@@ -1,9 +1,7 @@
 """Test WSL integration with Claude data reader."""
 
 from pathlib import Path
-from unittest.mock import Mock, patch
-
-import pytest
+from unittest.mock import patch
 
 from claude_monitor.data.reader import _resolve_claude_data_path
 
@@ -22,12 +20,12 @@ class TestWSLIntegration:
         """Test WSL path resolution in data reader."""
         # Test that WSL utils are called when available
         mock_get_wsl_paths.return_value = []  # No WSL paths available
-        
+
         result = _resolve_claude_data_path()
-        
+
         # Should call get_wsl_claude_paths
         mock_get_wsl_paths.assert_called_once()
-        
+
         # Should fall back to default since no WSL paths
         assert result == Path("~/.claude/projects").expanduser()
 
@@ -35,7 +33,7 @@ class TestWSLIntegration:
     def test_wsl_utilities_import_error(self, mock_import_error):
         """Test graceful handling of WSL utilities import error."""
         mock_import_error.side_effect = ImportError("WSL utilities not available")
-        
+
         # Should fall back to default path without error
         result = _resolve_claude_data_path()
         assert result == Path("~/.claude/projects").expanduser()
@@ -48,12 +46,12 @@ class TestWSLIntegration:
         # Mock WSL path exists but has no JSONL files
         wsl_path = Path("//wsl$/Ubuntu/home/testuser/.claude/projects")
         default_path = Path("~/.claude/projects").expanduser()
-        
+
         mock_get_wsl_paths.return_value = [wsl_path]
         mock_exists.return_value = False  # No paths exist
         mock_rglob.return_value = []  # No JSONL files
-        
+
         result = _resolve_claude_data_path()
-        
+
         # Should fall back to default
         assert result == default_path

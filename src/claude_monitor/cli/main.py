@@ -38,7 +38,7 @@ SessionChangeCallback = Callable[[str, str, Optional[Dict[str, Any]]], None]
 def get_standard_claude_paths() -> List[str]:
     """Get list of standard Claude data directory paths to check."""
     paths = ["~/.claude/projects", "~/.config/claude/projects"]
-    
+
     # Add WSL paths if available
     try:
         from claude_monitor.utils.wsl_utils import get_wsl_claude_paths
@@ -47,7 +47,7 @@ def get_standard_claude_paths() -> List[str]:
     except Exception:
         # Ignore WSL detection errors for fallback compatibility
         pass
-    
+
     return paths
 
 
@@ -62,7 +62,7 @@ def discover_claude_data_paths(custom_paths: Optional[List[str]] = None) -> List
     """
     import logging
     logger = logging.getLogger(__name__)
-    
+
     # If no custom paths provided, use the smart resolution logic
     if not custom_paths:
         from claude_monitor.data.reader import _resolve_claude_data_path
@@ -75,7 +75,7 @@ def discover_claude_data_paths(custom_paths: Optional[List[str]] = None) -> List
         else:
             logger.warning(f"Smart-resolved path does not exist: {smart_path}")
         # Fall back to old logic if smart resolution fails
-    
+
     logger.debug("Falling back to standard path discovery")
     paths_to_check: List[str] = (
         [str(p) for p in custom_paths] if custom_paths else get_standard_claude_paths()
@@ -91,7 +91,7 @@ def discover_claude_data_paths(custom_paths: Optional[List[str]] = None) -> List
             if path.exists() and path.is_dir():
                 # Check if it has JSONL files (including subdirectories)
                 jsonl_files = list(path.rglob("*.jsonl"))
-                
+
                 if jsonl_files:
                     logger.debug(f"Found path with {len(jsonl_files)} JSONL files: {path}")
                     discovered_paths.append(path)

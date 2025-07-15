@@ -6,8 +6,6 @@ into a single cohesive module.
 
 import json
 import logging
-import os
-import platform
 from datetime import datetime, timedelta
 from datetime import timezone as tz
 from pathlib import Path
@@ -33,19 +31,19 @@ logger = logging.getLogger(__name__)
 
 def _resolve_claude_data_path(data_path: Optional[str] = None) -> Path:
     """Resolve Claude data path with intelligent WSL support.
-    
+
     Args:
         data_path: Custom data path or None for auto-detection
-        
+
     Returns:
         Resolved Path object
     """
     if data_path:
         return Path(data_path).expanduser()
-    
+
     # Standard paths to check
     candidate_paths: List[Path] = [Path("~/.claude/projects").expanduser()]
-    
+
     # Add WSL paths if available
     try:
         from claude_monitor.utils.wsl_utils import get_wsl_claude_paths
@@ -57,10 +55,10 @@ def _resolve_claude_data_path(data_path: Optional[str] = None) -> Path:
         logger.debug("WSL utilities not available")
     except Exception as e:
         logger.debug(f"Error getting WSL paths: {e}")
-    
+
     # Try each candidate path in order
     logger.debug(f"Checking {len(candidate_paths)} potential Claude data paths")
-    
+
     for i, path in enumerate(candidate_paths):
         try:
             logger.debug(f"Checking path {i+1}/{len(candidate_paths)}: {path}")
@@ -68,7 +66,7 @@ def _resolve_claude_data_path(data_path: Optional[str] = None) -> Path:
                 logger.debug(f"Path exists: {path}")
                 # Check for JSONL files recursively (Claude stores JSONL in project subdirs)
                 jsonl_files = list(path.rglob("*.jsonl"))
-                
+
                 if jsonl_files:
                     logger.info(f"Found Claude data at: {path} (with {len(jsonl_files)} JSONL files)")
                     return path
@@ -82,7 +80,7 @@ def _resolve_claude_data_path(data_path: Optional[str] = None) -> Path:
         except Exception as e:
             # Catch any other unexpected errors
             logger.debug(f"Unexpected error checking path {path}: {e}")
-    
+
     # Fall back to default
     fallback_path = Path("~/.claude/projects").expanduser()
     logger.warning(f"No valid Claude data path found, falling back to: {fallback_path}")

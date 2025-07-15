@@ -110,8 +110,9 @@ class TestFunctions:
 
     def test_discover_claude_data_paths_with_custom(self) -> None:
         """Test discover with custom paths."""
-        from claude_monitor.cli.main import discover_claude_data_paths
         from pathlib import Path
+
+        from claude_monitor.cli.main import discover_claude_data_paths
 
         custom_paths = ["/custom/path"]
         mock_jsonl_files = [Path("/custom/path/test.jsonl")]
