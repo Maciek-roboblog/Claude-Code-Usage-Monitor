@@ -3,6 +3,7 @@
 import argparse
 import contextlib
 import logging
+import os
 import sys
 import traceback
 from pathlib import Path
@@ -37,6 +38,10 @@ SessionChangeCallback = Callable[[str, str, Optional[Dict[str, Any]]], None]
 
 def get_standard_claude_paths() -> List[str]:
     """Get list of standard Claude data directory paths to check."""
+    # Check if environment variable is set for custom data path or Docker volume
+    env_path = os.environ.get("CLAUDE_DATA_PATH")
+    if env_path:
+        return [env_path]
     return ["~/.claude/projects", "~/.config/claude/projects"]
 
 
