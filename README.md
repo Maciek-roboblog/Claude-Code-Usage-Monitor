@@ -188,6 +188,9 @@ claude-monitor --help
 |-----------|------|---------|-------------|
 | --plan | string | custom | Plan type: pro, max5, max20, or custom |
 | --custom-limit-tokens | int | None | Token limit for custom plan (must be > 0) |
+| --compact | flag | False | Enable compact display mode for status bars |
+| --compact-fields | string | None | Comma-separated fields for compact mode (tokens,percentage,burn_rate,predicted_end,reset_time,current_time) |
+| --no-color | flag | False | Disable color output |
 | --timezone | string | auto | Timezone (auto-detected). Examples: UTC, America/New_York, Europe/London |
 | --time-format | string | auto | Time format: 12h, 24h, or auto |
 | --theme | string | auto | Display theme: light, dark, classic, or auto |
@@ -340,6 +343,54 @@ claude-monitor --timezone UTC
 
 # Use London time
 claude-monitor --timezone Europe/London
+```
+
+#### Compact Mode for Status Bars
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Maciek-roboblog/Claude-Code-Usage-Monitor/main/doc/sccm.png" alt="Claude Compact Mode Screenshot" width="600">
+</p>
+
+Perfect for tmux, status bars, and minimal displays:
+
+```bash
+# Basic compact mode
+claude-monitor --compact
+
+# Disable compact mode
+claude-monitor --no-compact
+
+# Custom fields (tokens and percentage only)
+claude-monitor --compact --compact-fields tokens,percentage
+
+# All available fields
+claude-monitor --compact --compact-fields tokens,percentage,burn_rate,predicted_end,reset_time,current_time
+```
+
+**Available Compact Fields:**
+- `tokens` - Token usage (12.5K/44K)
+- `percentage` - Usage percentage (28%)
+- `burn_rate` - Current burn rate (1.2K/h)
+- `predicted_end` - Session end prediction (2h 15m)
+- `reset_time` - Next reset time (@14:30)
+- `current_time` - Current timestamp (09:45)
+
+**Color Coding:**
+- 🟢 Green: < 50% usage (safe zone)
+- 🟡 Yellow: 50-80% usage (caution)
+- 🔴 Red: > 80% usage (critical)
+
+**tmux Integration Examples:**
+```bash
+# Right status bar
+set -g status-right "#(claude-monitor --compact --compact-fields tokens,percentage)"
+
+# Left status bar with session info
+set -g status-left "#S | #(claude-monitor --compact --compact-fields percentage,burn_rate)"
+
+# Both sides with comprehensive info
+set -g status-left "#S | #(claude-monitor --compact --compact-fields percentage)"
+set -g status-right "#(claude-monitor --compact --compact-fields tokens,predicted_end) | %H:%M"
 ```
 
 #### Logging and Debugging
@@ -749,6 +800,24 @@ claude-monitor --plan custom_max
    - Better planning for work schedules
    - Correct session expiration estimates
 
+4. **Compact Mode Integration**
+
+```bash
+   # tmux status bar integration
+   set -g status-right "#(claude-monitor --compact --compact-fields tokens,percentage)"
+
+   # Terminal prompt integration
+   PS1='$(claude-monitor --compact --compact-fields percentage --no-color) $ '
+
+   # Conky/status bar integration
+   claude-monitor --compact --compact-fields tokens,burn_rate
+   ```
+
+   - Choose appropriate refresh rates for your use case
+   - Use `--no-color` for non-terminal integrations
+   - Select relevant fields to avoid information overload
+   - Consider performance impact of frequent updates
+
 #### Optimization Tips
 
 1. **Terminal Setup**
@@ -769,7 +838,6 @@ claude-monitor --plan custom_max
    # Check status anytime
    tmux attach -t claude-monitor
    ```
-
 
 3. **Multi-Session Strategy**
    - Remember sessions last exactly 5 hours

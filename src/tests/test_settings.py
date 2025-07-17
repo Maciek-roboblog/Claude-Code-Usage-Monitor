@@ -235,7 +235,6 @@ class TestSettings:
         assert settings.log_level == "INFO"
         assert settings.log_file is None
         assert settings.debug is False
-        assert settings.version is False
         assert settings.clear is False
 
     def test_plan_validator_valid_values(self) -> None:
@@ -563,7 +562,6 @@ class TestSettings:
             time_format="24h",
             log_level="DEBUG",
             log_file=Path("/tmp/test.log"),
-            version=True,
             _cli_parse_args=[],
         )
 
@@ -580,7 +578,6 @@ class TestSettings:
         assert namespace.time_format == "24h"
         assert namespace.log_level == "DEBUG"
         assert namespace.log_file == "/tmp/test.log"
-        assert namespace.version is True
 
     def test_to_namespace_none_values(self) -> None:
         """Test conversion to namespace with None values."""
@@ -643,3 +640,122 @@ class TestSettingsIntegration:
 
         # Should only return init_settings
         assert sources == ("init_settings",)
+
+
+class TestCompactMode:
+    """Test suite for compact mode functionality."""
+
+    def test_compact_field_exists(self) -> None:
+        """Test that compact field exists in Settings model."""
+        settings = Settings(_cli_parse_args=[])
+        assert hasattr(settings, "compact")
+        assert settings.compact is False  # Default value
+
+    def test_compact_cli_parsing_enabled(self) -> None:
+        """Test compact mode can be enabled via CLI."""
+        settings = Settings.load_with_last_used(["--compact"])
+        assert settings.compact is True
+
+    def test_compact_cli_parsing_disabled(self) -> None:
+        """Test compact mode can be disabled via CLI."""
+        settings = Settings.load_with_last_used(["--no-compact"])
+        assert settings.compact is False
+
+    def test_compact_persisted(self) -> None:
+        """Test that compact mode and related fields ARE saved to last used params."""
+        import shutil
+
+        temp_dir = Path(tempfile.mkdtemp())
+        last_used = LastUsedParams(temp_dir)
+        try:
+            # Create settings with compact enabled and custom fields
+            settings = Settings.load_with_last_used(
+                [
+                    "--compact",
+                    "--compact-fields",
+                    "tokens,percentage",
+                    "--theme",
+                    "dark",
+                ]
+            )
+            # Save settings
+            last_used.save(settings)
+            # Load saved params and check compact options ARE present
+            saved_params = last_used.load()
+            assert saved_params["compact"] is True
+            assert saved_params["compact_fields"] == ["tokens", "percentage"]
+            assert saved_params["theme"] == "dark"
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_compact_to_namespace(self) -> None:
+        """Test that compact field is included in namespace conversion."""
+        settings = Settings.load_with_last_used(["--compact"])
+        args = settings.to_namespace()
+
+        assert hasattr(args, "compact")
+        assert args.compact is True
+
+    def test_compact_default_to_namespace(self) -> None:
+        """Test that compact defaults to False in namespace conversion."""
+        settings = Settings(_cli_parse_args=[])
+        args = settings.to_namespace()
+
+        assert hasattr(args, "compact")
+        assert args.compact is False
+
+    def test_compact_compatibility_with_other_flags(self) -> None:
+        """Test compact mode works with other CLI flags."""
+        settings = Settings.load_with_last_used(
+            ["--compact", "--plan", "pro", "--theme", "dark"]
+        )
+
+        assert settings.compact is True
+        assert settings.plan == "pro"
+        assert settings.theme == "dark"
+
+    def test_compact_fields_basic_parsing(self) -> None:
+        """Test basic compact fields parsing."""
+        settings = Settings(_cli_parse_args=["--compact-fields", "tokens"])
+        assert settings.compact_fields == ["tokens"]
+
+    def test_compact_fields_persisted(self) -> None:
+        """Test that compact fields are saved to last used params."""
+        import shutil
+        import tempfile
+
+        temp_dir = Path(tempfile.mkdtemp())
+        last_used = LastUsedParams(temp_dir)
+
+        try:
+            settings = Settings(
+                _cli_parse_args=["--compact-fields", "tokens,percentage"]
+            )
+            settings.theme = "dark"
+
+            # Save settings
+            last_used.save(settings)
+
+            # Load saved params and check compact options are there
+            saved_params = last_used.load()
+            assert saved_params["compact_fields"] == ["tokens", "percentage"]
+            assert "theme" in saved_params  # Other fields are also saved
+
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_compact_options_in_namespace(self) -> None:
+        """Test that all compact options are included in namespace."""
+        settings = Settings(
+            _cli_parse_args=[
+                "--compact",
+                "--compact-fields",
+                "tokens,percentage",
+            ]
+        )
+        args = settings.to_namespace()
+
+        assert hasattr(args, "compact")
+        assert args.compact is True
+        assert hasattr(args, "compact_fields")
+        assert args.compact_fields == ["tokens", "percentage"]

@@ -13,8 +13,15 @@ from rich.console import Console, Group, RenderableType
 from rich.live import Live
 from rich.text import Text
 
+# Import compact components at module level to avoid redundant imports
+from claude_monitor.compact import (
+    CompactColorManager,
+    CompactFieldSelector,
+    CompactRefreshManager,
+    EnhancedCompactFormatter,
+)
 from claude_monitor.core.calculations import calculate_hourly_burn_rate
-from claude_monitor.core.models import normalize_model_name
+from claude_monitor.core.models import CompactColorThresholds, normalize_model_name
 from claude_monitor.core.plans import Plans
 from claude_monitor.ui.components import (
     AdvancedCustomLimitDisplay,
@@ -30,6 +37,8 @@ from claude_monitor.utils.time_utils import (
     get_time_format_preference,
     percentage,
 )
+
+DEFAULT_COMPACT_REFRESH_RATE = 2.0
 
 
 class DisplayController:
@@ -48,6 +57,12 @@ class DisplayController:
         config_dir = Path.home() / ".claude" / "config"
         config_dir.mkdir(parents=True, exist_ok=True)
         self.notification_manager = NotificationManager(config_dir)
+
+        # Enhanced compact mode components (initialized on demand)
+        self._enhanced_compact_formatter: Optional[EnhancedCompactFormatter] = None
+        self._compact_refresh_manager: Optional[CompactRefreshManager] = None
+        self._compact_field_selector = None
+        self._compact_color_manager: Optional[CompactColorManager] = None
 
     def _extract_session_data(self, active_block: Dict[str, Any]) -> Dict[str, Any]:
         """Extract basic session data from active block."""
@@ -208,6 +223,10 @@ class DisplayController:
         Returns:
             Rich renderable for display
         """
+        logger = logging.getLogger(__name__)
+        compact_mode = getattr(args, "compact", False)
+        logger.debug(f"Display mode: {'compact' if compact_mode else 'standard'}")
+
         if not data or "blocks" not in data:
             screen_buffer = self.error_display.format_error_screen(
                 args.plan, args.timezone
@@ -225,9 +244,17 @@ class DisplayController:
         current_time = datetime.now(pytz.UTC)
 
         if not active_block:
-            screen_buffer = self.session_display.format_no_active_session_screen(
-                args.plan, args.timezone, token_limit, current_time, args
-            )
+            # Choose formatting based on compact mode
+            if compact_mode:
+                screen_buffer = (
+                    self.session_display.format_compact_no_active_session_screen(
+                        args.plan, args.timezone, token_limit, current_time, args
+                    )
+                )
+            else:
+                screen_buffer = self.session_display.format_no_active_session_screen(
+                    args.plan, args.timezone, token_limit, current_time, args
+                )
             return self.buffer_manager.create_screen_renderable(screen_buffer)
 
         cost_limit_p90 = None
@@ -269,9 +296,55 @@ class DisplayController:
             processed_data["messages_limit_p90"] = messages_limit_p90
 
         try:
-            screen_buffer = self.session_display.format_active_session_screen(
-                **processed_data
-            )
+            if compact_mode:
+                # For compact mode, create a SessionDisplayData object
+                from claude_monitor.ui.session_display import SessionDisplayData
+
+                session_data = SessionDisplayData(
+                    plan=processed_data["plan"],
+                    timezone=processed_data["timezone"],
+                    tokens_used=processed_data["tokens_used"],
+                    token_limit=processed_data["token_limit"],
+                    usage_percentage=processed_data["usage_percentage"],
+                    tokens_left=processed_data["tokens_left"],
+                    elapsed_session_minutes=processed_data["elapsed_session_minutes"],
+                    total_session_minutes=processed_data["total_session_minutes"],
+                    burn_rate=processed_data["burn_rate"],
+                    session_cost=processed_data["session_cost"],
+                    per_model_stats=processed_data["per_model_stats"],
+                    sent_messages=processed_data["sent_messages"],
+                    entries=processed_data["entries"],
+                    predicted_end_str=processed_data["predicted_end_str"],
+                    reset_time_str=processed_data["reset_time_str"],
+                    current_time_str=processed_data["current_time_str"],
+                    show_switch_notification=processed_data.get(
+                        "show_switch_notification", False
+                    ),
+                    show_exceed_notification=processed_data.get(
+                        "show_exceed_notification", False
+                    ),
+                    show_tokens_will_run_out=processed_data.get(
+                        "show_tokens_will_run_out", False
+                    ),
+                    original_limit=processed_data.get("original_limit", 0),
+                )
+
+                # Check if advanced compact options are configured
+                if hasattr(args, "compact_fields") and args.compact_fields:
+                    # Use enhanced compact formatter with advanced features
+                    screen_buffer = self._format_enhanced_compact_display(
+                        session_data, args
+                    )
+                else:
+                    # Use basic compact formatter
+                    screen_buffer = self.session_display.format_compact_session_screen(
+                        session_data
+                    )
+            else:
+                # Existing standard mode
+                screen_buffer = self.session_display.format_active_session_screen(
+                    **processed_data
+                )
         except Exception as e:
             # Log the error with more details
             logger = logging.getLogger(__name__)
@@ -300,6 +373,145 @@ class DisplayController:
             return self.buffer_manager.create_screen_renderable(screen_buffer)
 
         return self.buffer_manager.create_screen_renderable(screen_buffer)
+
+    def _initialize_compact_components(self, args: Any) -> None:
+        """Initialize compact mode components based on arguments.
+
+        Args:
+            args: Command line arguments containing compact configuration
+        """
+        # Initialize field selector with custom fields if provided
+        compact_fields = getattr(args, "compact_fields", None)
+        if compact_fields and isinstance(compact_fields, str):
+            # Parse comma-separated fields
+            field_list = [field.strip() for field in compact_fields.split(",")]
+            self._compact_field_selector = CompactFieldSelector(field_list)
+        else:
+            self._compact_field_selector = CompactFieldSelector(compact_fields)
+
+        # Initialize color manager with default thresholds and no-color setting
+        # Use hardcoded default thresholds since CLI args are removed
+        color_thresholds = CompactColorThresholds()
+        no_color = getattr(args, "no_color", False)
+        self._compact_color_manager = CompactColorManager(color_thresholds, no_color)
+
+        # Initialize refresh manager with default refresh rate
+        # Use hardcoded default since CLI arg is removed
+        refresh_rate = DEFAULT_COMPACT_REFRESH_RATE
+        self._compact_refresh_manager = CompactRefreshManager(refresh_rate)
+
+        # Initialize enhanced formatter with components
+        self._enhanced_compact_formatter = EnhancedCompactFormatter(
+            self._compact_field_selector, self._compact_color_manager
+        )
+
+    from claude_monitor.ui.session_display import SessionDisplayData
+
+    def _format_enhanced_compact_display(
+        self, session_data: SessionDisplayData, args: Any
+    ) -> List[str]:
+        """Format enhanced compact display with advanced features.
+
+        Args:
+            session_data: SessionDisplayData object
+            args: Command line arguments
+
+        Returns:
+            Screen buffer with enhanced compact display
+        """
+        # Initialize components if not already done
+        if self._enhanced_compact_formatter is None:
+            self._initialize_compact_components(args)
+
+        # Format the compact line using enhanced formatter
+        compact_line = self._enhanced_compact_formatter.format_compact_line(
+            session_data
+        )
+
+        # Check for performance warnings
+        performance_warning = None
+        if self._compact_refresh_manager:
+            performance_warning = (
+                self._compact_refresh_manager.get_performance_warning()
+            )
+
+        # Build screen buffer
+        screen_buffer = []
+
+        # Add performance warning if present
+        if performance_warning:
+            screen_buffer.append(performance_warning)
+            screen_buffer.append("")  # Empty line for spacing
+
+        # Add the main compact line
+        screen_buffer.append(compact_line)
+
+        # Add any notifications if present
+        if session_data.show_switch_notification:
+            screen_buffer.append("")
+            screen_buffer.append("[yellow]ℹ️  Switched to custom limit detection[/]")
+
+        if session_data.show_exceed_notification:
+            screen_buffer.append("")
+            screen_buffer.append("[red]⚠️  Session cost exceeded limit[/]")
+
+        if session_data.show_tokens_will_run_out:
+            screen_buffer.append("")
+            screen_buffer.append(
+                "[yellow]⚠️  Predicted to exceed cost limit before reset[/]"
+            )
+
+        return screen_buffer
+
+    def get_compact_refresh_interval(self, args: Any) -> float:
+        """Get the current refresh interval for compact mode.
+
+        Args:
+            args: Command line arguments
+
+        Returns:
+            Refresh interval in seconds
+        """
+        # Initialize refresh manager if not already done
+        if self._compact_refresh_manager is None:
+            refresh_rate = DEFAULT_COMPACT_REFRESH_RATE
+            self._compact_refresh_manager = CompactRefreshManager(refresh_rate)
+
+        return self._compact_refresh_manager.get_refresh_interval()
+
+    def should_show_performance_warning(self, args: Any) -> bool:
+        """Check if performance warning should be displayed.
+
+        Args:
+            args: Command line arguments
+
+        Returns:
+            True if performance warning should be shown
+        """
+        # Initialize refresh manager if not already done
+        if self._compact_refresh_manager is None:
+            refresh_rate = getattr(args, "compact_refresh_rate", 2.0)
+
+            self._compact_refresh_manager = CompactRefreshManager(refresh_rate)
+
+        return self._compact_refresh_manager.should_warn_performance()
+
+    def get_performance_recommendations(self, args: Any) -> dict:
+        """Get performance recommendations for current configuration.
+
+        Args:
+            args: Command line arguments
+
+        Returns:
+            Dictionary with performance recommendations
+        """
+        # Initialize refresh manager if not already done
+        if self._compact_refresh_manager is None:
+            refresh_rate = getattr(args, "compact_refresh_rate", 2.0)
+
+            self._compact_refresh_manager = CompactRefreshManager(refresh_rate)
+
+        return self._compact_refresh_manager.get_refresh_recommendations()
 
     def _process_active_session_data(
         self,
@@ -469,13 +681,29 @@ class DisplayController:
         screen_buffer = self.error_display.format_error_screen(plan, timezone)
         return self.buffer_manager.create_screen_renderable(screen_buffer)
 
-    def create_live_context(self) -> Live:
+    def create_live_context(self, args: Any = None) -> Live:
         """Create live display context manager.
+
+        Args:
+            args: Optional command line arguments for refresh rate configuration
 
         Returns:
             Live display context manager
         """
-        return self.live_manager.create_live_display()
+        # Determine refresh rate based on compact mode and configuration
+        refresh_per_second = 0.75  # Default refresh rate
+
+        if args and getattr(args, "compact", False):
+            # Use compact refresh rate if in compact mode
+            refresh_interval = self.get_compact_refresh_interval(args)
+            refresh_per_second = 1.0 / refresh_interval
+
+            # Ensure refresh rate is within reasonable bounds for Rich Live
+            refresh_per_second = max(0.1, min(refresh_per_second, 10.0))
+
+        return self.live_manager.create_live_display(
+            refresh_per_second=refresh_per_second
+        )
 
     def set_screen_dimensions(self, width: int, height: int) -> None:
         """Set screen dimensions for responsive layouts.
