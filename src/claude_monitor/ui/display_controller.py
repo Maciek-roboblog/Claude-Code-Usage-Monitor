@@ -72,8 +72,8 @@ class DisplayController:
         return token_limit, token_limit
 
     def _calculate_time_data(
-        self, 
-        session_data: Dict[str, Any], 
+        self,
+        session_data: Dict[str, Any],
         current_time: datetime,
         reset_hour: Optional[int] = None,
         timezone: Optional[str] = None
@@ -349,7 +349,7 @@ class DisplayController:
 
         # Calculate time data
         time_data = self._calculate_time_data(
-            session_data, 
+            session_data,
             current_time,
             reset_hour=getattr(args, 'reset_hour', None),
             timezone=getattr(args, 'timezone', None)
@@ -591,8 +591,8 @@ class SessionCalculator:
         self.tz_handler = TimezoneHandler()
 
     def calculate_time_data(
-        self, 
-        session_data: Dict[str, Any], 
+        self,
+        session_data: Dict[str, Any],
         current_time: datetime,
         reset_hour: Optional[int] = None,
         timezone: Optional[str] = None
