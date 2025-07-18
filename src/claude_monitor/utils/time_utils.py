@@ -510,15 +510,16 @@ class TimezoneHandler:
                 # Default 5-hour intervals from the original implementation
                 reset_hours = [4, 9, 14, 18, 23]
 
-            # Get current hour and minute
+            # Get current hour, minute, and second
             current_hour = target_time.hour
             current_minute = target_time.minute
+            current_second = target_time.second
 
             # Find next reset hour
             next_reset_hour = None
             for hour in reset_hours:
                 if current_hour < hour or (
-                    current_hour == hour and current_minute == 0
+                    current_hour == hour and current_minute == 0 and current_second == 0
                 ):
                     next_reset_hour = hour
                     break

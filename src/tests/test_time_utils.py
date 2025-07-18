@@ -898,6 +898,58 @@ class TestGetNextResetTime:
         )
         assert reset_time == expected
 
+    def test_reset_time_never_in_past(self) -> None:
+        """Test that get_next_reset_time never returns a time in the past."""
+        handler = TimezoneHandler("UTC")
+
+        # Test various times around the reset hour
+        test_cases = [
+            # (current_time, expected_behavior)
+            (
+                datetime(2024, 1, 1, 12, 59, 59),
+                datetime(2024, 1, 1, 13, 0, 0),
+            ),  # Before: next is 13:00 today
+            (
+                datetime(2024, 1, 1, 13, 0, 0),
+                datetime(2024, 1, 1, 13, 0, 0),
+            ),  # Exactly at: could be today or tomorrow
+            (
+                datetime(2024, 1, 1, 13, 0, 1),
+                datetime(2024, 1, 2, 13, 0, 0),
+            ),  # 1 second after: must be tomorrow
+            (
+                datetime(2024, 1, 1, 13, 0, 30),
+                datetime(2024, 1, 2, 13, 0, 0),
+            ),  # 30 seconds after: must be tomorrow
+            (
+                datetime(2024, 1, 1, 13, 0, 59),
+                datetime(2024, 1, 2, 13, 0, 0),
+            ),  # 59 seconds after: must be tomorrow
+            (
+                datetime(2024, 1, 1, 13, 1, 0),
+                datetime(2024, 1, 2, 13, 0, 0),
+            ),  # 1 minute after: must be tomorrow
+        ]
+
+        for current_dt, expected_dt in test_cases:
+            current_time = pytz.UTC.localize(current_dt)
+            expected_time = pytz.UTC.localize(expected_dt)
+
+            reset_time = handler.get_next_reset_time(
+                current_time, reset_hour=13, timezone_str="UTC"
+            )
+
+            # The returned time should never be before the current time
+            assert reset_time >= current_time, (
+                f"Reset time {reset_time} is before current time {current_time}!"
+            )
+
+            # For this test, we also check the expected exact value
+            assert reset_time == expected_time, (
+                f"At {current_dt.strftime('%H:%M:%S')}, expected {expected_dt}, "
+                f"but got {reset_time}"
+            )
+
     def test_default_intervals(self) -> None:
         """Test default 5-hour interval behavior."""
         handler = TimezoneHandler("UTC")
