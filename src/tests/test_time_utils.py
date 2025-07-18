@@ -2,7 +2,7 @@
 
 import locale
 import platform
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 from unittest.mock import Mock, patch
 
@@ -64,7 +64,9 @@ class TestTimeFormatDetector:
 
     @patch("claude_monitor.utils.time_utils.HAS_BABEL", True)
     @patch("claude_monitor.utils.time_utils.get_timezone_location")
-    def test_detect_from_timezone_with_babel_12h(self, mock_get_location: Mock) -> None:
+    def test_detect_from_timezone_with_babel_12h(
+        self, mock_get_location: Mock
+    ) -> None:
         """Test timezone detection with Babel for 12h countries."""
         mock_get_location.return_value = "United States US"
 
@@ -73,7 +75,9 @@ class TestTimeFormatDetector:
 
     @patch("claude_monitor.utils.time_utils.HAS_BABEL", True)
     @patch("claude_monitor.utils.time_utils.get_timezone_location")
-    def test_detect_from_timezone_with_babel_24h(self, mock_get_location: Mock) -> None:
+    def test_detect_from_timezone_with_babel_24h(
+        self, mock_get_location: Mock
+    ) -> None:
         """Test timezone detection with Babel for 24h countries."""
         mock_get_location.return_value = "Germany"
 
@@ -129,7 +133,9 @@ class TestTimeFormatDetector:
         self, mock_langinfo: Mock, mock_setlocale: Mock
     ) -> None:
         """Test locale detection for 24h format."""
-        mock_langinfo.side_effect = lambda x: "%H:%M:%S" if x == locale.D_T_FMT else ""
+        mock_langinfo.side_effect = (
+            lambda x: "%H:%M:%S" if x == locale.D_T_FMT else ""
+        )
 
         result = TimeFormatDetector.detect_from_locale()
         assert result is False
@@ -220,7 +226,9 @@ class TestTimeFormatDetector:
         result = TimeFormatDetector.detect_from_system()
         assert result == "24h"
 
-    @pytest.mark.skipif(platform.system() != "Windows", reason="Windows-specific test")
+    @pytest.mark.skipif(
+        platform.system() != "Windows", reason="Windows-specific test"
+    )
     @patch("platform.system")
     def test_detect_from_system_windows_12h(self, mock_system: Mock) -> None:
         """Test Windows system detection for 12h format."""
@@ -238,7 +246,9 @@ class TestTimeFormatDetector:
                 result = TimeFormatDetector.detect_from_system()
                 assert result == "12h"
 
-    @pytest.mark.skipif(platform.system() != "Windows", reason="Windows-specific test")
+    @pytest.mark.skipif(
+        platform.system() != "Windows", reason="Windows-specific test"
+    )
     @patch("platform.system")
     def test_detect_from_system_windows_24h(self, mock_system: Mock) -> None:
         """Test Windows system detection for 24h format."""
@@ -256,9 +266,13 @@ class TestTimeFormatDetector:
                 result = TimeFormatDetector.detect_from_system()
                 assert result == "24h"
 
-    @pytest.mark.skipif(platform.system() != "Windows", reason="Windows-specific test")
+    @pytest.mark.skipif(
+        platform.system() != "Windows", reason="Windows-specific test"
+    )
     @patch("platform.system")
-    def test_detect_from_system_windows_exception(self, mock_system: Mock) -> None:
+    def test_detect_from_system_windows_exception(
+        self, mock_system: Mock
+    ) -> None:
         """Test Windows system detection with exception."""
         mock_system.return_value = "Windows"
 
@@ -275,11 +289,15 @@ class TestTimeFormatDetector:
                 assert result == "12h"
 
     @patch("platform.system")
-    def test_detect_from_system_unknown_platform(self, mock_system: Mock) -> None:
+    def test_detect_from_system_unknown_platform(
+        self, mock_system: Mock
+    ) -> None:
         """Test system detection for unknown platform."""
         mock_system.return_value = "UnknownOS"
 
-        with patch.object(TimeFormatDetector, "detect_from_locale", return_value=False):
+        with patch.object(
+            TimeFormatDetector, "detect_from_locale", return_value=False
+        ):
             result = TimeFormatDetector.detect_from_system()
             assert result == "24h"
 
@@ -288,7 +306,9 @@ class TestTimeFormatDetector:
         args = Mock()
         args.time_format = "12h"
 
-        with patch.object(TimeFormatDetector, "detect_from_timezone") as mock_tz:
+        with patch.object(
+            TimeFormatDetector, "detect_from_timezone"
+        ) as mock_tz:
             mock_tz.return_value = False  # Should be ignored
 
             result = TimeFormatDetector.get_preference(args, "Europe/Berlin")
@@ -297,19 +317,29 @@ class TestTimeFormatDetector:
     def test_get_preference_timezone_fallback(self) -> None:
         """Test get_preference falling back to timezone detection."""
         with (
-            patch.object(TimeFormatDetector, "detect_from_timezone", return_value=True),
-            patch.object(TimeFormatDetector, "detect_from_system") as mock_system,
+            patch.object(
+                TimeFormatDetector, "detect_from_timezone", return_value=True
+            ),
+            patch.object(
+                TimeFormatDetector, "detect_from_system"
+            ) as mock_system,
         ):
             mock_system.return_value = "24h"  # Should be ignored
 
-            result = TimeFormatDetector.get_preference(None, "America/New_York")
+            result = TimeFormatDetector.get_preference(
+                None, "America/New_York"
+            )
             assert result is True
 
     def test_get_preference_system_fallback(self) -> None:
         """Test get_preference falling back to system detection."""
         with (
-            patch.object(TimeFormatDetector, "detect_from_timezone", return_value=None),
-            patch.object(TimeFormatDetector, "detect_from_system", return_value="12h"),
+            patch.object(
+                TimeFormatDetector, "detect_from_timezone", return_value=None
+            ),
+            patch.object(
+                TimeFormatDetector, "detect_from_system", return_value="12h"
+            ),
         ):
             result = TimeFormatDetector.get_preference(None, "Europe/Berlin")
             assert result is True
@@ -323,7 +353,11 @@ class TestSystemTimeDetector:
     @patch("platform.system")
     @patch("builtins.open", create=True)
     def test_get_timezone_linux_timezone_file(
-        self, mock_open: Mock, mock_system: Mock, mock_exists: Mock, mock_env: Mock
+        self,
+        mock_open: Mock,
+        mock_system: Mock,
+        mock_exists: Mock,
+        mock_env: Mock,
     ) -> None:
         """Test Linux timezone detection via /etc/timezone file."""
         mock_env.return_value = None  # No TZ environment variable
@@ -343,7 +377,11 @@ class TestSystemTimeDetector:
     @patch("platform.system")
     @patch("subprocess.run")
     def test_get_timezone_linux_timedatectl(
-        self, mock_run: Mock, mock_system: Mock, mock_exists: Mock, mock_env: Mock
+        self,
+        mock_run: Mock,
+        mock_system: Mock,
+        mock_exists: Mock,
+        mock_env: Mock,
     ) -> None:
         """Test Linux timezone detection via timedatectl."""
         mock_env.return_value = None  # No TZ environment variable
@@ -361,7 +399,9 @@ class TestSystemTimeDetector:
 
     @patch("platform.system")
     @patch("subprocess.run")
-    def test_get_timezone_windows(self, mock_run: Mock, mock_system: Mock) -> None:
+    def test_get_timezone_windows(
+        self, mock_run: Mock, mock_system: Mock
+    ) -> None:
         """Test Windows timezone detection."""
         mock_system.return_value = "Windows"
 
@@ -383,7 +423,9 @@ class TestSystemTimeDetector:
 
     def test_get_time_format(self) -> None:
         """Test get_time_format delegates to TimeFormatDetector."""
-        with patch.object(TimeFormatDetector, "detect_from_system", return_value="12h"):
+        with patch.object(
+            TimeFormatDetector, "detect_from_system", return_value="12h"
+        ):
             result = SystemTimeDetector.get_time_format()
             assert result == "12h"
 
@@ -458,7 +500,9 @@ class TestTimezoneHandler:
         """Test parsing invalid ISO timestamp."""
         handler = TimezoneHandler()
         with patch("claude_monitor.utils.time_utils.logger"):
-            result = handler.parse_timestamp("2024-01-01T25:00:00Z")  # Invalid hour
+            result = handler.parse_timestamp(
+                "2024-01-01T25:00:00Z"
+            )  # Invalid hour
             # Should try other formats or return None
             assert result is None or isinstance(result, datetime)
 
@@ -507,7 +551,9 @@ class TestTimezoneHandler:
     def test_ensure_utc_aware(self) -> None:
         """Test ensure_utc with timezone-aware datetime."""
         handler = TimezoneHandler()
-        dt = pytz.timezone("Europe/London").localize(datetime(2024, 1, 1, 12, 0, 0))
+        dt = pytz.timezone("Europe/London").localize(
+            datetime(2024, 1, 1, 12, 0, 0)
+        )
 
         result = handler.ensure_utc(dt)
         assert result.tzinfo == pytz.UTC
@@ -523,7 +569,9 @@ class TestTimezoneHandler:
     def test_ensure_timezone_aware(self) -> None:
         """Test ensure_timezone with timezone-aware datetime."""
         handler = TimezoneHandler()
-        dt = pytz.timezone("America/New_York").localize(datetime(2024, 1, 1, 12, 0, 0))
+        dt = pytz.timezone("America/New_York").localize(
+            datetime(2024, 1, 1, 12, 0, 0)
+        )
 
         result = handler.ensure_timezone(dt)
         assert result.tzinfo.zone == "America/New_York"
@@ -590,7 +638,9 @@ class TestTimezoneHandler:
         handler = TimezoneHandler("UTC")
         dt = pytz.UTC.localize(datetime(2024, 1, 1, 15, 30, 45))
 
-        with patch.object(TimeFormatDetector, "get_preference", return_value=True):
+        with patch.object(
+            TimeFormatDetector, "get_preference", return_value=True
+        ):
             result = handler.format_datetime(dt)
             assert "PM" in result or "AM" in result
 
@@ -708,26 +758,34 @@ class TestFormattingUtilities:
         dt = datetime(2024, 1, 1, 15, 30, 45)
 
         try:
-            result = format_display_time(dt, use_12h_format=True, include_seconds=False)
+            result = format_display_time(
+                dt, use_12h_format=True, include_seconds=False
+            )
             assert "PM" in result
             assert "3:30" in result or "03:30" in result
         except ValueError:
             # Windows format fallback
-            result = format_display_time(dt, use_12h_format=True, include_seconds=False)
+            result = format_display_time(
+                dt, use_12h_format=True, include_seconds=False
+            )
             assert "PM" in result
 
     def test_format_display_time_24h_with_seconds(self) -> None:
         """Test format_display_time in 24h format with seconds."""
         dt = datetime(2024, 1, 1, 15, 30, 45)
 
-        result = format_display_time(dt, use_12h_format=False, include_seconds=True)
+        result = format_display_time(
+            dt, use_12h_format=False, include_seconds=True
+        )
         assert result == "15:30:45"
 
     def test_format_display_time_24h_without_seconds(self) -> None:
         """Test format_display_time in 24h format without seconds."""
         dt = datetime(2024, 1, 1, 15, 30, 45)
 
-        result = format_display_time(dt, use_12h_format=False, include_seconds=False)
+        result = format_display_time(
+            dt, use_12h_format=False, include_seconds=False
+        )
         assert result == "15:30"
 
     def test_format_display_time_auto_detect(self) -> None:
@@ -747,7 +805,9 @@ class TestFormattingUtilities:
         dt = datetime(2024, 1, 1, 3, 30, 45)
 
         # Just test basic functionality - the Windows fallback is handled internally
-        result = format_display_time(dt, use_12h_format=True, include_seconds=True)
+        result = format_display_time(
+            dt, use_12h_format=True, include_seconds=True
+        )
         # Should contain time components
         assert ":" in result
 
@@ -757,3 +817,281 @@ class TestFormattingUtilities:
         else:
             # Alternative formats might be used
             assert "3" in result or "03" in result  # Hour should be present
+
+
+class TestGetNextResetTime:
+    """Test cases for TimezoneHandler.get_next_reset_time method."""
+
+    def test_custom_reset_hour_same_day(self) -> None:
+        """Test when next reset is later today."""
+        handler = TimezoneHandler("America/Denver")
+        # Set current time to 10:00 AM in America/Denver
+        current_time = pytz.timezone("America/Denver").localize(
+            datetime(2024, 1, 1, 10, 0, 0)
+        )
+
+        # Call get_next_reset_time with reset_hour=13 (1 PM)
+        reset_time = handler.get_next_reset_time(
+            current_time, reset_hour=13, timezone_str="America/Denver"
+        )
+
+        # Assert result is 1:00 PM same day in America/Denver
+        expected = pytz.timezone("America/Denver").localize(
+            datetime(2024, 1, 1, 13, 0, 0)
+        )
+        assert reset_time == expected
+
+    def test_custom_reset_hour_next_day(self) -> None:
+        """Test when next reset is tomorrow."""
+        handler = TimezoneHandler("Europe/Berlin")
+        # Set current time to 3:00 PM in Europe/Berlin
+        current_time = pytz.timezone("Europe/Berlin").localize(
+            datetime(2024, 1, 1, 15, 0, 0)
+        )
+
+        # Call get_next_reset_time with reset_hour=13 (1 PM)
+        reset_time = handler.get_next_reset_time(
+            current_time, reset_hour=13, timezone_str="Europe/Berlin"
+        )
+
+        # Assert result is 1:00 PM next day in Europe/Berlin
+        expected = pytz.timezone("Europe/Berlin").localize(
+            datetime(2024, 1, 2, 13, 0, 0)
+        )
+        assert reset_time == expected
+
+    def test_custom_reset_hour_exact_time(self) -> None:
+        """Test when current time is exactly the reset hour."""
+        handler = TimezoneHandler("Australia/Sydney")
+        # Set current time to exactly 1:00 PM in Australia/Sydney
+        current_time = pytz.timezone("Australia/Sydney").localize(
+            datetime(2024, 1, 1, 13, 0, 0)
+        )
+
+        # Call get_next_reset_time with reset_hour=13 (1 PM)
+        reset_time = handler.get_next_reset_time(
+            current_time, reset_hour=13, timezone_str="Australia/Sydney"
+        )
+
+        # Should return the same time (current reset time)
+        expected = pytz.timezone("Australia/Sydney").localize(
+            datetime(2024, 1, 1, 13, 0, 0)
+        )
+        assert reset_time == expected
+
+    def test_custom_reset_hour_after_exact_time(self) -> None:
+        """Test when current time is just after the reset hour."""
+        handler = TimezoneHandler("America/Sao_Paulo")
+        # Set current time to 1:01 PM in America/Sao_Paulo
+        current_time = pytz.timezone("America/Sao_Paulo").localize(
+            datetime(2024, 1, 1, 13, 1, 0)
+        )
+
+        # Call get_next_reset_time with reset_hour=13 (1 PM)
+        reset_time = handler.get_next_reset_time(
+            current_time, reset_hour=13, timezone_str="America/Sao_Paulo"
+        )
+
+        # Should return tomorrow's reset time
+        expected = pytz.timezone("America/Sao_Paulo").localize(
+            datetime(2024, 1, 2, 13, 0, 0)
+        )
+        assert reset_time == expected
+
+    def test_reset_time_never_in_past(self) -> None:
+        """Test that get_next_reset_time never returns a time in the past."""
+        handler = TimezoneHandler("UTC")
+
+        # Test various times around the reset hour
+        test_cases = [
+            # (current_time, expected_behavior)
+            (
+                datetime(2024, 1, 1, 12, 59, 59),
+                datetime(2024, 1, 1, 13, 0, 0),
+            ),  # Before: next is 13:00 today
+            (
+                datetime(2024, 1, 1, 13, 0, 0),
+                datetime(2024, 1, 1, 13, 0, 0),
+            ),  # Exactly at: could be today or tomorrow
+            (
+                datetime(2024, 1, 1, 13, 0, 1),
+                datetime(2024, 1, 2, 13, 0, 0),
+            ),  # 1 second after: must be tomorrow
+            (
+                datetime(2024, 1, 1, 13, 0, 30),
+                datetime(2024, 1, 2, 13, 0, 0),
+            ),  # 30 seconds after: must be tomorrow
+            (
+                datetime(2024, 1, 1, 13, 0, 59),
+                datetime(2024, 1, 2, 13, 0, 0),
+            ),  # 59 seconds after: must be tomorrow
+            (
+                datetime(2024, 1, 1, 13, 1, 0),
+                datetime(2024, 1, 2, 13, 0, 0),
+            ),  # 1 minute after: must be tomorrow
+        ]
+
+        for current_dt, expected_dt in test_cases:
+            current_time = pytz.UTC.localize(current_dt)
+            expected_time = pytz.UTC.localize(expected_dt)
+
+            reset_time = handler.get_next_reset_time(
+                current_time, reset_hour=13, timezone_str="UTC"
+            )
+
+            # The returned time should never be before the current time
+            assert reset_time >= current_time, (
+                f"Reset time {reset_time} is before current time {current_time}!"
+            )
+
+            # For this test, we also check the expected exact value
+            assert reset_time == expected_time, (
+                f"At {current_dt.strftime('%H:%M:%S')}, expected {expected_dt}, "
+                f"but got {reset_time}"
+            )
+
+    def test_default_intervals(self) -> None:
+        """Test default 5-hour interval behavior."""
+        handler = TimezoneHandler("UTC")
+        # Set current time to 12:00 PM UTC
+        current_time = pytz.UTC.localize(datetime(2024, 1, 1, 12, 0, 0))
+
+        # Call without reset_hour, should use default intervals [4, 9, 14, 18, 23]
+        reset_time = handler.get_next_reset_time(current_time, reset_hour=None)
+
+        # Next interval after 12:00 should be 14:00 (2 PM)
+        expected = pytz.UTC.localize(datetime(2024, 1, 1, 14, 0, 0))
+        assert reset_time == expected
+
+    def test_default_intervals_wrap_to_next_day(self) -> None:
+        """Test default intervals wrapping to next day."""
+        handler = TimezoneHandler("UTC")
+        # Set current time to 11:00 PM UTC (after last interval of 23:00)
+        current_time = pytz.UTC.localize(datetime(2024, 1, 1, 23, 30, 0))
+
+        # Call without reset_hour
+        reset_time = handler.get_next_reset_time(current_time, reset_hour=None)
+
+        # Should wrap to first interval (4:00) of next day
+        expected = pytz.UTC.localize(datetime(2024, 1, 2, 4, 0, 0))
+        assert reset_time == expected
+
+    def test_timezone_conversion(self) -> None:
+        """Test proper timezone handling."""
+        handler = TimezoneHandler("UTC")
+        # Set current time in UTC
+        current_time = pytz.UTC.localize(
+            datetime(2024, 1, 1, 4, 0, 0)
+        )  # 4 AM UTC = 1 PM Seoul
+
+        # Get reset for 15:00 (3 PM) in Seoul timezone
+        reset_time = handler.get_next_reset_time(
+            current_time, reset_hour=15, timezone_str="Asia/Seoul"
+        )
+
+        # Should return 3 PM Seoul time, converted back to UTC timezone
+        # 3 PM Seoul = 6 AM UTC
+        expected_utc = pytz.UTC.localize(datetime(2024, 1, 1, 6, 0, 0))
+        assert reset_time == expected_utc
+
+    def test_invalid_timezone_fallback(self) -> None:
+        """Test fallback behavior for invalid timezone."""
+        handler = TimezoneHandler("UTC")
+        current_time = pytz.UTC.localize(datetime(2024, 1, 1, 10, 0, 0))
+
+        with patch("claude_monitor.utils.time_utils.logger") as mock_logger:
+            # Should fall back to handler's default timezone
+            reset_time = handler.get_next_reset_time(
+                current_time, reset_hour=15, timezone_str="Invalid/Timezone"
+            )
+
+            # Should still return a valid datetime
+            assert isinstance(reset_time, datetime)
+            assert reset_time.tzinfo is not None
+            mock_logger.warning.assert_called()
+
+    def test_invalid_reset_hour(self) -> None:
+        """Test handling of invalid reset hour values."""
+        handler = TimezoneHandler("UTC")
+        current_time = pytz.UTC.localize(datetime(2024, 1, 1, 10, 0, 0))
+
+        with patch("claude_monitor.utils.time_utils.logger") as mock_logger:
+            # Test invalid hour (25)
+            reset_time = handler.get_next_reset_time(
+                current_time, reset_hour=25, timezone_str="UTC"
+            )
+
+            # Should fall back to default intervals
+            assert isinstance(reset_time, datetime)
+            mock_logger.warning.assert_called()
+
+    def test_naive_datetime_input(self) -> None:
+        """Test handling of naive datetime input."""
+        handler = TimezoneHandler("America/New_York")
+        # Provide naive datetime
+        current_time = datetime(2024, 1, 1, 10, 0, 0)
+
+        reset_time = handler.get_next_reset_time(
+            current_time, reset_hour=15, timezone_str="America/New_York"
+        )
+
+        # Should handle naive datetime and return timezone-aware result
+        assert isinstance(reset_time, datetime)
+        assert reset_time.tzinfo is not None
+
+    def test_error_handling_fallback(self) -> None:
+        """Test error handling with fallback to original behavior."""
+        handler = TimezoneHandler("UTC")
+        current_time = pytz.UTC.localize(datetime(2024, 1, 1, 10, 0, 0))
+
+        # Mock an exception in the timezone localization
+        with patch.object(
+            handler,
+            "_validate_and_get_tz",
+            side_effect=Exception("Test error"),
+        ):
+            with patch(
+                "claude_monitor.error_handling.report_error"
+            ) as mock_report:
+                reset_time = handler.get_next_reset_time(
+                    current_time, reset_hour=15, timezone_str="UTC"
+                )
+
+                # Should fall back to current_time + 5 hours
+                expected = current_time + timedelta(hours=5)
+                assert reset_time == expected
+                mock_report.assert_called_once()
+
+    def test_different_timezone_combinations(self) -> None:
+        """Test various timezone combinations."""
+        handler = TimezoneHandler("Europe/London")
+
+        test_cases = [
+            ("US/Eastern", 9),  # Eastern Standard Time, 9 AM
+            ("Asia/Tokyo", 18),  # Japan Standard Time, 6 PM
+            ("Australia/Sydney", 7),  # Australian Eastern Time, 7 AM
+            ("Europe/Berlin", 14),  # Central European Time, 2 PM
+        ]
+
+        for tz_str, reset_hour in test_cases:
+            current_time = pytz.timezone("Europe/London").localize(
+                datetime(2024, 6, 15, 12, 0, 0)  # Use summer time to test DST
+            )
+
+            reset_time = handler.get_next_reset_time(
+                current_time, reset_hour=reset_hour, timezone_str=tz_str
+            )
+
+            # Should return a valid timezone-aware datetime
+            assert isinstance(reset_time, datetime)
+            assert reset_time.tzinfo is not None
+
+            # The reset time should be after current time or the same day if before reset hour
+            # Convert reset time to the target timezone for comparison
+            target_tz = pytz.timezone(tz_str)
+            reset_target = reset_time.astimezone(target_tz)
+
+            # Reset should be at the correct hour
+            assert reset_target.hour == reset_hour
+            assert reset_target.minute == 0
+            assert reset_target.second == 0

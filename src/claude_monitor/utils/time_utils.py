@@ -7,7 +7,7 @@ import os
 import platform
 import re
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set, Union
 
 import pytz
@@ -456,6 +456,119 @@ class TimezoneHandler:
         fmt: str = "%Y-%m-%d %I:%M:%S %p %Z" if use_12_hour else "%Y-%m-%d %H:%M:%S %Z"
 
         return dt.strftime(fmt)
+
+    def get_next_reset_time(
+        self,
+        current_time: datetime,
+        reset_hour: Optional[int] = None,
+        timezone_str: Optional[str] = None,
+    ) -> datetime:
+        """Calculate the next reset time based on reset hour and timezone.
+
+        Args:
+            current_time: Current time (should be timezone-aware)
+            reset_hour: Hour of day for reset (0-23). If None, uses 5-hour intervals
+            timezone_str: Timezone for reset calculation. If None, uses default
+
+        Returns:
+            Next reset time as timezone-aware datetime
+
+        Example:
+            >>> handler = TimezoneHandler()
+            >>> now = datetime.now(pytz.UTC)
+            >>> # Get next 13:00 (1 PM) in Asia/Seoul
+            >>> reset = handler.get_next_reset_time(now, reset_hour=13, timezone_str="Asia/Seoul")
+        """
+        from claude_monitor.error_handling import report_error
+
+        try:
+            # Determine target timezone
+            if timezone_str:
+                target_tz = self._validate_and_get_tz(timezone_str)
+            else:
+                target_tz = self.default_tz
+
+            # Ensure current_time is timezone-aware
+            if current_time.tzinfo is None:
+                current_time = self.default_tz.localize(current_time)
+
+            # Convert current time to target timezone
+            target_time = current_time.astimezone(target_tz)
+
+            if reset_hour is not None:
+                # Validate reset_hour
+                if not (0 <= reset_hour <= 23):
+                    logger.warning(
+                        f"Invalid reset_hour {reset_hour}, using default intervals"
+                    )
+                    reset_hour = None
+                else:
+                    # Use single daily reset at custom hour
+                    reset_hours = [reset_hour]
+
+            if reset_hour is None:
+                # Default 5-hour intervals from the original implementation
+                reset_hours = [4, 9, 14, 18, 23]
+
+            # Get current hour, minute, and second
+            current_hour = target_time.hour
+            current_minute = target_time.minute
+            current_second = target_time.second
+
+            # Find next reset hour
+            next_reset_hour = None
+            for hour in reset_hours:
+                if current_hour < hour or (
+                    current_hour == hour and current_minute == 0 and current_second == 0
+                ):
+                    next_reset_hour = hour
+                    break
+
+            # If no reset hour found today, use first one tomorrow
+            if next_reset_hour is None:
+                next_reset_hour = reset_hours[0]
+                next_reset_date = target_time.date() + timedelta(days=1)
+            else:
+                next_reset_date = target_time.date()
+
+            # Create next reset datetime in target timezone
+            try:
+                next_reset = target_tz.localize(
+                    datetime.combine(
+                        next_reset_date,
+                        datetime.min.time().replace(hour=next_reset_hour),
+                    ),
+                    is_dst=None,
+                )
+            except Exception as e:
+                logger.warning(
+                    f"DST handling issue: {e}, using naive datetime"
+                )
+                naive_dt = datetime.combine(
+                    next_reset_date,
+                    datetime.min.time().replace(hour=next_reset_hour),
+                )
+                next_reset = target_tz.localize(naive_dt)
+
+            # Convert back to the original timezone if needed
+            if current_time.tzinfo != target_tz:
+                next_reset = next_reset.astimezone(current_time.tzinfo)
+
+            return next_reset
+
+        except Exception as e:
+            report_error(
+                exception=e,
+                component="TimezoneHandler",
+                context_name="get_next_reset_time",
+                context_data={
+                    "reset_hour": reset_hour,
+                    "timezone_str": timezone_str,
+                    "current_time": str(current_time),
+                },
+            )
+            # Fallback: return current time + 5 hours (original behavior)
+            return current_time + timedelta(hours=5)
 
 
 def get_time_format_preference(args: Any = None) -> bool:
