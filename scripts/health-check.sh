@@ -54,77 +54,77 @@ log_success() {
 # Health check functions
 check_data_access() {
     log_info "Checking data directory access..."
-    
+
     if [[ ! -d "$DATA_PATH" ]]; then
         log_error "Data directory does not exist: $DATA_PATH"
         return $EXIT_CRITICAL
     fi
-    
+
     if [[ ! -r "$DATA_PATH" ]]; then
         log_error "Data directory is not readable: $DATA_PATH"
         return $EXIT_CRITICAL
     fi
-    
+
     log_success "Data directory accessible"
     return $EXIT_OK
 }
 
 check_jsonl_files() {
     log_info "Checking for .jsonl files..."
-    
+
     local jsonl_count
     jsonl_count=$(find "$DATA_PATH" -name "*.jsonl" -type f 2>/dev/null | wc -l)
-    
+
     if [[ $jsonl_count -eq 0 ]]; then
         log_warn "No .jsonl files found in $DATA_PATH"
         return $EXIT_WARNING
     fi
-    
+
     log_success "Found $jsonl_count .jsonl files"
     return $EXIT_OK
 }
 
 check_python_imports() {
     log_info "Checking Python module imports..."
-    
+
     # Test critical imports
     local import_errors=0
-    
+
     # Check claude_monitor import
     if ! python -c "import claude_monitor" 2>/dev/null; then
         log_error "Failed to import claude_monitor module"
         ((import_errors++))
     fi
-    
+
     # Check api import
     if ! python -c "from claude_monitor.data.analysis import analyze_usage" 2>/dev/null; then
         log_error "Failed to import analyze_usage function"
         ((import_errors++))
     fi
-    
+
     # Check dependencies
     if ! python -c "import rich" 2>/dev/null; then
         log_error "Failed to import rich module"
         ((import_errors++))
     fi
-    
+
     if ! python -c "import pytz" 2>/dev/null; then
         log_error "Failed to import pytz module"
         ((import_errors++))
     fi
-    
+
     if [[ $import_errors -gt 0 ]]; then
         log_error "$import_errors import(s) failed"
         return $EXIT_CRITICAL
     fi
-    
+
     log_success "All Python imports successful"
     return $EXIT_OK
 }
 
 check_analysis_function() {
     log_info "Testing analysis function..."
-    
+
     # Create a temporary test to ensure the analysis function works
     local test_result
     if test_result=$(timeout "$TIMEOUT" python -c "
@@ -156,9 +156,9 @@ except Exception as e:
 
 check_file_permissions() {
     log_info "Checking file permissions..."
-    
+
     local permission_errors=0
-    
+
     # Check read access to .jsonl files
     while IFS= read -r -d '' file; do
         if [[ ! -r "$file" ]]; then
@@ -166,27 +166,27 @@ check_file_permissions() {
             ((permission_errors++))
         fi
     done < <(find "$DATA_PATH" -name "*.jsonl" -type f -print0 2>/dev/null)
-    
+
     if [[ $permission_errors -gt 0 ]]; then
         log_warn "$permission_errors file(s) have permission issues"
         return $EXIT_WARNING
     fi
-    
+
     log_success "File permissions OK"
     return $EXIT_OK
 }
 
 check_environment_variables() {
     log_info "Checking environment variables..."
-    
+
     local env_warnings=0
-    
+
     # Check required environment variables
     if [[ -z "${CLAUDE_DATA_PATH:-}" ]]; then
         log_warn "CLAUDE_DATA_PATH not set"
         ((env_warnings++))
     fi
-    
+
     # Check optional but important variables
     local important_vars=("CLAUDE_PLAN" "CLAUDE_TIMEZONE" "CLAUDE_THEME")
     for var in "${important_vars[@]}"; do
@@ -194,29 +194,29 @@ check_environment_variables() {
             log_info "$var not set (using default)"
         fi
     done
-    
+
     if [[ $env_warnings -gt 0 ]]; then
         log_warn "$env_warnings environment variable(s) missing"
         return $EXIT_WARNING
     fi
-    
+
     log_success "Environment variables OK"
     return $EXIT_OK
 }
 
 check_disk_space() {
     log_info "Checking disk space..."
-    
+
     # Check available space in data directory
     local available_kb
     available_kb=$(df "$DATA_PATH" | tail -1 | awk '{print $4}')
     local available_mb=$((available_kb / 1024))
-    
+
     if [[ $available_mb -lt 100 ]]; then
         log_warn "Low disk space: ${available_mb}MB available"
         return $EXIT_WARNING
     fi
-    
+
     log_success "Disk space OK (${available_mb}MB available)"
     return $EXIT_OK
 }
@@ -239,9 +239,9 @@ run_health_checks() {
     local checks_passed=0
     local checks_failed=0
     local checks_warned=0
-    
+
     log_info "Starting health checks..."
-    
+
     # Define checks to run
     local checks=(
         "check_data_access"
@@ -252,7 +252,7 @@ run_health_checks() {
         "check_environment_variables"
         "check_disk_space"
     )
-    
+
     # Run each check
     for check in "${checks[@]}"; do
         if $check; then
@@ -276,7 +276,7 @@ run_health_checks() {
             overall_status=$EXIT_CRITICAL
         fi
     done
-    
+
     # Summary
     echo ""
     echo "Health Check Summary:"
@@ -285,7 +285,7 @@ run_health_checks() {
     echo "  Failed: $checks_failed"
     echo "  Memory Usage: $(get_memory_usage)"
     echo "  Load Average: $(get_load_average)"
-    
+
     case $overall_status in
         "$EXIT_OK")
             echo -e "${GREEN}✅ All health checks passed${NC}"
@@ -297,7 +297,7 @@ run_health_checks() {
             echo -e "${RED}❌ Health checks failed${NC}"
             ;;
     esac
-    
+
     return $overall_status
 }
 

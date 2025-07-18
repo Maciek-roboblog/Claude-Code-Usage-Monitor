@@ -115,23 +115,23 @@ validate_volume() {
     log_info "Validating volume setup..."
     log_info "Data path: $DATA_PATH"
     log_info "Container path: $CONTAINER_PATH"
-    
+
     # Check if data path exists
     if [[ ! -d "$DATA_PATH" ]]; then
         log_error "Data directory does not exist: $DATA_PATH"
         return 1
     fi
-    
+
     # Check permissions
     if [[ ! -r "$DATA_PATH" ]]; then
         log_error "Data directory is not readable: $DATA_PATH"
         return 1
     fi
-    
+
     # Count .jsonl files
     local jsonl_count
     jsonl_count=$(find "$DATA_PATH" -name "*.jsonl" -type f 2>/dev/null | wc -l)
-    
+
     if [[ $jsonl_count -eq 0 ]]; then
         log_warn "No .jsonl files found in $DATA_PATH"
         log_warn "Make sure your Claude data directory contains usage data files"
@@ -139,7 +139,7 @@ validate_volume() {
     else
         log_success "Found $jsonl_count .jsonl files in data directory"
     fi
-    
+
     # Check file readability
     local readable_count=0
     while IFS= read -r -d '' file; do
@@ -147,18 +147,18 @@ validate_volume() {
             ((readable_count++))
         fi
     done < <(find "$DATA_PATH" -name "*.jsonl" -type f -print0 2>/dev/null)
-    
+
     if [[ $readable_count -lt $jsonl_count ]]; then
         log_warn "Some .jsonl files are not readable"
     else
         log_success "All .jsonl files are readable"
     fi
-    
+
     # Show example Docker command
     log_info ""
     log_info "Docker command for this setup:"
     echo "docker run -it --rm -v \"$DATA_PATH:$CONTAINER_PATH:ro\" claude-monitor"
-    
+
     return 0
 }
 
@@ -170,18 +170,18 @@ show_info() {
     echo "  Local path: $DATA_PATH"
     echo "  Container path: $CONTAINER_PATH"
     echo ""
-    
+
     # Check if path exists
     if [[ -d "$DATA_PATH" ]]; then
         echo "Directory Status:"
         echo "  Exists: ✅ Yes"
         echo "  Readable: $([ -r "$DATA_PATH" ] && echo "✅ Yes" || echo "❌ No")"
         echo "  Size: $(du -sh "$DATA_PATH" 2>/dev/null | cut -f1 || echo "Unknown")"
-        
+
         local jsonl_count
         jsonl_count=$(find "$DATA_PATH" -name "*.jsonl" -type f 2>/dev/null | wc -l)
         echo "  .jsonl files: $jsonl_count"
-        
+
         if [[ $jsonl_count -gt 0 ]]; then
             echo ""
             echo "Recent files (last 5):"
@@ -195,7 +195,7 @@ show_info() {
         echo "Directory Status:"
         echo "  Exists: ❌ No"
     fi
-    
+
     echo ""
     echo "Docker Commands:"
     echo "  Basic run:"
@@ -218,19 +218,19 @@ init_test_data() {
         log_info "Check-only mode: would create test data in $DATA_PATH"
         return 0
     fi
-    
+
     log_info "Initializing test data in $DATA_PATH"
-    
+
     # Create directory if it doesn't exist
     if [[ ! -d "$DATA_PATH" ]]; then
         log_info "Creating directory: $DATA_PATH"
         mkdir -p "$DATA_PATH"
     fi
-    
+
     # Create a sample .jsonl file for testing
     local test_file
     test_file="$DATA_PATH/test-usage-$(date +%Y%m%d).jsonl"
-    
+
     if [[ -f "$test_file" ]]; then
         log_warn "Test file already exists: $test_file"
     else
@@ -242,7 +242,7 @@ init_test_data() {
 EOF
         log_success "Test data created successfully"
     fi
-    
+
     log_info "Test data initialization complete"
     validate_volume
 }

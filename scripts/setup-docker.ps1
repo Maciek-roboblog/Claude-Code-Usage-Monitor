@@ -424,4 +424,3 @@ $script:ClaudeDataPath = $DataPath
 
 # Script execution
 Main
-

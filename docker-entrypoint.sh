@@ -42,20 +42,20 @@ trap cleanup SIGTERM SIGINT SIGQUIT
 # Validate required environment variables
 validate_environment() {
     log_info "Validating environment configuration..."
-    
+
     # Validate CLAUDE_DATA_PATH
     if [[ -z "${CLAUDE_DATA_PATH:-}" ]]; then
         log_error "CLAUDE_DATA_PATH environment variable is not set"
         exit 1
     fi
-    
+
     if [[ ! -d "${CLAUDE_DATA_PATH}" ]]; then
         log_error "Data directory ${CLAUDE_DATA_PATH} does not exist or is not accessible"
         log_error "Please ensure you've mounted Claude data directory to /data"
         log_error "Example: docker run -v ~/.claude/projects:/data claude-monitor"
         exit 1
     fi
-    
+
     # Check for .jsonl files with optimized command chaining
     if ! find "${CLAUDE_DATA_PATH}" -name "*.jsonl" -type f | head -1 | grep -q .; then
         log_warn "No .jsonl files found in ${CLAUDE_DATA_PATH}" && \
@@ -65,7 +65,7 @@ validate_environment() {
         jsonl_count=$(find "${CLAUDE_DATA_PATH}" -name "*.jsonl" -type f | wc -l) && \
         log_success "Found ${jsonl_count} .jsonl files in data directory"
     fi
-    
+
     # Validate CLAUDE_PLAN
     if [[ -n "${CLAUDE_PLAN:-}" ]]; then
         case "${CLAUDE_PLAN}" in
@@ -78,7 +78,7 @@ validate_environment() {
                 ;;
         esac
     fi
-    
+
     # Validate CLAUDE_THEME
     if [[ -n "${CLAUDE_THEME:-}" ]]; then
         case "${CLAUDE_THEME}" in
@@ -91,7 +91,7 @@ validate_environment() {
                 ;;
         esac
     fi
-    
+
     # Validate CLAUDE_REFRESH_INTERVAL
     if [[ -n "${CLAUDE_REFRESH_INTERVAL:-}" ]]; then
         if ! [[ "${CLAUDE_REFRESH_INTERVAL}" =~ ^[0-9]+$ ]] || [[ "${CLAUDE_REFRESH_INTERVAL}" -lt 1 ]]; then
@@ -104,7 +104,7 @@ validate_environment() {
 # Test application startup
 test_application() {
     log_info "Testing application startup..."
-    
+
     # Optimized startup test with command chaining
     if python -c "from claude_monitor.data.analysis import analyze_usage; result = analyze_usage(); print('✓ Analysis successful: {} blocks found'.format(len(result.get('blocks', []))))" 2>/dev/null && \
        log_success "Application startup test passed"; then
@@ -120,7 +120,7 @@ test_application() {
 initialize() {
     log_info "🐳 Claude Code Usage Monitor - Docker Container Starting"
     log_info "Version: 3.0.4"
-    
+
     # Debug mode logging with optimized checks
     if [[ "${CLAUDE_DEBUG_MODE:-false}" == "true" ]]; then
         log_info "Debug mode enabled" && \
@@ -131,7 +131,7 @@ initialize() {
         log_info "  CLAUDE_THEME=${CLAUDE_THEME:-unset}" && \
         log_info "  CLAUDE_REFRESH_INTERVAL=${CLAUDE_REFRESH_INTERVAL:-unset}"
     fi
-    
+
     # Initialize with optimized validation chain
     validate_environment && \
     test_application && \
@@ -141,22 +141,22 @@ initialize() {
 # Build command line arguments from environment variables
 build_args() {
     local args=()
-    
+
     if [[ -n "${CLAUDE_PLAN:-}" ]]; then
         args+=("--plan")
         args+=("${CLAUDE_PLAN}")
     fi
-    
+
     if [[ -n "${CLAUDE_TIMEZONE:-}" ]]; then
         args+=("--timezone")
         args+=("${CLAUDE_TIMEZONE}")
     fi
-    
+
     if [[ -n "${CLAUDE_THEME:-}" ]]; then
         args+=("--theme")
         args+=("${CLAUDE_THEME}")
     fi
-    
+
     printf '%s\n' "${args[@]}"
 }
 
@@ -164,18 +164,18 @@ build_args() {
 main() {
     # Initialize container
     initialize
-    
+
     # If no arguments provided, use default behavior
     if [[ $# -eq 0 ]]; then
         log_info "Starting Claude Code Usage Monitor..."
-        
+
         # Build arguments from environment variables
         mapfile -t cmd_args < <(build_args)
-        
+
         if [[ "${CLAUDE_DEBUG_MODE:-false}" == "true" ]]; then
             log_info "Executing: python -m claude_monitor ${cmd_args[*]}"
         fi
-        
+
         # Execute the main application with signal handling
         exec python -m claude_monitor "${cmd_args[@]}"
     else

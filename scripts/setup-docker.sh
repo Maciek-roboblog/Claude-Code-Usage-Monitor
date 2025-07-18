@@ -55,35 +55,35 @@ detect_compose_command() {
 # Prerequisite checks
 check_prerequisites() {
     log_info "Checking prerequisites..."
-    
+
     # Check Docker
     if ! command -v docker &> /dev/null; then
         log_error "Docker is not installed. Please install Docker Desktop."
         exit 1
     fi
-    
+
     # Detect and set compose command
     detect_compose_command
-    
+
     # Check Docker Compose (v1 or v2) using the previously detected command
     if ! ${compose_cmd} version &> /dev/null; then
         log_error "Docker Compose is not installed or not functioning."
         exit 1
     fi
-    
+
     # Check if Docker is running
     if ! docker info &> /dev/null; then
         log_error "Docker is not running. Please start Docker Desktop."
         exit 1
     fi
-    
+
     log_success "Prerequisites verified (using: $compose_cmd)"
 }
 
 # Automatic detection of Claude data
 detect_claude_data() {
     log_info "Detecting Claude data..."
-    
+
     local claude_paths=(
         "$HOME/.claude/projects"
         "$HOME/.config/claude/projects"
@@ -91,7 +91,7 @@ detect_claude_data() {
         "$HOME/AppData/Local/Claude/projects"
         "$HOME/AppData/Roaming/Claude/projects"
     )
-    
+
     for path in "${claude_paths[@]}"; do
         shopt -s nullglob
         jsonl_files=("$path"/*.jsonl)
@@ -102,27 +102,27 @@ detect_claude_data() {
             return 0
         fi
     done
-    
+
     # Advanced search
     log_warning "Advanced search for Claude data..."
     local found_path
     found_path=$(find "$HOME" -maxdepth 5 -name "*.jsonl" -path "*claude*" -print -quit 2>/dev/null | head -1)
-    
+
     if [ -n "$found_path" ]; then
         CLAUDE_DATA_PATH=$(dirname "$found_path")
         log_success "Claude data found: $CLAUDE_DATA_PATH"
         return 0
     fi
-    
+
     log_warning "No Claude data found automatically."
-    
+
     if [[ ${quiet:-false} == true ]]; then
         log_error "Claude data path required in quiet mode. Use --data-path option."
         exit 1
     fi
-    
+
     read -p "Please enter the path to your Claude data: " CLAUDE_DATA_PATH
-    
+
     if [ ! -d "$CLAUDE_DATA_PATH" ]; then
         log_error "The specified path does not exist: $CLAUDE_DATA_PATH"
         exit 1
@@ -132,21 +132,21 @@ detect_claude_data() {
 # Cleanup existing resources
 cleanup_existing() {
     log_info "Cleaning up existing resources..."
-    
+
     # Stop existing containers
     docker stop "$CONTAINER_NAME" 2>/dev/null || true
     ${compose_cmd} down 2>/dev/null || true
-    
+
     # Remove existing containers
     docker rm "$CONTAINER_NAME" 2>/dev/null || true
-    
+
     log_success "Cleanup complete"
 }
 
 # Build Docker image
 build_image() {
     log_info "Building Docker image..."
-    
+
     # Build with optimizations
     DOCKER_BUILDKIT=1 docker build \
         --target runtime \
@@ -156,9 +156,9 @@ build_image() {
         log_error "Image build failed"
         exit 1
     }
-    
+
     log_success "Docker image built: $IMAGE_NAME:latest"
-    
+
     # Show image size
     local image_size
     image_size=$(docker images "$IMAGE_NAME:latest" --format "table {{.Size}}" | tail -1)
@@ -168,7 +168,7 @@ build_image() {
 # Docker Compose configuration
 setup_compose() {
     log_info "Configuring Docker Compose..."
-    
+
     # Create a local .env file if needed
     if [ ! -f ".env" ]; then
         cat > .env << EOF
@@ -182,13 +182,13 @@ COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT
 EOF
         log_success ".env file created"
     fi
-    
+
     # Validate configuration
     ${compose_cmd} config > /dev/null || {
         log_error "Invalid Docker Compose configuration"
         exit 1
     }
-    
+
     log_success "Docker Compose configuration validated"
 }
 
@@ -226,7 +226,7 @@ test_installation() {
 # Start the service
 start_service() {
     log_info "Starting Claude Monitor service..."
-    
+
     # In quiet mode, default to background mode
     if [[ ${quiet:-false} == true ]]; then
         log_info "Starting in background mode (quiet mode)..."
@@ -236,7 +236,7 @@ start_service() {
         log_info "Use '${compose_cmd} down' to stop"
         return
     fi
-    
+
     quiet_echo
     quiet_echo "Choose startup mode:"
     quiet_echo "1) Interactive mode (docker run)"
@@ -244,7 +244,7 @@ start_service() {
     quiet_echo "3) Background mode (${compose_cmd} -d)"
     quiet_echo
     read -p "Your choice (1-3): " choice
-    
+
     case $choice in
         1)
             log_info "Starting in interactive mode..."
@@ -305,7 +305,7 @@ main() {
     local build_only=false
     local no_start=false
     local quiet=false
-    
+
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -345,38 +345,38 @@ main() {
                 ;;
         esac
     done
-    
+
     quiet_echo "Docker Configuration - $PROJECT_NAME"
     quiet_echo "=================================================="
     quiet_echo
-    
+
     check_prerequisites
-    
+
     if [ "$cleanup_only" = true ]; then
         cleanup_existing
         log_success "Cleanup complete"
         exit 0
     fi
-    
+
     if [ -z "${CLAUDE_DATA_PATH:-}" ]; then
         detect_claude_data
     fi
-    
+
     cleanup_existing
     build_image
-    
+
     if [ "$build_only" = true ]; then
         log_success "Build complete"
         exit 0
     fi
-    
+
     setup_compose
     test_installation
-    
+
     if [ "$no_start" = false ]; then
         start_service
     fi
-    
+
     quiet_echo
     quiet_echo "=================================================="
     log_success "Docker configuration completed successfully!"
