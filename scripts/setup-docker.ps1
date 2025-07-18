@@ -417,7 +417,7 @@ function Main {
     Write-Host "  docker-compose up                             # Start"
     Write-Host "  docker-compose down                           # Stop"
     Write-Host "  docker-compose logs -f                        # View logs"
-    Write-Host "  docker exec -it $ContainerName bash           # Enter the container"
+    Write-Host "  docker exec -it $ContainerName bash     # Enter the container"
 }
 # Global variables
 $script:ClaudeDataPath = $DataPath

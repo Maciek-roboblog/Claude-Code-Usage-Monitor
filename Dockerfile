@@ -22,7 +22,6 @@ WORKDIR /build
 
 # Copy dependency files first for better caching
 COPY pyproject.toml ./
-COPY uv.lock ./
 COPY README.md ./
 
 # Copy source code
