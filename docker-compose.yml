@@ -1,0 +1,70 @@
+services:
+  claude-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: claude-monitor:latest
+    container_name: claude-usage-monitor
+    
+    # Environment variables - customize as needed
+    environment:
+      # Claude plan type (pro, max5, max20, custom_max)
+      CLAUDE_PLAN: "pro"
+      
+      # Timezone for display (examples: Europe/Warsaw, US/Eastern, Asia/Tokyo, UTC)
+      CLAUDE_TIMEZONE: "UTC"
+      
+      # Theme (light, dark, auto)
+      CLAUDE_THEME: "auto"
+      
+      # Refresh interval in seconds
+      CLAUDE_REFRESH_INTERVAL: "10"
+      
+      # Debug mode (true/false)
+      CLAUDE_DEBUG_MODE: "false"
+      
+      # Data path inside container (should match volume mount)
+      CLAUDE_DATA_PATH: "/data"
+    
+    # Volume mounts - CRITICAL: Mount your Claude data directory
+    volumes:
+      # Mount your local Claude data directory to /data in container
+      # Adjust the left side path to match your Claude data location
+      - ${CLAUDE_PROJECTS_DIR:-~/.claude/projects}:/data:ro
+      
+      # Alternative mount examples (uncomment and adjust as needed):
+      # - ~/.config/claude/projects:/data:ro    # Alternative Claude location
+      # - /custom/path/to/claude/data:/data:ro  # Custom path
+      # - claude-data:/data                     # Named volume (see volumes section)
+    
+    # Resource limits (optional - uncomment for production)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+    # Restart policy
+    restart: unless-stopped
+    
+    # Interactive terminal support
+    stdin_open: true
+    tty: true
+    
+    # Health check - Use the script defined in Dockerfile instead of inline command
+    # healthcheck:
+    #   test: ["CMD", "python", "-c", "from claude_monitor.data.analysis import analyze_usage; analyze_usage()"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 10s
+
+# Named volumes (optional)
+# Uncomment if you prefer to use named volumes instead of bind mounts
+# volumes:
+#   claude-data:
+#     driver: local

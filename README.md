@@ -18,6 +18,7 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage with ad
   - [⚡ Modern Installation with uv (Recommended)](#-modern-installation-with-uv-recommended)
   - [📦 Installation with pip](#-installation-with-pip)
   - [🛠️ Other Package Managers](#️-other-package-managers)
+  - [� Docker Installation (Containerized)](#-docker-installation-containerized)
 - [📖 Usage](#-usage)
   - [Get Help](#get-help)
   - [Basic Usage](#basic-usage)
@@ -35,6 +36,7 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage with ad
 - [🔧 Development Installation](#-development-installation)
 - [Troubleshooting](#troubleshooting)
   - [Installation Issues](#installation-issues)
+  - [Docker Issues](#docker-issues)
   - [Runtime Issues](#runtime-issues)
 - [📞 Contact](#-contact)
 - [📚 Additional Documentation](#-additional-documentation)
@@ -274,6 +276,24 @@ ccm                  # Shortest alias
 #### Development mode
 If running from source, use python -m claude_monitor from the src/ directory.
 
+#### With Docker
+
+```bash
+# Quick start with Docker
+docker run -it --rm \
+  -v ~/.claude/projects:/data:ro \
+  claude-monitor
+
+# With Docker Compose (background service)
+docker-compose up -d
+docker logs claude-usage-monitor -f
+
+# Windows PowerShell
+docker run -it --rm \
+  -v "$env:USERPROFILE\.claude\projects:/data:ro" \
+  claude-monitor
+```
+
 ### Configuration Options
 
 #### Specify Your Plan
@@ -353,6 +373,38 @@ claude-monitor --log-file ~/.claude-monitor/logs/monitor.log
 
 # Set log level
 claude-monitor --log-level WARNING  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+```
+
+#### Docker Configuration Examples
+
+All command-line options can be used with Docker via environment variables:
+
+```bash
+# Plan configuration
+docker run -it --rm \
+  -v ~/.claude/projects:/data:ro \
+  -e CLAUDE_PLAN=max5 \
+  claude-monitor
+
+# Timezone and theme
+docker run -it --rm \
+  -v ~/.claude/projects:/data:ro \
+  -e CLAUDE_TIMEZONE=US/Eastern \
+  -e CLAUDE_THEME=dark \
+  claude-monitor
+
+# Complete configuration
+docker run -it --rm \
+  -v ~/.claude/projects:/data:ro \
+  -e CLAUDE_PLAN=max20 \
+  -e CLAUDE_TIMEZONE=Europe/London \
+  -e CLAUDE_THEME=light \
+  -e CLAUDE_REFRESH_INTERVAL=5 \
+  -e CLAUDE_DEBUG_MODE=true \
+  claude-monitor
+
+# With Docker Compose (edit docker-compose.yml)
+docker-compose up
 ```
 
 ### Available Plans
