@@ -197,4 +197,3 @@ msgstr "La limite de coût sera dépassée avant la réinitialisation !"
 #: src/claude_monitor/ui/session_display.py:447
 msgid "No active session"
 msgstr "Aucune session active"
-

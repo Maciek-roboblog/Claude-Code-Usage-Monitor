@@ -188,4 +188,3 @@ msgstr ""
 #: src/claude_monitor/ui/session_display.py:447
 msgid "No active session"
 msgstr ""
-
