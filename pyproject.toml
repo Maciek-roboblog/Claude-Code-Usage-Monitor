@@ -45,7 +45,8 @@ dependencies = [
   "pytz>=2023.3",
   "rich>=13.7.0",
   "tomli>=1.2.0; python_version < '3.11'",
-  "tzdata; sys_platform == 'win32'"
+  "tzdata; sys_platform == 'win32'",
+  "importlib-resources>=1.3.0; python_version < '3.9'"
 ]
 
 [project.optional-dependencies]
@@ -62,7 +63,8 @@ dev = [
   "pytest-xdist>=3.6.0",
   "ruff>=0.12.0",
   "build>=0.10.0",
-  "twine>=4.0.0"
+  "twine>=4.0.0",
+  "polib>=1.1.0",
 ]
 test = [
   "pytest>=8.0.0",
@@ -95,7 +97,7 @@ include = ["claude_monitor*"]
 exclude = ["tests*", "src/tests*"]
 
 [tool.setuptools.package-data]
-claude_monitor = ["py.typed"]
+claude_monitor = ["py.typed", "locales/**/*.mo"]
 
 [tool.black]
 line-length = 88

@@ -11,8 +11,6 @@ import pytz
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from claude_monitor import __version__
-
 logger = logging.getLogger(__name__)
 
 
@@ -29,6 +27,7 @@ class LastUsedParams:
         try:
             params = {
                 "theme": settings.theme,
+                "language": settings.language,
                 "timezone": settings.timezone,
                 "time_format": settings.time_format,
                 "refresh_rate": settings.refresh_rate,
@@ -130,6 +129,11 @@ class Settings(BaseSettings):
     theme: Literal["light", "dark", "classic", "auto"] = Field(
         default="auto",
         description="Display theme (light, dark, classic, auto)",
+    )
+
+    language: Literal["auto", "en", "fr", "es", "de"] = Field(
+        default="auto",
+        description="Language for interface (auto, en, fr, es, de)",
     )
 
     custom_limit_tokens: Optional[int] = Field(
@@ -241,78 +245,88 @@ class Settings(BaseSettings):
     @classmethod
     def load_with_last_used(cls, argv: Optional[List[str]] = None) -> "Settings":
         """Load settings with last used params support (default behavior)."""
-        if argv and "--version" in argv:
-            print(f"claude-monitor {__version__}")
+        # Sauvegarder les arguments originaux
+        original_argv = None
+        if argv is not None:
             import sys
 
-            sys.exit(0)
+            original_argv = sys.argv[:]
+            sys.argv = [sys.argv[0]] + argv
 
-        clear_config = argv and "--clear" in argv
+        try:
+            clear_config = argv and "--clear" in argv
 
-        if clear_config:
-            last_used = LastUsedParams()
-            last_used.clear()
-            settings = cls(_cli_parse_args=argv)
-        else:
-            last_used = LastUsedParams()
-            last_params = last_used.load()
-
-            settings = cls(_cli_parse_args=argv)
-
-            cli_provided_fields = set()
-            if argv:
-                for _i, arg in enumerate(argv):
-                    if arg.startswith("--"):
-                        field_name = arg[2:].replace("-", "_")
-                        if field_name in cls.model_fields:
-                            cli_provided_fields.add(field_name)
-
-            for key, value in last_params.items():
-                if key == "plan":
-                    continue
-                if not hasattr(settings, key):
-                    continue
-                if key not in cli_provided_fields:
-                    setattr(settings, key, value)
-
-            if (
-                "plan" in cli_provided_fields
-                and settings.plan == "custom"
-                and "custom_limit_tokens" not in cli_provided_fields
-            ):
-                settings.custom_limit_tokens = None
-
-        if settings.timezone == "auto":
-            settings.timezone = cls._get_system_timezone()
-        if settings.time_format == "auto":
-            settings.time_format = cls._get_system_time_format()
-
-        if settings.debug:
-            settings.log_level = "DEBUG"
-
-        if settings.theme == "auto" or (
-            "theme" not in cli_provided_fields and not clear_config
-        ):
-            from claude_monitor.terminal.themes import (
-                BackgroundDetector,
-                BackgroundType,
-            )
-
-            detector = BackgroundDetector()
-            detected_bg = detector.detect_background()
-
-            if detected_bg == BackgroundType.LIGHT:
-                settings.theme = "light"
-            elif detected_bg == BackgroundType.DARK:
-                settings.theme = "dark"
+            if clear_config:
+                last_used = LastUsedParams()
+                last_used.clear()
+                settings = cls()
             else:
-                settings.theme = "auto"
+                last_used = LastUsedParams()
+                last_params = last_used.load()
 
-        if not clear_config:
-            last_used = LastUsedParams()
-            last_used.save(settings)
+                settings = cls()
 
-        return settings
+                cli_provided_fields = set()
+                if argv:
+                    for _i, arg in enumerate(argv):
+                        if arg.startswith("--"):
+                            field_name = arg[2:].replace("-", "_")
+                            if field_name in cls.model_fields:
+                                cli_provided_fields.add(field_name)
+
+                for key, value in last_params.items():
+                    if key == "plan":
+                        continue
+                    if not hasattr(settings, key):
+                        continue
+                    if key not in cli_provided_fields:
+                        setattr(settings, key, value)
+
+                if (
+                    "plan" in cli_provided_fields
+                    and settings.plan == "custom"
+                    and "custom_limit_tokens" not in cli_provided_fields
+                ):
+                    settings.custom_limit_tokens = None
+
+            if settings.timezone == "auto":
+                settings.timezone = cls._get_system_timezone()
+            if settings.time_format == "auto":
+                settings.time_format = cls._get_system_time_format()
+
+            if settings.debug:
+                settings.log_level = "DEBUG"
+
+            if settings.theme == "auto" or (
+                "theme" not in cli_provided_fields and not clear_config
+            ):
+                from claude_monitor.terminal.themes import (
+                    BackgroundDetector,
+                    BackgroundType,
+                )
+
+                detector = BackgroundDetector()
+                detected_bg = detector.detect_background()
+
+                if detected_bg == BackgroundType.LIGHT:
+                    settings.theme = "light"
+                elif detected_bg == BackgroundType.DARK:
+                    settings.theme = "dark"
+                else:
+                    settings.theme = "auto"
+
+            if not clear_config:
+                last_used = LastUsedParams()
+                last_used.save(settings)
+
+            return settings
+
+        finally:
+            # Restaurer les arguments originaux
+            if original_argv is not None:
+                import sys
+
+                sys.argv = original_argv
 
     def to_namespace(self) -> argparse.Namespace:
         """Convert to argparse.Namespace for compatibility."""

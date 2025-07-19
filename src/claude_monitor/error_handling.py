@@ -10,6 +10,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
+from claude_monitor.i18n import _
+
 
 class ErrorLevel(str, Enum):
     """Error severity levels for logging."""
@@ -43,7 +45,11 @@ def report_error(
 
     try:
         log_method(
-            f"Error in {component}: {exception}",
+            _(
+                "Error in {component}: {exception}",
+                component=component,
+                exception=str(exception),
+            ),
             exc_info=True,
             extra=extra_data,
         )

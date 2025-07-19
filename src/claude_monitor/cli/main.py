@@ -19,6 +19,7 @@ from claude_monitor.core.plans import Plans, PlanType, get_token_limit
 from claude_monitor.core.settings import Settings
 from claude_monitor.data.analysis import analyze_usage
 from claude_monitor.error_handling import report_error
+from claude_monitor.i18n import _, init_i18n
 from claude_monitor.monitoring.orchestrator import MonitoringOrchestrator
 from claude_monitor.terminal.manager import (
     enter_alternate_screen,
@@ -63,17 +64,71 @@ def discover_claude_data_paths(custom_paths: Optional[List[str]] = None) -> List
     return discovered_paths
 
 
+def extract_language_from_argv(argv: List[str]) -> Optional[str]:
+    """Extract --language argument from argv without full parsing.
+
+    This allows early i18n initialization before pydantic-settings parsing.
+
+    Args:
+        argv: Command line arguments
+
+    Returns:
+        Language code if found, None otherwise
+    """
+    try:
+        # Look for --language flag
+        if "--language" in argv:
+            idx = argv.index("--language")
+            # Make sure there's a value after the flag
+            if idx + 1 < len(argv):
+                language = argv[idx + 1]
+                # Validate it's a language code, not another flag
+                if not language.startswith("-"):
+                    return language
+
+        # Look for --language=value format
+        for arg in argv:
+            if arg.startswith("--language="):
+                language = arg.split("=", 1)[1]
+                if language:  # Not empty
+                    return language
+
+    except (ValueError, IndexError):
+        # If anything goes wrong, return None for default behavior
+        pass
+
+    return None
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     """Main entry point with direct pydantic-settings integration."""
     if argv is None:
         argv = sys.argv[1:]
 
-    if "--version" in argv or "-v" in argv:
-        print(f"claude-monitor {__version__}")
-        return 0
-
     try:
+        # PRE-SCAN: Extract --language before full parsing for early i18n init
+        pre_scanned_language = extract_language_from_argv(argv)
+        language_to_use = (
+            None if pre_scanned_language == "auto" else pre_scanned_language
+        )
+        init_i18n(language_to_use)
+
+        # Handle --version with translations after i18n is initialized
+        if "--version" in argv or "-v" in argv:
+            print(_("claude-monitor {version}", version=__version__))
+            return 0
+
+        # Now parse settings with potentially translated help
         settings = Settings.load_with_last_used(argv)
+
+        # Validate that pre-scanned language matches parsed language
+        # (this ensures consistency but settings.language takes precedence)
+        final_language_to_use = (
+            None if settings.language == "auto" else settings.language
+        )
+        if final_language_to_use != language_to_use:
+            # Re-initialize i18n with the final language from settings
+            init_i18n(final_language_to_use)
 
         setup_environment()
         ensure_directories()
@@ -92,11 +147,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0
 
     except KeyboardInterrupt:
-        print("\n\nMonitoring stopped by user.")
+        print(_("\n\nMonitoring stopped by user."))
         return 0
     except Exception as e:
         logger = logging.getLogger(__name__)
-        logger.error(f"Monitor failed: {e}", exc_info=True)
+        logger.error(_("Monitor failed: {error}", error=str(e)), exc_info=True)
         traceback.print_exc()
         return 1
 

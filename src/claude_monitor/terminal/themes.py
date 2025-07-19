@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from claude_monitor.i18n import _
+
 # Windows-compatible imports with graceful fallbacks
 try:
     import select
@@ -618,10 +620,10 @@ COST_THRESHOLDS: List[Tuple[float, str]] = [
 
 # Velocity/burn rate emojis and labels
 VELOCITY_INDICATORS: Dict[str, Dict[str, Union[str, float]]] = {
-    "slow": {"emoji": "🐌", "label": "Slow", "threshold": 50},
-    "normal": {"emoji": "➡️", "label": "Normal", "threshold": 150},
-    "fast": {"emoji": "🚀", "label": "Fast", "threshold": 300},
-    "very_fast": {"emoji": "⚡", "label": "Very fast", "threshold": float("inf")},
+    "slow": {"emoji": "🐌", "label": _("Slow"), "threshold": 50},
+    "normal": {"emoji": "➡️", "label": _("Normal"), "threshold": 150},
+    "fast": {"emoji": "🚀", "label": _("Fast"), "threshold": 300},
+    "very_fast": {"emoji": "⚡", "label": _("Very fast"), "threshold": float("inf")},
 }
 
 
