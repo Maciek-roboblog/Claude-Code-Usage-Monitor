@@ -1,15 +1,11 @@
-# Pre-commit configuration
-# https://pre-commit.com/
-
+# .pre-commit-config.yaml
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version.
-    rev: v0.8.4  # Use the ref you want to point at
+    rev: v0.12.3
     hooks:
-      # Run the linter.
+      # Lint-only pass (no auto-fix)
       - id: ruff
-        args: [--fix]
-      # Run the formatter.
+      # Formatting pass (auto-fix)
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/pre-commit-hooks

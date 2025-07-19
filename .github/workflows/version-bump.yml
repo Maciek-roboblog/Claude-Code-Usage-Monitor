@@ -1,139 +1,139 @@
-# name: Version Bump Helper
+ name: Version Bump Helper
 
-# on:
-#   workflow_dispatch:
-#     inputs:
-#       bump_type:
-#         description: 'Version bump type'
-#         required: true
-#         default: 'patch'
-#         type: choice
-#         options:
-#           - patch
-#           - minor
-#           - major
-#       changelog_entry:
-#         description: 'Changelog entry (brief description of changes)'
-#         required: true
-#         type: string
+ on:
+   workflow_dispatch:
+     inputs:
+       bump_type:
+         description: 'Version bump type'
+         required: true
+         default: 'patch'
+         type: choice
+         options:
+           - patch
+           - minor
+           - major
+       changelog_entry:
+         description: 'Changelog entry (brief description of changes)'
+         required: true
+         type: string
 
-# jobs:
-#   bump-version:
-#     runs-on: ubuntu-latest
-#     permissions:
-#       contents: write
-#       pull-requests: write
-#     steps:
-#       - uses: actions/checkout@v4
-#         with:
-#           fetch-depth: 0
-#           token: ${{ secrets.GITHUB_TOKEN }}
+ jobs:
+   bump-version:
+     runs-on: ubuntu-latest
+     permissions:
+       contents: write
+       pull-requests: write
+     steps:
+       - uses: actions/checkout@v4
+         with:
+           fetch-depth: 0
+           token: ${{ secrets.GITHUB_TOKEN }}
 
-#       - name: Install uv
-#         uses: astral-sh/setup-uv@v4
-#         with:
-#           version: "latest"
+       - name: Install uv
+         uses: astral-sh/setup-uv@v4
+         with:
+           version: "latest"
 
-#       - name: Set up Python
-#         run: uv python install
+       - name: Set up Python
+         run: uv python install
 
-#       - name: Extract current version
-#         id: current
-#         run: |
-#           CURRENT_VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
-#           echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-#           echo "Current version: $CURRENT_VERSION"
+       - name: Extract current version
+         id: current
+         run: |
+           CURRENT_VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+           echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+           echo "Current version: $CURRENT_VERSION"
 
-#       - name: Calculate new version
-#         id: new
-#         run: |
-#           CURRENT="${{ steps.current.outputs.version }}"
-#           BUMP_TYPE="${{ github.event.inputs.bump_type }}"
+       - name: Calculate new version
+         id: new
+         run: |
+           CURRENT="${{ steps.current.outputs.version }}"
+           BUMP_TYPE="${{ github.event.inputs.bump_type }}"
 
-#           # Split version into components
-#           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+           # Split version into components
+           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
 
-#           # Bump according to type
-#           case "$BUMP_TYPE" in
-#             major)
-#               MAJOR=$((MAJOR + 1))
-#               MINOR=0
-#               PATCH=0
-#               ;;
-#             minor)
-#               MINOR=$((MINOR + 1))
-#               PATCH=0
-#               ;;
-#             patch)
-#               PATCH=$((PATCH + 1))
-#               ;;
-#           esac
+           # Bump according to type
+           case "$BUMP_TYPE" in
+             major)
+               MAJOR=$((MAJOR + 1))
+               MINOR=0
+               PATCH=0
+               ;;
+             minor)
+               MINOR=$((MINOR + 1))
+               PATCH=0
+               ;;
+             patch)
+               PATCH=$((PATCH + 1))
+               ;;
+           esac
 
-#           NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-#           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-#           echo "New version: $NEW_VERSION"
+           NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+           echo "New version: $NEW_VERSION"
 
-#       - name: Update pyproject.toml
-#         run: |
-#           NEW_VERSION="${{ steps.new.outputs.version }}"
-#           sed -i "s/^version = .*/version = \"$NEW_VERSION\"/" pyproject.toml
-#           echo "Updated pyproject.toml to version $NEW_VERSION"
+       - name: Update pyproject.toml
+         run: |
+           NEW_VERSION="${{ steps.new.outputs.version }}"
+           sed -i "s/^version = .*/version = \"$NEW_VERSION\"/" pyproject.toml
+           echo "Updated pyproject.toml to version $NEW_VERSION"
 
-#       - name: Update CHANGELOG.md
-#         run: |
-#           NEW_VERSION="${{ steps.new.outputs.version }}"
-#           TODAY=$(date +%Y-%m-%d)
-#           CHANGELOG_ENTRY="${{ github.event.inputs.changelog_entry }}"
+       - name: Update CHANGELOG.md
+         run: |
+           NEW_VERSION="${{ steps.new.outputs.version }}"
+           TODAY=$(date +%Y-%m-%d)
+           CHANGELOG_ENTRY="${{ github.event.inputs.changelog_entry }}"
 
-#           # Create new changelog section
-#           echo "## [$NEW_VERSION] - $TODAY" > changelog_new.md
-#           echo "" >> changelog_new.md
-#           echo "### Changed" >> changelog_new.md
-#           echo "- $CHANGELOG_ENTRY" >> changelog_new.md
-#           echo "" >> changelog_new.md
+           # Create new changelog section
+           echo "## [$NEW_VERSION] - $TODAY" > changelog_new.md
+           echo "" >> changelog_new.md
+           echo "### Changed" >> changelog_new.md
+           echo "- $CHANGELOG_ENTRY" >> changelog_new.md
+           echo "" >> changelog_new.md
 
-#           # Find the line number where we should insert (after the # Changelog header)
-#           LINE_NUM=$(grep -n "^# Changelog" CHANGELOG.md | head -1 | cut -d: -f1)
+           # Find the line number where we should insert (after the # Changelog header)
+           LINE_NUM=$(grep -n "^# Changelog" CHANGELOG.md | head -1 | cut -d: -f1)
 
-#           if [ -n "$LINE_NUM" ]; then
-#             # Insert after the Changelog header and empty line
-#             head -n $((LINE_NUM + 1)) CHANGELOG.md > changelog_temp.md
-#             cat changelog_new.md >> changelog_temp.md
-#             tail -n +$((LINE_NUM + 2)) CHANGELOG.md >> changelog_temp.md
-#             mv changelog_temp.md CHANGELOG.md
-#           else
-#             # If no header found, prepend to file
-#             cat changelog_new.md CHANGELOG.md > changelog_temp.md
-#             mv changelog_temp.md CHANGELOG.md
-#           fi
+           if [ -n "$LINE_NUM" ]; then
+             # Insert after the Changelog header and empty line
+             head -n $((LINE_NUM + 1)) CHANGELOG.md > changelog_temp.md
+             cat changelog_new.md >> changelog_temp.md
+             tail -n +$((LINE_NUM + 2)) CHANGELOG.md >> changelog_temp.md
+             mv changelog_temp.md CHANGELOG.md
+           else
+             # If no header found, prepend to file
+             cat changelog_new.md CHANGELOG.md > changelog_temp.md
+             mv changelog_temp.md CHANGELOG.md
+           fi
 
-#           # Add the version link at the bottom
-#           echo "" >> CHANGELOG.md
-#           echo "[$NEW_VERSION]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v$NEW_VERSION" >> CHANGELOG.md
+           # Add the version link at the bottom
+           echo "" >> CHANGELOG.md
+           echo "[$NEW_VERSION]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v$NEW_VERSION" >> CHANGELOG.md
 
-#           echo "Updated CHANGELOG.md with new version entry"
+           echo "Updated CHANGELOG.md with new version entry"
 
-#       - name: Create Pull Request
-#         uses: peter-evans/create-pull-request@v6
-#         with:
-#           token: ${{ secrets.GITHUB_TOKEN }}
-#           commit-message: "Bump version to ${{ steps.new.outputs.version }}"
-#           title: "chore: bump version to ${{ steps.new.outputs.version }}"
-#           body: |
-#             ## Version Bump: ${{ steps.current.outputs.version }} → ${{ steps.new.outputs.version }}
+       - name: Create Pull Request
+         uses: peter-evans/create-pull-request@v6
+         with:
+           token: ${{ secrets.GITHUB_TOKEN }}
+           commit-message: "Bump version to ${{ steps.new.outputs.version }}"
+           title: "chore: bump version to ${{ steps.new.outputs.version }}"
+           body: |
+             ## Version Bump: ${{ steps.current.outputs.version }} → ${{ steps.new.outputs.version }}
 
-#             **Bump Type**: ${{ github.event.inputs.bump_type }}
+             **Bump Type**: ${{ github.event.inputs.bump_type }}
 
-#             **Changes**: ${{ github.event.inputs.changelog_entry }}
+             **Changes**: ${{ github.event.inputs.changelog_entry }}
 
-#             This PR was automatically created by the Version Bump workflow.
+             This PR was automatically created by the Version Bump workflow.
 
-#             ### Checklist
-#             - [ ] Review the version bump in `pyproject.toml`
-#             - [ ] Review the changelog entry in `CHANGELOG.md`
-#             - [ ] Merge this PR to trigger the release workflow
-#           branch: version-bump-${{ steps.new.outputs.version }}
-#           delete-branch: true
-#           labels: |
-#             version-bump
-#             automated
+             ### Checklist
+             - [ ] Review the version bump in `pyproject.toml`
+             - [ ] Review the changelog entry in `CHANGELOG.md`
+             - [ ] Merge this PR to trigger the release workflow
+           branch: version-bump-${{ steps.new.outputs.version }}
+           delete-branch: true
+           labels: |
+             version-bump
+             automated

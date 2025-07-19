@@ -1,32 +1,38 @@
-# 🐛 Troubleshooting Guide
+# 🐛 Troubleshooting Guide - Claude Monitor v3.0.0
 
-Common issues and solutions for Claude Code Usage Monitor.
+**⚠️ This guide is specifically for Claude Monitor v3.0.0** - If you're using an older version, please upgrade first.
 
 ## 🚨 Quick Fixes
 
-### Most Common Issues
+### Most Common v3.0.0 Issues
 
 | Problem | Quick Fix |
 |---------|-----------|
-| `command not found: claude-monitor` | Add `~/.local/bin` to PATH or use `python3 -m claude_monitor` |
-| `externally-managed-environment` | Use `uv tool install` or `pipx install` instead of pip |
-| No active session | Start a Claude Code session first |
-| Permission denied | Only for source: `chmod +x claude_monitor.py` |
-| Display issues | Resize terminal to 80+ characters width |
-| Hidden cursor after exit | `printf '\033[?25h'` |
+| `command not found: claude-monitor` | Add `~/.local/bin` to PATH or use `python -m claude_monitor` |
+| `externally-managed-environment` | Use `uv tool install claude-monitor` instead of pip |
+| No Claude data found | Ensure you have active Claude Code sessions with recent messages |
+| Validation errors | Check configuration with `claude-monitor --help` |
+| Display issues | Terminal width must be 80+ characters |
+| Theme detection problems | Use `--theme dark` or `--theme light` explicitly |
 
+## 🔧 Installation Issues (v3.0.0)
 
-## 🔧 Installation Issues
+### Package Name Change
 
-### "externally-managed-environment" Error (Modern Linux)
+**v3.0.0 Breaking Change**: Package name changed from `claude-usage-monitor` to `claude-monitor`
 
-**Error Message**:
+```bash
+# OLD (deprecated)
+pip install claude-usage-monitor
+
+# NEW (v3.0.0)
+pip install claude-monitor
+uv tool install claude-monitor
 ```
-error: externally-managed-environment
-× This environment is externally managed
-```
 
-**This is common on Ubuntu 23.04+, Debian 12+, Fedora 38+**
+### "externally-managed-environment" Error
+
+**Common on Ubuntu 23.04+, Debian 12+, Fedora 38+**
 
 **Solutions (in order of preference)**:
 
@@ -34,632 +40,526 @@ error: externally-managed-environment
    ```bash
    # Install uv
    curl -LsSf https://astral.sh/uv/install.sh | sh
+   source ~/.bashrc
 
    # Install claude-monitor
    uv tool install claude-monitor
+   claude-monitor
    ```
 
 2. **Use pipx**:
    ```bash
    # Install pipx
    sudo apt install pipx  # Ubuntu/Debian
-   # or
-   python3 -m pip install --user pipx
-
-   # Install claude-monitor
    pipx install claude-monitor
+   claude-monitor
    ```
 
 3. **Use virtual environment**:
    ```bash
-   python3 -m venv myenv
-   source myenv/bin/activate
+   python3 -m venv venv
+   source venv/bin/activate
    pip install claude-monitor
+   claude-monitor
    ```
 
-4. **Force installation (NOT recommended)**:
-   ```bash
-   pip install --user claude-monitor --break-system-packages
-   ```
-   ⚠️ **Warning**: This bypasses system protection. Use virtual environment instead!
+### Command Not Found After Installation
 
-### Command Not Found After pip Install
-
-**Issue**: `claude-monitor` command not found after pip installation
+**Issue**: `claude-monitor` command not found
 
 **Solutions**:
 
-1. **Check installation location**:
+1. **Check PATH**:
    ```bash
-   pip show -f claude-monitor | grep claude-monitor
-   ```
-
-2. **Add to PATH**:
-   ```bash
-   # Add this to ~/.bashrc or ~/.zshrc
-   export PATH="$HOME/.local/bin:$PATH"
-
-   # Reload shell
+   # Add to ~/.bashrc or ~/.zshrc
+   echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
    source ~/.bashrc
    ```
 
-3. **Run with Python module**:
+2. **Use Python module**:
    ```bash
-   python3 -m claude_monitor
+   python -m claude_monitor
    ```
 
-### Python Version Conflicts
+3. **Check installation**:
+   ```bash
+   pip show claude-monitor
+   which claude-monitor
+   ```
 
-**Issue**: Multiple Python versions causing installation issues
+### Python Version Requirements
+
+**v3.0.0 requires Python 3.9+**
+
+```bash
+# Check Python version
+python3 --version
+
+# If too old, upgrade Python or use specific version
+python3.11 -m pip install claude-monitor
+python3.11 -m claude_monitor
+```
+
+### Dependency Installation Issues
+
+**Missing dependencies error**:
+```bash
+# Manual installation of core dependencies
+pip install pytz>=2023.3 rich>=13.7.0 pydantic>=2.0.0
+pip install pydantic-settings>=2.0.0 numpy>=1.21.0
+```
+
+## 💾 Data and Configuration Issues
+
+### No Claude Data Directory Found
+
+**Error**: `No Claude data directory found`
+
+**Causes and Solutions**:
+
+1. **Default data path doesn't exist**:
+   ```bash
+   # Check if directory exists
+   ls ~/.claude/projects
+
+   # Start Claude Code session first
+   # Go to claude.ai/code and send messages
+   ```
+
+2. **Permission issues**:
+   ```bash
+   # Check permissions
+   ls -la ~/.claude/
+
+   # Fix permissions if needed
+   chmod 755 ~/.claude/projects
+   ```
+
+3. **Custom data path**:
+   ```bash
+   # If Claude uses different path, set environment variable
+   export CLAUDE_CONFIG_DIR=/path/to/your/claude/config
+   claude-monitor
+   ```
+
+### JSONL File Processing Errors
+
+**Error**: `Failed to parse JSON line in {file}: {error}`
 
 **Solutions**:
-
-1. **Check Python version**:
+1. **Corrupted files**: Let monitor skip malformed lines (automatic)
+2. **Check file integrity**:
    ```bash
-   python3 --version
-   pip3 --version
+   # Validate JSONL files
+   find ~/.claude/projects -name "*.jsonl" -exec python -c "
+   import json
+   with open('{}') as f:
+       for i, line in enumerate(f, 1):
+           try: json.loads(line)
+           except: print(f'Error in {}: line {i}')
+   " \;
    ```
 
-2. **Use specific Python version**:
+### Session Detection Issues
+
+**Error**: `No active session found`
+
+**Debugging steps**:
+
+1. **Verify Claude Code usage**:
+   - Must use claude.ai/code (not regular Claude)
+   - Send at least 2-3 messages
+   - Wait 30 seconds after last message
+
+2. **Check data freshness**:
    ```bash
-   python3.11 -m pip install claude-monitor
-   python3.11 -m claude_monitor
+   # Check recent files
+   find ~/.claude/projects -name "*.jsonl" -mtime -1 -ls
    ```
 
-3. **Use uv (handles Python versions automatically)**:
+3. **Manual data verification**:
    ```bash
-   uv tool install claude-monitor
+   # Enable debug logging
+   claude-monitor --debug --log-file /tmp/claude-debug.log
+
+   # Check logs
+   tail -f /tmp/claude-debug.log
    ```
 
-### Python Dependencies Missing
+## ⚙️ Configuration Validation Errors
 
-**Error Message**:
-```
-ModuleNotFoundError: No module named 'pytz'
-```
+### Invalid Plan Configuration
 
-**Solution**:
+**Error**: `Invalid plan: {value}. Must be one of: pro, max5, max20, custom`
+
+**Valid options**:
 ```bash
-# If installed via pip/pipx/uv, this should be automatic
-# If running from source:
-pip install pytz
-
-# For virtual environment users:
-source venv/bin/activate  # Linux/Mac
-pip install pytz
+# Correct plan names (case-insensitive)
+claude-monitor --plan pro      # 44k tokens
+claude-monitor --plan max5     # 88k tokens
+claude-monitor --plan max20    # 220k tokens
+claude-monitor --plan custom   # P90 auto-detection
 ```
 
-**Note**: When installing via `pip install claude-monitor`, `uv tool install claude-monitor`, or `pipx install claude-monitor`, pytz is installed automatically.
+### Invalid Theme Settings
 
-### Permission Denied (Linux/Mac)
+**Error**: `Invalid theme: {value}. Must be one of: light, dark, classic, auto`
 
-**Error Message**:
-```
-Permission denied: ./claude_monitor.py
-```
-
-**This only applies when running from source**
-
-**Solution**:
+**Solutions**:
 ```bash
-# Make script executable
-chmod +x claude_monitor.py
+# Force specific theme
+claude-monitor --theme dark
+claude-monitor --theme light
 
-# Or run with python directly
-python claude_monitor.py
-python3 claude_monitor.py
+# Debug theme detection
+claude-monitor --debug
 ```
 
-**Note**: If installed via pip/pipx/uv, use `claude-monitor` command instead.
+### Timezone Validation Errors
 
+**Error**: `Invalid timezone: {value}`
 
-## 📊 Usage Data Issues
-
-### No Active Session Found
-
-**Error Message**:
-```
-No active session found. Please start a Claude session first.
-```
-
-**Cause**: Monitor only works when you have an active Claude Code session.
-
-**Solution**:
-1. Go to [claude.ai/code](https://claude.ai/code)
-2. Start a conversation with Claude
-3. Send at least one message
-4. Run the monitor again
-
-**Verification**:
+**Solutions**:
 ```bash
-# Test if ccusage can detect sessions
-ccusage blocks --json
+# Use auto-detection (default)
+claude-monitor --timezone auto
+
+# Valid timezone examples
+claude-monitor --timezone UTC
+claude-monitor --timezone America/New_York
+claude-monitor --timezone Europe/London
+claude-monitor --timezone Asia/Tokyo
+
+# List available timezones
+python -c "import pytz; print('\n'.join(sorted(pytz.all_timezones)))" | grep America
 ```
 
-### Failed to Get Usage Data
+### Numeric Range Validation Errors
 
-**Error Message**:
+**Common validation failures**:
+
+```bash
+# Refresh rate: must be 1-60 seconds
+claude-monitor --refresh-rate 5    # Valid
+claude-monitor --refresh-rate 0    # Invalid: below minimum
+
+# Display refresh rate: must be 0.1-20 Hz
+claude-monitor --refresh-per-second 1.0   # Valid
+claude-monitor --refresh-per-second 25    # Invalid: above maximum
+
+# Reset hour: must be 0-23
+claude-monitor --reset-hour 9      # Valid
+claude-monitor --reset-hour 24     # Invalid: out of range
+
+# Custom token limit: must be positive
+claude-monitor --plan custom --custom-limit-tokens 50000  # Valid
+claude-monitor --plan custom --custom-limit-tokens 0      # Invalid
 ```
-Failed to get usage data: <various error messages>
-```
 
-**Debugging Steps**:
+## 🖥️ Display and Terminal Issues
 
-1. **Check ccusage installation**:
-   ```bash
-   ccusage --version
-   ccusage blocks --json
-   ```
-
-2. **Verify Claude session**:
-   - Ensure you're logged into Claude
-   - Send a recent message to Claude Code
-   - Check that you're using Claude Code, not regular Claude
-
-3. **Check network connectivity**:
-   ```bash
-   # Test basic connectivity
-   ping claude.ai
-   curl -I https://claude.ai
-   ```
-
-4. **Clear browser data** (if ccusage uses browser data):
-   - Clear Claude cookies
-   - Re-login to Claude
-   - Start fresh session
-
-### Incorrect Token Counts
-
-**Issue**: Monitor shows unexpected token numbers
-
-**Possible Causes & Solutions**:
-
-1. **Multiple Sessions**:
-   - Remember: You can have multiple 5-hour sessions
-   - Each session has its own token count
-   - Monitor shows aggregate across all active sessions
-
-2. **Session Timing**:
-   - Sessions last exactly 5 hours from first message
-   - Reset times are reference points, not actual resets
-   - Check session start times in monitor output
-
-3. **Plan Detection Issues**:
-   ```bash
-   # Try different plan settings
-   ./claude_monitor.py --plan custom_max
-   ./claude_monitor.py --plan max5
-   ```
-
-
-## 🖥️ Display Issues
-
-### Terminal Too Narrow
+### Terminal Width Too Narrow
 
 **Issue**: Overlapping text, garbled display
 
-**Solution**:
+**Solutions**:
 ```bash
 # Check terminal width
-tput cols
+tput cols  # Should be 80+
 
-# Should be 80 or more characters
-# Resize terminal window or use:
-./claude_monitor.py | less -S  # Scroll horizontally
+# Resize terminal window or use scrolling
+claude-monitor | less -S
 ```
 
-### Missing Colors
+### Theme Detection Problems
 
-**Issue**: No color output, plain text only
+**Issue**: Wrong colors, poor contrast
+
+**Debug theme detection**:
+```bash
+# Check environment variables
+echo $COLORFGBG
+echo $TERM
+echo $COLORTERM
+
+# Force theme explicitly
+claude-monitor --theme dark   # For dark terminals
+claude-monitor --theme light  # For light terminals
+```
+
+**SSH/Remote sessions**:
+```bash
+# Theme detection may fail over SSH
+claude-monitor --theme dark  # Usually safer for SSH
+```
+
+### Missing Colors or Emojis
+
+**Issue**: Plain text output, no colors
 
 **Solutions**:
 ```bash
-# Check terminal color support
+# Check terminal capabilities
 echo $TERM
+echo $COLORTERM
 
-# Force color output (if supported)
+# Force color output
 export FORCE_COLOR=1
-./claude_monitor.py
+claude-monitor
 
-# Alternative terminals with better color support:
-# - Use modern terminal (iTerm2, Windows Terminal, etc.)
-# - Check terminal settings for ANSI color support
+# Try different terminal
+# iTerm2, Windows Terminal, or modern Linux terminals work best
 ```
-
-### Screen Flicker
-
-**Issue**: Excessive screen clearing/redrawing
-
-**Cause**: Terminal compatibility issues
-
-**Solutions**:
-1. Use a modern terminal emulator
-2. Check terminal size (minimum 80 characters)
-3. Ensure stable window size during monitoring
 
 ### Cursor Remains Hidden After Exit
 
 **Issue**: Terminal cursor invisible after Ctrl+C
 
-**Quick Fix**:
+**Quick fix**:
 ```bash
-# Restore cursor visibility
+# Restore cursor
 printf '\033[?25h'
 
 # Or reset terminal completely
 reset
 ```
 
-**Prevention**: Always exit with Ctrl+C for graceful shutdown
+## 🔄 Runtime and Performance Issues
 
+### Monitor Startup Timeout
 
-## ⏰ Time & Timezone Issues
+**Error**: `Timeout waiting for initial data`
 
-### Incorrect Reset Times
+**Causes and solutions**:
 
-**Issue**: Reset predictions don't match your schedule
+1. **Slow data loading**:
+   ```bash
+   # Use custom timeout
+   # (Note: Not directly configurable, but data loads faster on subsequent runs)
 
-**Solution**:
-```bash
-# Set your timezone explicitly
-./claude_monitor.py --timezone America/New_York
-./claude_monitor.py --timezone Europe/London
-./claude_monitor.py --timezone Asia/Tokyo
+   # Check if Claude data exists
+   ls -la ~/.claude/projects/*.jsonl
+   ```
 
-# Set custom reset hour
-./claude_monitor.py --reset-hour 9  # 9 AM resets
-```
+2. **Large data files**:
+   ```bash
+   # Monitor memory usage
+   top -p $(pgrep -f claude_monitor)
 
-**Find Your Timezone**:
-```bash
-# Linux/Mac - find available timezones
-timedatectl list-timezones | grep -i america
-timedatectl list-timezones | grep -i europe
+   # Use quick start mode (automatically enabled)
+   claude-monitor  # Loads only last 24 hours initially
+   ```
 
-# Or use online timezone finder
-# https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-```
+### High CPU or Memory Usage
 
-### Session Expiration Confusion
-
-**Issue**: Don't understand when sessions expire
-
-**Explanation**:
-- Sessions last **exactly 5 hours** from your first message
-- Default reset times (4:00, 9:00, 14:00, 18:00, 23:00) are reference points
-- Your actual session resets 5 hours after YOU start each session
-
-**Example**:
-```
-10:30 AM - You send first message → Session expires 3:30 PM
-02:00 PM - You start new session → Session expires 7:00 PM
-```
-
-## 🔧 Platform-Specific Issues
-
-### Windows Issues
-
-**PowerShell Execution Policy**:
-```powershell
-# If scripts are blocked
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-
-# Run with Python directly
-python claude_monitor.py
-```
-
-**Path Issues**:
-```bash
-# If ccusage not found, add npm global path
-npm config get prefix
-# Add result/bin to PATH environment variable
-```
-
-**Virtual Environment on Windows**:
-```cmd
-# Activate virtual environment
-venv\Scripts\activate
-
-# Deactivate
-deactivate
-```
-
-### macOS Issues
-
-**Permission Issues with Homebrew Python**:
-```bash
-# Use system Python if Homebrew Python has issues
-/usr/bin/python3 -m venv venv
-
-# Or reinstall Python via Homebrew
-brew reinstall python3
-```
-
-**ccusage Installation Issues**:
-```bash
-# If npm permission issues
-sudo chown -R $(whoami) $(npm config get prefix)/{lib/node_modules,bin,share}
-
-# Or use nvm for Node.js management
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-nvm install node
-```
-
-### Linux Issues
-
-**Missing Python venv Module**:
-```bash
-# Ubuntu/Debian
-sudo apt-get install python3-venv
-
-# Fedora/CentOS
-sudo dnf install python3-venv
-
-# Arch Linux
-sudo pacman -S python-virtualenv
-```
-
-**npm Permission Issues**:
-```bash
-# Configure npm to use different directory
-mkdir ~/.npm-global
-npm config set prefix '~/.npm-global'
-echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.profile
-source ~/.profile
-```
-
-
-## 🧠 Performance Issues
-
-### High CPU Usage
-
-**Cause**: Monitor updates every 3 seconds
+**Issue**: Monitor consuming too many resources
 
 **Solutions**:
-1. **Normal behavior**: 3-second updates are intentional for real-time monitoring
-2. **Reduce frequency**: Currently not configurable, but will be in future versions
-3. **Close when not needed**: Use Ctrl+C to exit when not actively monitoring
-
-### Memory Usage Growing
-
-**Issue**: Memory usage increases over time
-
-**Debugging**:
 ```bash
-# Monitor memory usage
-top -p $(pgrep -f claude_monitor)
-htop  # Look for claude_monitor process
+# Reduce refresh rate
+claude-monitor --refresh-rate 30          # Data refresh every 30s
+claude-monitor --refresh-per-second 0.5   # Display refresh at 0.5 Hz
 
-# Check for memory leaks
-python -m tracemalloc claude_monitor.py
+# Monitor resource usage
+htop | grep claude-monitor
 ```
 
-**Solutions**:
-1. Restart monitor periodically for long sessions
-2. Report issue with system details
-3. Use virtual environment to isolate dependencies
+### Thread and Callback Errors
 
-### Slow Startup
+**Error**: `Callback error: {error}` or `Session callback error: {error}`
 
-**Cause**: ccusage needs to fetch session data
-
-**Normal**: First run may take 5-10 seconds
-
-**If consistently slow**:
-1. Check internet connection
-2. Verify Claude session is active
-3. Clear browser cache/cookies for Claude
-
-
-## 🔄 Data Accuracy Issues
-
-### Token Counts Don't Match Claude UI
-
-**Possible Causes**:
-
-1. **Different Counting Methods**:
-   - Monitor counts tokens used in current session(s)
-   - Claude UI might show different metrics
-   - Multiple sessions can cause confusion
-
-2. **Timing Differences**:
-   - Monitor updates every 3 seconds
-   - Claude UI updates in real-time
-   - Brief discrepancies are normal
-
-3. **Session Boundaries**:
-   - Monitor tracks 5-hour session windows
-   - Verify you're comparing the same time periods
-
-**Debugging**:
+**Debug approach**:
 ```bash
-# Check raw ccusage data
-ccusage blocks --json | jq .
+# Enable detailed logging
+claude-monitor --debug --log-file /tmp/debug.log
 
-# Compare with monitor output
-./claude_monitor.py --plan custom_max
+# Check thread status
+ps -T -p $(pgrep -f claude_monitor)
 ```
 
-### Burn Rate Calculations Seem Wrong
+## 🔍 Advanced Debugging
 
-**Understanding Burn Rate**:
-- Calculated from token usage in the last hour
-- Includes all active sessions
-- May fluctuate based on recent activity
+### Enable Debug Mode
 
-**If still seems incorrect**:
-1. Monitor for longer period (10+ minutes)
-2. Check if multiple sessions are active
-3. Verify recent usage patterns match expectations
+```bash
+# Full debug output
+claude-monitor --debug
 
+# Debug with file logging
+claude-monitor --debug --log-file ~/.claude-monitor/logs/debug.log
+
+# Check logs
+tail -f ~/.claude-monitor/logs/debug.log
+```
+
+### Validate Configuration
+
+```bash
+# Test configuration without starting monitor
+python -c "
+from claude_monitor.core.settings import Settings
+try:
+    settings = Settings.load_with_last_used(['--plan', 'custom'])
+    print('Configuration valid')
+    print(f'Plan: {settings.plan}')
+    print(f'Theme: {settings.theme}')
+    print(f'Timezone: {settings.timezone}')
+except Exception as e:
+    print(f'Configuration error: {e}')
+"
+```
+
+### Check Data Path Discovery
+
+```bash
+# Test data path discovery
+python -c "
+from claude_monitor.cli.main import discover_claude_data_paths
+paths = discover_claude_data_paths()
+print(f'Found paths: {paths}')
+for path in paths:
+    print(f'  {path}: {len(list(path.glob(\"*.jsonl\")))} JSONL files')
+"
+```
+
+### Validate JSONL Data Structure
+
+```bash
+# Check data structure
+python -c "
+from claude_monitor.data.reader import load_usage_entries
+try:
+    entries, raw = load_usage_entries(include_raw=True)
+    print(f'Loaded {len(entries)} entries')
+    if entries:
+        print(f'Latest entry: {entries[-1].timestamp}')
+        print(f'Total tokens: {entries[-1].input_tokens + entries[-1].output_tokens}')
+except Exception as e:
+    print(f'Data loading error: {e}')
+"
+```
+
+### Test Pydantic Settings
+
+```bash
+# Test settings validation
+python -c "
+from claude_monitor.core.settings import Settings
+from pydantic import ValidationError
+
+test_cases = [
+    ['--plan', 'invalid'],
+    ['--theme', 'invalid'],
+    ['--timezone', 'Invalid/Zone'],
+    ['--refresh-rate', '0'],
+    ['--refresh-per-second', '25'],
+    ['--reset-hour', '24']
+]
+
+for case in test_cases:
+    try:
+        Settings.load_with_last_used(case)
+        print(f'{case}: Valid')
+    except ValidationError as e:
+        print(f'{case}: {e.errors()[0][\"msg\"]}')
+    except Exception as e:
+        print(f'{case}: {e}')
+"
+```
 
 ## 🆘 Getting Help
 
-### Before Asking for Help
+### Before Reporting Issues
 
-1. **Check this troubleshooting guide**
-2. **Search existing GitHub issues**
-3. **Try basic debugging steps**
-4. **Gather system information**
+1. **Check this guide first**
+2. **Try with debug mode**: `claude-monitor --debug`
+3. **Verify installation**: `pip show claude-monitor`
+4. **Test with minimal config**: `claude-monitor --clear`
 
-### What Information to Include
-
-When reporting issues, include:
+### Information to Include in Bug Reports
 
 ```bash
 # System information
 uname -a  # Linux/Mac
 systeminfo  # Windows
 
-# Python version
+# Python and package versions
 python --version
-python3 --version
+pip show claude-monitor
 
 # Installation method
-# Did you use: pip, pipx, uv, or source?
+which claude-monitor
+echo $PATH
 
-# Check installation
-pip show claude-monitor  # If using pip
-uv tool list  # If using uv
-pipx list  # If using pipx
+# Configuration test
+claude-monitor --help
 
-# Node.js and npm versions
-node --version
-npm --version
+# Debug output (if possible)
+claude-monitor --debug | head -20
+```
 
-# ccusage version
-ccusage --version
+### Issue Template
 
-# Test ccusage directly
-ccusage blocks --json
+```markdown
+**Problem**: Brief description
+
+**Environment**:
+- OS: [Ubuntu 24.04 / Windows 11 / macOS 14]
+- Python: [3.11.0]
+- Installation: [uv/pip/pipx/source]
+- Version: [3.0.0]
+
+**Steps to Reproduce**:
+1. Command: `claude-monitor --plan custom`
+2. Expected: ...
+3. Actual: ...
+
+**Error Output**:
+```
+Paste error messages here
+```
+
+**Debug Information**:
+```
+Output from: claude-monitor --debug | head -20
+```
 ```
 
 ### Where to Get Help
 
 1. **GitHub Issues**: [Create new issue](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues/new)
 2. **Email**: [maciek@roboblog.eu](mailto:maciek@roboblog.eu)
-3. **Documentation**: Check [README.md](README.md) for installation and usage
+3. **Documentation**: [README.md](README.md)
 
-### Issue Template
+## 🔄 Complete Reset
 
-```markdown
-**[MAIN-PROBLEM]: Your specific problem**
-
-**Problem Description**
-Clear description of the issue.
-
-**Installation Method**
-- [ ] pip install claude-monitor
-- [ ] pipx install claude-monitor
-- [ ] uv tool install claude-monitor
-- [ ] Running from source
-
-**Steps to Reproduce**
-1. Command run: `claude-monitor --plan pro`
-2. Expected result: ...
-3. Actual result: ...
-
-**Environment**
-- OS: [Ubuntu 24.04 / Windows 11 / macOS 14]
-- Python: [3.11.0]
-- Node.js: [20.0.0]
-- ccusage: [latest]
-- Installation path: [e.g., /home/user/.local/bin/claude-monitor]
-
-**Error Output**
-```
-Paste full error messages here
-```
-
-**Additional Context**
-Any other relevant information.
-```
-
-
-## 🔧 Advanced Debugging
-
-### Enable Debug Mode
+If all else fails:
 
 ```bash
-# Run with Python verbose output
-python -v claude_monitor.py
+# 1. Uninstall completely
+pip uninstall claude-monitor
+uv tool uninstall claude-monitor  # if using uv
+pipx uninstall claude-monitor     # if using pipx
 
-# Check ccusage debug output
-ccusage blocks --debug
+# 2. Clear all configuration
+rm -rf ~/.claude-monitor/
 
-# Monitor system calls (Linux/Mac)
-strace -e trace=execve python claude_monitor.py
-```
+# 3. Clear Python cache
+find . -name "*.pyc" -delete 2>/dev/null
+find . -name "__pycache__" -delete 2>/dev/null
 
-### Network Debugging
+# 4. Fresh installation (choose one)
+uv tool install claude-monitor     # Recommended
+# OR
+pipx install claude-monitor       # Alternative
+# OR
+python -m venv venv && source venv/bin/activate && pip install claude-monitor
 
-```bash
-# Check if ccusage makes network requests
-netstat -p | grep ccusage  # Linux
-lsof -i | grep ccusage     # Mac
-
-# Monitor network traffic
-tcpdump -i any host claude.ai  # Requires sudo
-```
-
-### File System Debugging
-
-```bash
-# Check if ccusage accesses browser data
-strace -e trace=file python claude_monitor.py  # Linux
-dtruss python claude_monitor.py               # Mac
-
-# Look for browser profile directories
-ls ~/.config/google-chrome/Default/  # Linux Chrome
-ls ~/Library/Application\ Support/Google/Chrome/Default/  # Mac Chrome
-```
-
-
-## 🔄 Reset Solutions
-
-### Complete Reset
-
-If all else fails, complete reset:
-
-```bash
-# 1. Uninstall everything
-pip uninstall claude-monitor  # If installed via pip
-pipx uninstall claude-monitor  # If installed via pipx
-uv tool uninstall claude-monitor  # If installed via uv
-
-# 2. Clear caches
-find ~/.cache -name "*claude*" -delete 2>/dev/null
-find . -name "*.pyc" -delete
-find . -name "__pycache__" -delete
-
-# 3. Fresh installation (choose one method)
-# Method 1: uv (Recommended)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-source ~/.bashrc  # or restart terminal
-uv tool install claude-monitor
-
-# Method 2: pipx
-pipx install claude-monitor
-
-# Method 3: pip with venv
-python3 -m venv myenv
-source myenv/bin/activate
-pip install claude-monitor
-
-# 5. Test basic functionality
+# 5. Test installation
 claude-monitor --help
-```
-
-### Browser Reset for Claude
-
-```bash
-# Clear Claude-specific data
-# 1. Logout from Claude
-# 2. Clear cookies for claude.ai
-# 3. Clear browser cache
-# 4. Login again and start fresh session
+claude-monitor --version
 ```
 
 ---
 
-**Still having issues?** Don't hesitate to [create an issue](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues/new) or [contact us directly](mailto:maciek@roboblog.eu)!
+**Still having issues?** Don't hesitate to [create an issue](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues/new) with the **[v3.0.0]** tag in the title!

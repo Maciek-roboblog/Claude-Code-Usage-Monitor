@@ -1,85 +1,210 @@
+# Automatically refactored pyproject.toml with best practices
+
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "claude-monitor"
-version = "2.0.0"
-description = "A multilingual real-time terminal monitoring tool for Claude AI token usage"
+version = "3.0.4"
+description = "A real-time terminal monitoring tool for Claude Code token usage with advanced analytics and Rich UI"
 readme = "README.md"
-license = {text = "MIT"}
-requires-python = ">=3.8"
-authors = [
-    { name = "Maciek", email = "maciek@roboblog.eu" },
+license = { text = "MIT" }
+requires-python = ">=3.9"
+authors = [{ name = "Maciek", email = "maciek@roboblog.eu" }]
+maintainers = [{ name = "Maciek", email = "maciek@roboblog.eu" }]
+keywords = [
+  "ai", "analytics", "claude", "dashboard",
+  "developer-tools", "monitoring", "rich",
+  "terminal", "token", "usage"
 ]
-maintainers = [
-    { name = "Maciek", email = "maciek@roboblog.eu" },
-]
-keywords = ["claude", "ai", "token", "monitoring", "usage", "terminal", "i18n", "multilingual", "french"]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Environment :: Console",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Software Development",
-    "Topic :: System :: Monitoring",
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Environment :: Console :: Curses",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Debuggers",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: System :: Monitoring",
+  "Topic :: Terminals",
+  "Topic :: Utilities",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS",
+#  "Operating System :: Microsoft :: Windows",
+  "Typing :: Typed"
 ]
 dependencies = [
-    "pytz",
-    "rich>=13.0.0",
+  "numpy>=1.21.0",
+  "pydantic>=2.0.0",
+  "pydantic-settings>=2.0.0",
+  "pyyaml>=6.0",
+  "pytz>=2023.3",
+  "rich>=13.7.0",
+  "tomli>=1.2.0; python_version < '3.11'",
+  "tzdata; sys_platform == 'win32'",
+  "importlib-resources>=1.3.0; python_version < '3.9'"
 ]
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.8.0",
-    "pre-commit>=2.20.0; python_version<'3.8'",
-    "pre-commit>=3.0.0; python_version>='3.8'",
-    "babel>=2.12.0",
+  "black>=24.0.0",
+  "isort>=5.13.0",
+  "mypy>=1.13.0",
+  "pre-commit>=4.0.0",
+  "pytest>=8.0.0",
+  "pytest-asyncio>=0.24.0",
+  "pytest-benchmark>=4.0.0",
+  "pytest-cov>=6.0.0",
+  "pytest-mock>=3.14.0",
+  "pytest-xdist>=3.6.0",
+  "ruff>=0.12.0",
+  "build>=0.10.0",
+  "twine>=4.0.0",
+  "polib>=1.1.0",
 ]
+test = [
+  "pytest>=8.0.0",
+  "pytest-cov>=6.0.0",
+  "pytest-mock>=3.14.0",
+  "pytest-asyncio>=0.24.0",
+  "pytest-benchmark>=4.0.0"
+]
+
 
 [project.urls]
-Homepage = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor"
-Repository = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git"
-Issues = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues"
-Documentation = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor#readme"
-Changelog = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/blob/main/CHANGELOG.md"
-"Source Code" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor"
-"Bug Tracker" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues"
+homepage = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor"
+repository = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git"
+documentation = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor#readme"
+issues = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues"
+changelog = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/blob/main/CHANGELOG.md"
 "Release Notes" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases"
+"Discussions" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/discussions"
 
 [project.scripts]
-claude-monitor = "claude_monitor:main"
+claude-monitor = "claude_monitor.__main__:main"
+claude-code-monitor = "claude_monitor.__main__:main"
+cmonitor = "claude_monitor.__main__:main"
+ccmonitor = "claude_monitor.__main__:main"
+ccm = "claude_monitor.__main__:main"
 
-[tool.hatch.build.targets.wheel]
-packages = ["usage_analyzer"]
-include = [
-    "claude_monitor.py",
-    "usage_analyzer/**/*.py",
-    "usage_analyzer/locales/**/*.mo",
-    "usage_analyzer/locales/**/*.po"
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["claude_monitor*"]
+exclude = ["tests*", "src/tests*"]
+
+[tool.setuptools.package-data]
+claude_monitor = ["py.typed", "locales/**/*.mo"]
+
+[tool.black]
+line-length = 88
+target-version = ["py39", "py310", "py311", "py312"]
+skip-string-normalization = false
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  \.eggs
+  | \.git
+  | \.hg
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["claude_monitor"]
+force_single_line = true
+atomic = true
+include_trailing_comma = true
+lines_after_imports = 2
+lines_between_types = 1
+use_parentheses = true
+src_paths = ["src"]
+skip_glob = ["*/migrations/*", "*/venv/*", "*/build/*", "*/dist/*"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I"]  # pycodestyle + Pyflakes + isort
+ignore = ["E501"]              # Line length handled by formatter
+
+[tool.ruff.format]
+quote-style = "double"
+
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true      # Catch unintended Any returns
+warn_no_return = true       # Ensure functions return as expected
+strict_optional = true      # Disallow None where not annotated
+
+disable_error_code = [
+  "attr-defined",   # Attribute existence
+  "name-defined",   # Name resolution
+  "import",         # Import errors
+  "misc",           # Misc issues
 ]
 
-[tool.hatch.build.targets.sdist]
-include = [
-    "claude_monitor.py",
-    "usage_analyzer/**/*.py",
-    "usage_analyzer/locales/**/*.mo", 
-    "usage_analyzer/locales/**/*.po",
-    "babel.cfg",
-    "README.md",
-    "LICENSE",
-    "CHANGELOG.md",
-    "CLAUDE.md",
-    "DEVELOPMENT.md",
-    "CONTRIBUTING.md",
-    "CONTRIBUTING_i18n.md",
-    "TROUBLESHOOTING.md",
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["src/tests"]
+python_files = ["test_*.py","*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+  "--strict-markers","--strict-config","--color=yes","--tb=short",
+  "--cov=claude_monitor","--cov-report=term-missing","--cov-report=html",
+  "--cov-report=xml","--cov-fail-under=70","--no-cov-on-fail","-ra","-q",
+  "-m","not integration"
 ]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "unit: marks tests as unit tests",
+  "integration: marks tests as integration tests",
+  "benchmark: marks tests as benchmarks",
+  "network: marks tests as requiring network access",
+  "subprocess: marks tests as requiring subprocess"
+]
+filterwarnings = [
+  "error",
+  "ignore::UserWarning",
+  "ignore::DeprecationWarning",
+  "ignore::PendingDeprecationWarning"
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/claude_monitor"]
+omit = ["*/tests/*","*/test_*","*/__main__.py","*/conftest.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "if self.debug:",
+  "if settings.DEBUG",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if 0:",
+  "if __name__ == .__main__.:",
+  "class .*\\bProtocol\\):",
+  "@(abc\\.)?abstractmethod"
+]
+show_missing = true
+skip_empty = false
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
