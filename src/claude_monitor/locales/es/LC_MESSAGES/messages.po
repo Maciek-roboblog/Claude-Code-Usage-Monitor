@@ -1,0 +1,193 @@
+# Spanish translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-07-19 15:06+0200\n"
+"PO-Revision-Date: 2025-07-18 14:34+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: es\n"
+"Language-Team: es <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: src/claude_monitor/error_handling.py:49
+#, python-brace-format
+msgid "Error in {component}: {exception}"
+msgstr "Error en {component}: {exception}"
+
+#: src/claude_monitor/cli/main.py:118
+#, python-brace-format
+msgid "claude-monitor {version}"
+msgstr "claude-monitor {version}"
+
+#: src/claude_monitor/cli/main.py:150
+msgid ""
+"\n"
+"\n"
+"Monitoring stopped by user."
+msgstr ""
+"\n"
+"\n"
+"Monitoreo detenido por el usuario."
+
+#: src/claude_monitor/cli/main.py:154
+#, python-brace-format
+msgid "Monitor failed: {error}"
+msgstr "Falló el monitor: {error}"
+
+#: src/claude_monitor/terminal/themes.py:623
+msgid "Slow"
+msgstr "Lento"
+
+#: src/claude_monitor/terminal/themes.py:624
+msgid "Normal"
+msgstr "Normal"
+
+#: src/claude_monitor/terminal/themes.py:625
+msgid "Fast"
+msgstr "Rápido"
+
+#: src/claude_monitor/terminal/themes.py:626
+msgid "Very fast"
+msgstr "Muy rápido"
+
+#: src/claude_monitor/ui/components.py:104
+msgid "Failed to get usage data"
+msgstr "Error al obtener datos de uso"
+
+#: src/claude_monitor/ui/components.py:106
+msgid "Possible causes:"
+msgstr "Posibles causas:"
+
+#: src/claude_monitor/ui/components.py:107
+msgid "You are not logged into Claude"
+msgstr "No has iniciado sesión en Claude"
+
+#: src/claude_monitor/ui/components.py:108
+msgid "Network connection issues"
+msgstr "Problemas de conexión de red"
+
+#: src/claude_monitor/ui/components.py:111
+msgid "Retrying in 3 seconds... (Ctrl+C to exit)"
+msgstr "Reintentando en 3 segundos... (Ctrl+C para salir)"
+
+#: src/claude_monitor/ui/components.py:144
+msgid "Loading..."
+msgstr "Cargando..."
+
+#: src/claude_monitor/ui/components.py:150
+msgid "Fetching Claude usage data..."
+msgstr "Obteniendo datos de uso de Claude..."
+
+#: src/claude_monitor/ui/components.py:155
+msgid "Calculating your P90 session limits from usage history..."
+msgstr "Calculando tus límites de sesión P90 desde el historial de uso..."
+
+#: src/claude_monitor/ui/components.py:159
+msgid "This may take a few seconds"
+msgstr "Esto puede tomar unos segundos"
+
+#: src/claude_monitor/ui/session_display.py:198
+msgid "Session-Based Dynamic Limits"
+msgstr "Límites dinámicos basados en sesiones"
+
+#: src/claude_monitor/ui/session_display.py:214
+msgid "Cost Usage"
+msgstr "Uso de costos"
+
+#: src/claude_monitor/ui/session_display.py:220
+#: src/claude_monitor/ui/session_display.py:290
+#: src/claude_monitor/ui/session_display.py:412
+msgid "Token Usage"
+msgstr "Uso de tokens"
+
+#: src/claude_monitor/ui/session_display.py:231
+msgid "Messages Usage"
+msgstr "Uso de mensajes"
+
+#: src/claude_monitor/ui/session_display.py:245
+#: src/claude_monitor/ui/session_display.py:315
+msgid "Time to Reset"
+msgstr "Tiempo para reinicio"
+
+#: src/claude_monitor/ui/session_display.py:252
+#: src/claude_monitor/ui/session_display.py:257
+msgid "Model Distribution"
+msgstr "Distribución de modelos"
+
+#: src/claude_monitor/ui/session_display.py:263
+#: src/claude_monitor/ui/session_display.py:299
+#: src/claude_monitor/ui/session_display.py:419
+msgid "Burn Rate"
+msgstr "Tasa de consumo"
+
+#: src/claude_monitor/ui/session_display.py:273
+#: src/claude_monitor/ui/session_display.py:285
+#: src/claude_monitor/ui/session_display.py:422
+msgid "Cost Rate"
+msgstr "Tasa de costo"
+
+#: src/claude_monitor/ui/session_display.py:283
+msgid "Session Cost"
+msgstr "Costo de la sesión"
+
+#: src/claude_monitor/ui/session_display.py:294
+#: src/claude_monitor/ui/session_display.py:416
+msgid "Tokens"
+msgstr "Tokens"
+
+#: src/claude_monitor/ui/session_display.py:294
+#: src/claude_monitor/ui/session_display.py:416
+msgid "left"
+msgstr "restantes"
+
+#: src/claude_monitor/ui/session_display.py:303
+#: src/claude_monitor/ui/session_display.py:425
+msgid "Sent Messages"
+msgstr "Mensajes enviados"
+
+#: src/claude_monitor/ui/session_display.py:308
+msgid "Model Usage"
+msgstr "Uso del modelo"
+
+#: src/claude_monitor/ui/session_display.py:319
+msgid "Predictions"
+msgstr "Predicciones"
+
+#: src/claude_monitor/ui/session_display.py:321
+msgid "Tokens will run out"
+msgstr "Los tokens se agotarán"
+
+#: src/claude_monitor/ui/session_display.py:324
+msgid "Limit resets at"
+msgstr "El límite se restablece a las"
+
+#: src/claude_monitor/ui/session_display.py:366
+msgid "Token limit exceeded"
+msgstr "¡Límite de tokens excedido!"
+
+#: src/claude_monitor/ui/session_display.py:366
+msgid "tokens"
+msgstr "tokens"
+
+#: src/claude_monitor/ui/session_display.py:372
+msgid "You have exceeded the maximum cost limit!"
+msgstr "¡Has superado el límite máximo de costos!"
+
+#: src/claude_monitor/ui/session_display.py:378
+msgid "Cost limit will be exceeded before reset!"
+msgstr "¡El límite de costos se superará antes del reinicio!"
+
+#: src/claude_monitor/ui/session_display.py:439
+#: src/claude_monitor/ui/session_display.py:443
+#: src/claude_monitor/ui/session_display.py:447
+msgid "No active session"
+msgstr "No hay sesión activa"

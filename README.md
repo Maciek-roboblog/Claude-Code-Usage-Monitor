@@ -56,6 +56,7 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage with ad
 - **⚠️ Advanced warning system** - Multi-level alerts with cost and time predictions
 - **💼 Professional Architecture** - Modular design with Single Responsibility Principle (SRP) compliance
 - **🎨 Intelligent theming** - Scientific color schemes with automatic terminal background detection
+- **🌍 Internationalization** - Multi-language support with auto-detection (i18n)
 - **⏰ Advanced scheduling** - Auto-detected system timezone and time format preferences
 - **📈 Cost analytics** - Model-specific pricing with cache token calculations
 - **🔧 Pydantic validation** - Type-safe configuration with automatic validation
@@ -188,6 +189,7 @@ claude-monitor --help
 |-----------|------|---------|-------------|
 | --plan | string | custom | Plan type: pro, max5, max20, or custom |
 | --custom-limit-tokens | int | None | Token limit for custom plan (must be > 0) |
+| --language | string | auto | Interface language: en, fr, es, de, or auto (system detection) |
 | --timezone | string | auto | Timezone (auto-detected). Examples: UTC, America/New_York, Europe/London |
 | --time-format | string | auto | Time format: 12h, 24h, or auto |
 | --theme | string | auto | Display theme: light, dark, classic, or auto |
@@ -638,6 +640,32 @@ claude-monitor --timezone Asia/Singapore
 # UTC for international team coordination
 claude-monitor --timezone UTC --reset-hour 12
 ```
+
+#### 🌐 Multi-language Interface
+**Scenario**: You prefer to use the interface in your native language.
+
+```bash
+# French interface
+claude-monitor --language fr
+
+# Spanish interface
+claude-monitor --language es
+
+# German interface
+claude-monitor --language de
+
+# Auto-detect system language
+claude-monitor --language auto
+
+# Combined with other localization options
+claude-monitor --language fr --timezone Europe/Paris --time-format 24h
+```
+
+**Features**:
+- Automatic system language detection
+- Consistent translations across all UI elements
+- Fallback to English for unsupported languages
+- Performance optimized with compiled translations
 
 
 #### ⚡ Quick Check

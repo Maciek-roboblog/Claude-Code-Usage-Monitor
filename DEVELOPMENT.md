@@ -284,6 +284,151 @@ uv run ruff format .
 
 ---
 
+### 🛠️ **Internationalization (i18n)**
+
+#### **🛠️ Translation Workflow**
+
+**📋 Available Commands:**
+```bash
+# Extract all translatable strings from source code
+python src/scripts/translate.py extract
+
+# Update existing .po files with new strings
+python src/scripts/translate.py update
+
+# Compile .po files to .mo binaries
+python src/scripts/translate.py compile
+
+# Show translation statistics
+python src/scripts/translate.py stats
+
+# Initialize new language
+python src/scripts/translate.py init <language_code>
+
+# Complete workflow (extract → update → compile)
+python src/scripts/translate.py full
+```
+
+**📁 File Structure:**
+```
+src/claude_monitor/locales/
+├── messages.pot              # Template (auto-generated)
+├── babel.cfg                 # Extraction configuration
+├── en/LC_MESSAGES/
+│   ├── messages.po          # English source
+│   └── messages.mo          # Compiled English
+├── fr/LC_MESSAGES/
+│   ├── messages.po          # French translations
+│   └── messages.mo          # Compiled French
+└── <lang>/LC_MESSAGES/      # Your new language
+    ├── messages.po          # Translations to edit
+    └── messages.mo          # Compiled binary
+```
+
+#### **🎯 Developer Guidelines**
+
+**📝 Writing Translatable Code:**
+```python
+# Import the translation function
+from claude_monitor.i18n import _
+
+# Simple message
+error_msg = _("Connection failed")
+
+# Message with variables (recommended)
+error_msg = _("Error in {component}: {error}",
+              component="data_reader",
+              error=str(exception))
+
+# Alternative formatting (also supported)
+error_msg = _("Found {count} sessions").format(count=len(sessions))
+```
+
+**✅ Best Practices:**
+- **Complete sentences**: Use full sentences, not fragments
+- **Context clarity**: Provide meaningful variable names
+- **Avoid concatenation**: Don't split sentences across multiple `_()` calls
+- **Consistent terminology**: Use the same terms throughout the application
+- **Cultural adaptation**: Consider number formats, date formats, etc.
+
+#### **🧪 Testing Translations**
+
+**Run i18n Test Suite:**
+```bash
+# Run comprehensive i18n tests
+python src/tests/test_i18n.py
+
+# Or with pytest
+uv run pytest src/tests/test_i18n.py -v
+```
+
+**Test Coverage Includes:**
+- ✅ Multi-language interface functionality
+- ✅ Translation performance (≤20ms for 1000 translations)
+- ✅ Fallback behavior for unknown languages
+- ✅ Complex string formatting scenarios
+- ✅ Initialization edge cases and error handling
+
+**Manual Testing:**
+```bash
+# Test your language
+claude-monitor --language it
+
+# Test auto-detection
+claude-monitor --language auto
+
+# Test with other options
+claude-monitor --language it --timezone Europe/Rome --time-format 24h
+```
+
+#### **🔧 Technical Architecture**
+
+**Core Components:**
+- **`claude_monitor.i18n`** - Public API (`_()` function, `init_i18n()`)
+- **`claude_monitor.i18n.core`** - Core translation engine
+- **`claude_monitor.i18n.formatters`** - Advanced formatting support
+- **`src/scripts/translate.py`** - Development tooling
+
+**Performance Features:**
+- **Compiled .mo files** for runtime efficiency
+- **Translation caching** to minimize lookup overhead
+- **Lazy loading** of translation catalogs
+- **Thread-safe operations** for concurrent access
+
+**Error Handling:**
+- **Graceful fallback** to English for missing translations
+- **Runtime error recovery** when i18n system isn't initialized
+- **Development warnings** for missing translation keys (debug mode)
+
+#### **🚀 Advanced Features**
+
+**Language Auto-detection:**
+```python
+# System language detection
+init_i18n("auto")  # Uses system locale
+
+# Manual override
+init_i18n("fr")    # Force French
+```
+
+**Integration with Settings:**
+```bash
+# Language preference is saved
+claude-monitor --language fr
+# Subsequent runs remember the preference
+```
+
+**Debugging Translation Issues:**
+```bash
+# Enable debug logging to see translation lookups
+claude-monitor --debug --language fr
+
+# Check translation statistics
+python src/scripts/translate.py stats
+```
+
+---
+
 ## 📊 **Project Metrics & Goals**
 
 ### 🎯 **Current Performance Metrics**
