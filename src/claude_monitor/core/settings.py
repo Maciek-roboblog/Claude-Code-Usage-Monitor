@@ -164,6 +164,11 @@ class Settings(BaseSettings):
 
     clear: bool = Field(default=False, description="Clear saved configuration")
 
+    json_output: bool = Field(
+        default=False,
+        description="Output analysis data as JSON instead of running interactive monitor",
+    )
+
     @field_validator("plan", mode="before")
     @classmethod
     def validate_plan(cls, v: Any) -> str:
@@ -329,5 +334,6 @@ class Settings(BaseSettings):
         args.log_level = self.log_level
         args.log_file = str(self.log_file) if self.log_file else None
         args.version = self.version
+        args.json_output = self.json_output
 
         return args

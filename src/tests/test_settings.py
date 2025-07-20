@@ -643,3 +643,76 @@ class TestSettingsIntegration:
 
         # Should only return init_settings
         assert sources == ("init_settings",)
+
+    def test_json_output_field_default(self) -> None:
+        """Test json_output field has correct default value."""
+        settings = Settings(_cli_parse_args=[])
+        assert settings.json_output is False
+
+    def test_json_output_field_can_be_set_true(self) -> None:
+        """Test json_output field can be set to True."""
+        settings = Settings(json_output=True, _cli_parse_args=[])
+        assert settings.json_output is True
+
+    def test_json_output_field_can_be_set_false(self) -> None:
+        """Test json_output field can be explicitly set to False."""
+        settings = Settings(json_output=False, _cli_parse_args=[])
+        assert settings.json_output is False
+
+    def test_json_output_in_to_namespace(self) -> None:
+        """Test json_output field is included in to_namespace conversion."""
+        settings = Settings(json_output=True, _cli_parse_args=[])
+        namespace = settings.to_namespace()
+        assert hasattr(namespace, 'json_output')
+        assert namespace.json_output is True
+
+        settings = Settings(json_output=False, _cli_parse_args=[])
+        namespace = settings.to_namespace()
+        assert namespace.json_output is False
+
+    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
+    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
+    def test_json_output_cli_parsing(self, mock_time_format: Mock, mock_timezone: Mock) -> None:
+        """Test json_output field works with CLI argument parsing."""
+        mock_timezone.return_value = "UTC"
+        mock_time_format.return_value = "24h"
+
+        with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+            mock_instance = Mock()
+            mock_instance.load.return_value = {}
+            MockLastUsed.return_value = mock_instance
+
+            # Test --json-output flag
+            settings = Settings.load_with_last_used(["--json-output"])
+            assert settings.json_output is True
+
+            # Test --no-json-output flag
+            settings = Settings.load_with_last_used(["--no-json-output"])
+            assert settings.json_output is False
+
+            # Test default (no flag)
+            settings = Settings.load_with_last_used([])
+            assert settings.json_output is False
+
+    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
+    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
+    def test_json_output_with_other_flags(self, mock_time_format: Mock, mock_timezone: Mock) -> None:
+        """Test json_output works in combination with other flags."""
+        mock_timezone.return_value = "UTC"
+        mock_time_format.return_value = "24h"
+
+        with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+            mock_instance = Mock()
+            mock_instance.load.return_value = {}
+            MockLastUsed.return_value = mock_instance
+
+            # Test with multiple flags
+            settings = Settings.load_with_last_used([
+                "--json-output", 
+                "--plan", "max20",
+                "--theme", "dark"
+            ])
+            
+            assert settings.json_output is True
+            assert settings.plan == "max20"
+            assert settings.theme == "dark"
