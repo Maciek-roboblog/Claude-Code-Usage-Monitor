@@ -217,6 +217,7 @@ class TestJsonOutput:
         assert parsed_output["success"] is False
         assert parsed_output["error"] == "No Claude data directory found"
         assert parsed_output["data"] is None
+        assert "version" in parsed_output["metadata"]
 
     @patch("claude_monitor.cli.main.analyze_usage")
     @patch("claude_monitor.cli.main.discover_claude_data_paths")
@@ -240,6 +241,7 @@ class TestJsonOutput:
         assert parsed_output["success"] is False
         assert parsed_output["error"] == "Failed to analyze usage data"
         assert parsed_output["data"] is None
+        assert "version" in parsed_output["metadata"]
 
     @patch("claude_monitor.cli.main.analyze_usage")
     @patch("claude_monitor.cli.main.discover_claude_data_paths")
@@ -263,6 +265,7 @@ class TestJsonOutput:
         assert parsed_output["success"] is False
         assert parsed_output["error"] == "Test exception"
         assert parsed_output["data"] is None
+        assert "version" in parsed_output["metadata"]
 
     @patch("claude_monitor.cli.main.analyze_usage")
     @patch("claude_monitor.cli.main.discover_claude_data_paths")

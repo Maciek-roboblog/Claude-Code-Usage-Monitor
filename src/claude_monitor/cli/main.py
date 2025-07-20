@@ -116,15 +116,16 @@ def _run_json_output(args: argparse.Namespace) -> int:
             error_result = {
                 "error": "No Claude data directory found",
                 "success": False,
-                "data": None
+                "data": None,
+                "metadata": {"version": __version__}
             }
             print(json.dumps(error_result, indent=2))
             return 1
 
         data_path: Path = data_paths[0]
         
-        # Get hours_back parameter (default to 96 hours like the interactive mode)
-        hours_back = getattr(args, 'hours_back', 96)
+        # Get hours_back parameter (default to 96 hours to match interactive mode)
+        hours_back: int = getattr(args, 'hours_back', 96)
         
         # Analyze usage data
         usage_data = analyze_usage(
@@ -138,7 +139,8 @@ def _run_json_output(args: argparse.Namespace) -> int:
             error_result = {
                 "error": "Failed to analyze usage data", 
                 "success": False,
-                "data": None
+                "data": None,
+                "metadata": {"version": __version__}
             }
             print(json.dumps(error_result, indent=2))
             return 1
@@ -165,7 +167,8 @@ def _run_json_output(args: argparse.Namespace) -> int:
         error_result = {
             "error": str(e),
             "success": False,
-            "data": None
+            "data": None,
+            "metadata": {"version": __version__}
         }
         print(json.dumps(error_result, indent=2))
         return 1
