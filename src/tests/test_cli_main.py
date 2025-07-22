@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from claude_monitor.cli.main import main, _run_json_output
+from claude_monitor.cli.main import _run_json_output, main
 
 
 class TestMain:

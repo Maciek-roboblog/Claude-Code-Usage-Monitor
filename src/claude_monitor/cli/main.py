@@ -108,7 +108,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 def _run_json_output(args: argparse.Namespace) -> int:
     """Run in JSON output mode - analyze data and output JSON to stdout."""
     import json
-    
+
     try:
         # Discover Claude data paths
         data_paths: List[Path] = discover_claude_data_paths()
@@ -123,10 +123,10 @@ def _run_json_output(args: argparse.Namespace) -> int:
             return 1
 
         data_path: Path = data_paths[0]
-        
+
         # Get hours_back parameter (default to 96 hours to match interactive mode)
         hours_back: int = getattr(args, 'hours_back', 96)
-        
+
         # Analyze usage data
         usage_data = analyze_usage(
             hours_back=hours_back,
@@ -134,17 +134,17 @@ def _run_json_output(args: argparse.Namespace) -> int:
             quick_start=False,
             data_path=str(data_path)
         )
-        
+
         if usage_data is None:
             error_result = {
-                "error": "Failed to analyze usage data", 
+                "error": "Failed to analyze usage data",
                 "success": False,
                 "data": None,
                 "metadata": {"version": __version__}
             }
             print(json.dumps(error_result, indent=2))
             return 1
-            
+
         # Add metadata
         result = {
             "success": True,
@@ -158,11 +158,11 @@ def _run_json_output(args: argparse.Namespace) -> int:
                 "version": __version__
             }
         }
-        
+
         # Output JSON to stdout
         print(json.dumps(result, indent=2, default=str))
         return 0
-        
+
     except Exception as e:
         error_result = {
             "error": str(e),
