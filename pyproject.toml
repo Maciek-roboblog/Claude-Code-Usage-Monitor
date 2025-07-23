@@ -10,7 +10,7 @@ version = "3.0.4"
 description = "A real-time terminal monitoring tool for Claude Code token usage with advanced analytics and Rich UI"
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [{ name = "Maciek", email = "maciek@roboblog.eu" }]
 maintainers = [{ name = "Maciek", email = "maciek@roboblog.eu" }]
 keywords = [
