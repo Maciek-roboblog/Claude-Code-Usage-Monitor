@@ -1,6 +1,6 @@
 # 🎯 Claude Code Usage Monitor
 [![PyPI Version](https://img.shields.io/pypi/v/claude-monitor.svg)](https://pypi.org/project/claude-monitor/)
-[![Python Version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
+[![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![codecov](https://codecov.io/gh/Maciek-roboblog/Claude-Code-Usage-Monitor/branch/main/graph/badge.svg)](https://codecov.io/gh/Maciek-roboblog/Claude-Code-Usage-Monitor)
@@ -593,9 +593,9 @@ tzdata                      # Windows timezone data
 
 #### Python Requirements
 
-- **Minimum**: Python 3.10+
+- **Minimum**: Python 3.11+
 - **Recommended**: Python 3.11+
-- **Tested on**: Python 3.10, 3.11, 3.12, 3.13
+- **Tested on**: Python 3.11, 3.12, 3.13
 
 ### Smart Detection Features
 
@@ -903,7 +903,7 @@ python -m pytest tests/test_analysis.py -v
 
 ### Prerequisites
 
-1. **Python 3.10+** installed on your system
+1. **Python 3.11+** installed on your system
 2. **Git** for cloning the repository
 
 
