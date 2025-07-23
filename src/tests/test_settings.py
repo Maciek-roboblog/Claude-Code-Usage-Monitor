@@ -708,11 +708,11 @@ class TestSettingsIntegration:
 
             # Test with multiple flags
             settings = Settings.load_with_last_used([
-                "--json-output", 
+                "--json-output",
                 "--plan", "max20",
                 "--theme", "dark"
             ])
-            
+
             assert settings.json_output is True
             assert settings.plan == "max20"
             assert settings.theme == "dark"

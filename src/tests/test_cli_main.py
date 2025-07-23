@@ -95,7 +95,7 @@ class TestMain:
         mock_args = Mock()
         mock_args.json_output = True
         mock_args.plan = "pro"
-        
+
         mock_settings = Mock()
         mock_settings.log_file = None
         mock_settings.log_level = "INFO"
@@ -108,7 +108,7 @@ class TestMain:
             patch("claude_monitor.cli.main._run_monitoring") as mock_monitoring,
         ):
             result = main(["--json-output", "--plan", "pro"])
-            
+
             assert result == 0
             mock_json_output.assert_called_once_with(mock_args)
             mock_monitoring.assert_not_called()
@@ -122,7 +122,7 @@ class TestMain:
         mock_args.theme = None
         mock_args.refresh_per_second = 1.0
         mock_args.refresh_rate = 10
-        
+
         mock_settings = Mock()
         mock_settings.log_file = None
         mock_settings.log_level = "INFO"
@@ -141,7 +141,7 @@ class TestMain:
             patch("time.sleep", side_effect=KeyboardInterrupt),
         ):
             result = main(["--plan", "pro"])
-            
+
             assert result == 0
             mock_json_output.assert_not_called()
             mock_monitoring.assert_called_once()
@@ -174,7 +174,7 @@ class TestJsonOutput:
         }
         mock_analyze_usage.return_value = mock_usage_data
 
-        # Create args mock  
+        # Create args mock
         args = Mock()
         args.plan = "pro"
 
@@ -185,11 +185,11 @@ class TestJsonOutput:
         # Verify result
         assert result == 0
         mock_print.assert_called_once()
-        
+
         # Parse and verify JSON output
         json_output = mock_print.call_args[0][0]
         parsed_output = json.loads(json_output)
-        
+
         assert parsed_output["success"] is True
         assert parsed_output["error"] is None
         assert parsed_output["data"] == mock_usage_data
@@ -210,10 +210,10 @@ class TestJsonOutput:
 
         assert result == 1
         mock_print.assert_called_once()
-        
+
         json_output = mock_print.call_args[0][0]
         parsed_output = json.loads(json_output)
-        
+
         assert parsed_output["success"] is False
         assert parsed_output["error"] == "No Claude data directory found"
         assert parsed_output["data"] is None
@@ -234,10 +234,10 @@ class TestJsonOutput:
 
         assert result == 1
         mock_print.assert_called_once()
-        
+
         json_output = mock_print.call_args[0][0]
         parsed_output = json.loads(json_output)
-        
+
         assert parsed_output["success"] is False
         assert parsed_output["error"] == "Failed to analyze usage data"
         assert parsed_output["data"] is None
@@ -258,10 +258,10 @@ class TestJsonOutput:
 
         assert result == 1
         mock_print.assert_called_once()
-        
+
         json_output = mock_print.call_args[0][0]
         parsed_output = json.loads(json_output)
-        
+
         assert parsed_output["success"] is False
         assert parsed_output["error"] == "Test exception"
         assert parsed_output["data"] is None
@@ -309,10 +309,10 @@ class TestJsonOutput:
             result = _run_json_output(args)
 
         assert result == 0
-        
+
         json_output = mock_print.call_args[0][0]
         parsed_output = json.loads(json_output)
-        
+
         # Verify metadata structure
         metadata = parsed_output["metadata"]
         assert metadata["data_path"] == "/custom/path"
