@@ -151,7 +151,7 @@ class TestMain:
 class TestJsonOutput:
     """Test cases for JSON output functionality."""
 
-    @patch("claude_monitor.data.analysis.analyze_usage")
+    @patch("claude_monitor.cli.main.analyze_usage")
     @patch("claude_monitor.cli.main.discover_claude_data_paths")
     def test_json_output_success(self, mock_discover_paths: Mock, mock_analyze_usage: Mock) -> None:
         """Test successful JSON output with valid data."""
@@ -220,7 +220,7 @@ class TestJsonOutput:
         assert parsed_output["data"] is None
         assert "version" in parsed_output["metadata"]
 
-    @patch("claude_monitor.data.analysis.analyze_usage")
+    @patch("claude_monitor.cli.main.analyze_usage")
     @patch("claude_monitor.cli.main.discover_claude_data_paths")
     def test_json_output_analyze_usage_returns_none(self, mock_discover_paths: Mock, mock_analyze_usage: Mock) -> None:
         """Test JSON output when analyze_usage returns None."""
@@ -244,7 +244,7 @@ class TestJsonOutput:
         assert parsed_output["data"] is None
         assert "version" in parsed_output["metadata"]
 
-    @patch("claude_monitor.data.analysis.analyze_usage")
+    @patch("claude_monitor.cli.main.analyze_usage")
     @patch("claude_monitor.cli.main.discover_claude_data_paths")
     def test_json_output_with_exception(self, mock_discover_paths: Mock, mock_analyze_usage: Mock) -> None:
         """Test JSON output when an exception occurs during analysis."""
@@ -268,7 +268,7 @@ class TestJsonOutput:
         assert parsed_output["data"] is None
         assert "version" in parsed_output["metadata"]
 
-    @patch("claude_monitor.data.analysis.analyze_usage")
+    @patch("claude_monitor.cli.main.analyze_usage")
     @patch("claude_monitor.cli.main.discover_claude_data_paths")
     def test_json_output_with_custom_hours_back(self, mock_discover_paths: Mock, mock_analyze_usage: Mock) -> None:
         """Test JSON output uses custom hours_back parameter."""
@@ -291,7 +291,7 @@ class TestJsonOutput:
             data_path="/test/path"
         )
 
-    @patch("claude_monitor.data.analysis.analyze_usage")
+    @patch("claude_monitor.cli.main.analyze_usage")
     @patch("claude_monitor.cli.main.discover_claude_data_paths")
     def test_json_output_metadata_structure(self, mock_discover_paths: Mock, mock_analyze_usage: Mock) -> None:
         """Test that JSON output metadata has correct structure."""
