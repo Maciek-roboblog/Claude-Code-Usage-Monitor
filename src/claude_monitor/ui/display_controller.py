@@ -72,10 +72,16 @@ class DisplayController:
         return token_limit, token_limit
 
     def _calculate_time_data(
-        self, session_data: Dict[str, Any], current_time: datetime
+        self,
+        session_data: Dict[str, Any],
+        current_time: datetime,
+        reset_hour: Optional[int] = None,
+        timezone: Optional[str] = None
     ) -> Dict[str, Any]:
         """Calculate time-related data for the session."""
-        return self.session_calculator.calculate_time_data(session_data, current_time)
+        return self.session_calculator.calculate_time_data(
+            session_data, current_time, reset_hour, timezone
+        )
 
     def _calculate_cost_predictions(
         self,
@@ -342,7 +348,12 @@ class DisplayController:
         tokens_left = token_limit - tokens_used
 
         # Calculate time data
-        time_data = self._calculate_time_data(session_data, current_time)
+        time_data = self._calculate_time_data(
+            session_data,
+            current_time,
+            reset_hour=getattr(args, 'reset_hour', None),
+            timezone=getattr(args, 'timezone', None)
+        )
 
         # Calculate burn rate
         burn_rate = calculate_hourly_burn_rate(data["blocks"], current_time)
@@ -580,13 +591,19 @@ class SessionCalculator:
         self.tz_handler = TimezoneHandler()
 
     def calculate_time_data(
-        self, session_data: Dict[str, Any], current_time: datetime
+        self,
+        session_data: Dict[str, Any],
+        current_time: datetime,
+        reset_hour: Optional[int] = None,
+        timezone: Optional[str] = None
     ) -> Dict[str, Any]:
         """Calculate time-related data for the session.
 
         Args:
             session_data: Dictionary containing session information
             current_time: Current UTC time
+            reset_hour: Optional custom reset hour (0-23)
+            timezone: Optional timezone string for reset calculation
 
         Returns:
             Dictionary with calculated time data
@@ -598,14 +615,24 @@ class SessionCalculator:
             start_time = self.tz_handler.ensure_utc(start_time)
 
         # Calculate reset time
-        if session_data.get("end_time_str"):
+        # Prioritize user's custom reset hour over API end time
+        if reset_hour is not None:
+            # User specified a custom reset hour, use our new logic
+            reset_time = self.tz_handler.get_next_reset_time(
+                current_time=current_time,
+                reset_hour=reset_hour,
+                timezone_str=timezone
+            )
+        elif session_data.get("end_time_str"):
+            # Fall back to API end time if no custom reset hour
             reset_time = self.tz_handler.parse_timestamp(session_data["end_time_str"])
             reset_time = self.tz_handler.ensure_utc(reset_time)
         else:
-            reset_time = (
-                start_time + timedelta(hours=5)  # Default session duration
-                if start_time
-                else current_time + timedelta(hours=5)  # Default session duration
+            # Use default 5-hour intervals if no end time and no custom reset hour
+            reset_time = self.tz_handler.get_next_reset_time(
+                current_time=current_time,
+                reset_hour=None,
+                timezone_str=timezone
             )
 
         # Calculate session times
