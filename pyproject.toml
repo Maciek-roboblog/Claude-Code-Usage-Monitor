@@ -99,7 +99,7 @@ claude_monitor = ["py.typed"]
 
 [tool.black]
 line-length = 88
-target-version = ["py39", "py310", "py311", "py312"]
+target-version = ["py39", "py310", "py311", "py312", "py313"]
 skip-string-normalization = false
 include = '\.pyi?$'
 extend-exclude = '''

@@ -1,6 +1,6 @@
 # 🎯 Claude Code Usage Monitor
 [![PyPI Version](https://img.shields.io/pypi/v/claude-monitor.svg)](https://pypi.org/project/claude-monitor/)
-[![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)](https://python.org)
+[![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![codecov](https://codecov.io/gh/Maciek-roboblog/Claude-Code-Usage-Monitor/branch/main/graph/badge.svg)](https://codecov.io/gh/Maciek-roboblog/Claude-Code-Usage-Monitor)
@@ -63,6 +63,7 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage with ad
 - **🧪 Extensive testing** - 100+ test cases with full coverage
 - **🎯 Error reporting** - Optional Sentry integration for production monitoring
 - **⚡ Performance optimized** - Advanced caching and efficient data processing
+- **🤖 JSON output mode** - Machine-readable JSON for automation and scripting
 
 ### 📋 Default Custom Plan
 
@@ -200,6 +201,7 @@ claude-monitor --help
 | --debug | flag | False | Enable debug logging |
 | --version, -v | flag | False | Show version information |
 | --clear | flag | False | Clear saved configuration |
+| --json-output | flag | False | Output analysis data as JSON instead of interactive UI |
 
 #### Plan Options
 
@@ -369,6 +371,9 @@ claude-monitor --log-file ~/.claude-monitor/logs/monitor.log
 
 # Set log level
 claude-monitor --log-level WARNING  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+# Output JSON for automation/scripting
+claude-monitor --json-output
 ```
 
 ### Available Plans
@@ -385,6 +390,54 @@ claude-monitor --log-level WARNING  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 - **P90 Analysis**: Custom plan uses 90th percentile calculations from your usage history
 - **Cost Tracking**: Model-specific pricing with cache token calculations
 - **Limit Detection**: Intelligent threshold detection with 95% confidence
+
+### Automation & Scripting
+
+#### JSON Output Mode
+
+For automation, CI/CD pipelines, and programmatic access:
+
+```bash
+# Get usage data as JSON
+claude-monitor --json-output
+
+# Combine with other flags
+claude-monitor --json-output --plan max20
+
+# Example JSON output structure
+{
+  "success": true,
+  "error": null,
+  "data": {
+    "blocks": [
+      {
+        "id": "session_123",
+        "isActive": true,
+        "totalTokens": 15420,
+        "costUSD": 7.32,
+        "startTime": "2025-01-20T10:00:00Z",
+        "endTime": "2025-01-20T15:00:00Z"
+      }
+    ],
+    "metadata": {
+      "generated_at": "2025-01-20T15:30:00Z",
+      "entries_count": 1
+    }
+  },
+  "metadata": {
+    "data_path": "/home/user/.claude/projects",
+    "hours_back": 96,
+    "plan": "max20",
+    "version": "3.0.0"
+  }
+}
+```
+
+**Use Cases:**
+- **CI/CD Integration**: Monitor token usage in automated pipelines
+- **Cost Tracking**: Extract usage data for billing and reporting
+- **API Integration**: Feed data into dashboards and monitoring systems
+- **Shell Scripts**: Parse JSON with `jq` for automated workflows
 
 
 ## 🚀 What's New in v3.0.0
@@ -414,7 +467,7 @@ claude-monitor --log-level WARNING  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 #### **Breaking Changes**
 - Package name changed from claude-usage-monitor to claude-monitor
 - Default plan changed from pro to custom (with auto-detection)
-- Minimum Python version increased to 3.9+
+- Minimum Python version increased to 3.10+
 - Command structure updated (see examples above)
 
 
@@ -561,9 +614,9 @@ tzdata                      # Windows timezone data
 
 #### Python Requirements
 
-- **Minimum**: Python 3.9+
+- **Minimum**: Python 3.11+
 - **Recommended**: Python 3.11+
-- **Tested on**: Python 3.9, 3.10, 3.11, 3.12, 3.13
+- **Tested on**: Python 3.11, 3.12, 3.13
 
 ### Smart Detection Features
 
@@ -893,7 +946,7 @@ python -m pytest tests/test_analysis.py -v
 
 ### Prerequisites
 
-1. **Python 3.9+** installed on your system
+1. **Python 3.11+** installed on your system
 2. **Git** for cloning the repository
 
 

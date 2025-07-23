@@ -93,7 +93,11 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         args = settings.to_namespace()
 
-        _run_monitoring(args)
+        # Check if JSON output mode is requested
+        if hasattr(args, 'json_output') and args.json_output:
+            return _run_json_output(args)
+        else:
+            _run_monitoring(args)
 
         return 0
 
@@ -104,6 +108,75 @@ def main(argv: Optional[List[str]] = None) -> int:
         logger = logging.getLogger(__name__)
         logger.error(f"Monitor failed: {e}", exc_info=True)
         traceback.print_exc()
+        return 1
+
+
+def _run_json_output(args: argparse.Namespace) -> int:
+    """Run in JSON output mode - analyze data and output JSON to stdout."""
+    import json
+
+    try:
+        # Discover Claude data paths
+        data_paths: List[Path] = discover_claude_data_paths()
+        if not data_paths:
+            error_result = {
+                "error": "No Claude data directory found",
+                "success": False,
+                "data": None,
+                "metadata": {"version": __version__}
+            }
+            print(json.dumps(error_result, indent=2))
+            return 1
+
+        data_path: Path = data_paths[0]
+
+        # Get hours_back parameter (default to 96 hours to match interactive mode)
+        hours_back: int = getattr(args, 'hours_back', 96)
+
+        # Analyze usage data
+        usage_data = analyze_usage(
+            hours_back=hours_back,
+            use_cache=True,
+            quick_start=False,
+            data_path=str(data_path)
+        )
+
+        if usage_data is None:
+            error_result = {
+                "error": "Failed to analyze usage data",
+                "success": False,
+                "data": None,
+                "metadata": {"version": __version__}
+            }
+            print(json.dumps(error_result, indent=2))
+            return 1
+
+        # Add metadata
+        result = {
+            "success": True,
+            "error": None,
+            "data": usage_data,
+            "metadata": {
+                "data_path": str(data_path),
+                "hours_back": hours_back,
+                "plan": getattr(args, 'plan', 'custom'),
+                "generated_at": usage_data.get("metadata", {}).get("generated_at"),
+                "version": __version__
+            }
+        }
+
+        # Output JSON to stdout
+        print(json.dumps(result, indent=2, default=str))
+        return 0
+
+    except Exception as e:
+        error_result = {
+            "error": str(e),
+            "success": False,
+            "data": None,
+            "metadata": {"version": __version__}
+        }
+        print(json.dumps(error_result, indent=2))
         return 1
 
 
