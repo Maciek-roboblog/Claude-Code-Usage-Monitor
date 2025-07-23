@@ -10,7 +10,7 @@ version = "3.0.4"
 description = "A real-time terminal monitoring tool for Claude Code token usage with advanced analytics and Rich UI"
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 authors = [{ name = "Maciek", email = "maciek@roboblog.eu" }]
 maintainers = [{ name = "Maciek", email = "maciek@roboblog.eu" }]
 keywords = [
@@ -99,7 +99,7 @@ claude_monitor = ["py.typed"]
 
 [tool.black]
 line-length = 88
-target-version = ["py39", "py310", "py311", "py312"]
+target-version = ["py39", "py310", "py311", "py312", "py313"]
 skip-string-normalization = false
 include = '\.pyi?$'
 extend-exclude = '''
