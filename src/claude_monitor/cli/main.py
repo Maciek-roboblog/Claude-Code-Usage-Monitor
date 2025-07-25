@@ -8,6 +8,7 @@ import sys
 import time
 import traceback
 from pathlib import Path
+import os
 from typing import Any, Callable, Dict, List, NoReturn, Optional, Union
 
 from rich.console import Console
@@ -42,8 +43,33 @@ SessionChangeCallback = Callable[[str, str, Optional[Dict[str, Any]]], None]
 
 
 def get_standard_claude_paths() -> List[str]:
-    """Get list of standard Claude data directory paths to check."""
-    return ["~/.claude/projects", "~/.config/claude/projects"]
+    """Get list of standard Claude data directory paths to check.
+    
+    Now supports CLAUDE_CONFIG_DIR environment variable for Claude Code compatibility.
+    """
+    paths = []
+    
+    # Check CLAUDE_CONFIG_DIR first (Claude Code standard)
+    claude_config_dir = os.environ.get("CLAUDE_CONFIG_DIR")
+    if claude_config_dir:
+        # For Claude Code, the data is directly in CLAUDE_CONFIG_DIR/.claude
+        config_path = Path(claude_config_dir).expanduser()
+        if config_path.name == ".claude":
+            # If CLAUDE_CONFIG_DIR already points to .claude, use it directly
+            paths.append(str(config_path))
+        else:
+            # Otherwise, append .claude
+            paths.append(str(config_path / ".claude"))
+    
+    # Also check current directory for .claude (when running from within .claude dir)
+    cwd_claude = Path.cwd()
+    if cwd_claude.name == ".claude" and cwd_claude.exists():
+        paths.append(str(cwd_claude))
+    
+    # Fall back to original paths and Claude Code's default location
+    paths.extend(["~/.claude/projects", "~/.config/claude/projects", "~/.claude"])
+    
+    return paths
 
 
 def discover_claude_data_paths(custom_paths: Optional[List[str]] = None) -> List[Path]:
