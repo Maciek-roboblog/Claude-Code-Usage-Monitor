@@ -573,6 +573,25 @@ class TestSettings:
             assert settings.plan == "custom"
             assert settings.custom_limit_tokens is None  # Should be reset
 
+    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
+    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
+    def test_load_with_last_used_plan_parsing(
+        self, mock_timezone: Mock, mock_time_format: Mock
+    ) -> None:
+        """Test plan parameter is correctly parsed from CLI arguments."""
+        mock_timezone.return_value = "UTC"
+        mock_time_format.return_value = "24h"
+
+        with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+            mock_instance = Mock()
+            mock_instance.load.return_value = {}
+            MockLastUsed.return_value = mock_instance
+
+            # Test various plan values
+            for plan in ["pro", "max5", "max20"]:
+                settings = Settings.load_with_last_used(["--plan", plan])
+                assert settings.plan == plan
+
     def test_to_namespace(self) -> None:
         """Test conversion to argparse.Namespace."""
         settings = Settings(
