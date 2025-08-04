@@ -573,7 +573,7 @@ When using the default Pro plan:
 
 1. **Detection**: Monitor notices token usage exceeding 7,000
 2. **Analysis**: Scans previous sessions for actual limits
-3. **Switch**: Automatically changes to custom_max mode
+3. **Switch**: Automatically changes to custom mode
 4. **Notification**: Displays clear message about the change
 5. **Continuation**: Keeps monitoring with new, higher limit
 
@@ -631,10 +631,10 @@ The auto-detection system:
 
 ```bash
 # Auto-detect your highest previous usage
-claude-monitor --plan custom_max
+claude-monitor --plan custom
 
 # Monitor with custom scheduling
-claude-monitor --plan custom_max --reset-hour 6
+claude-monitor --plan custom --reset-hour 6
 ```
 
 
@@ -705,7 +705,7 @@ claude-monitor
 ```
 
 - Monitor will detect if you exceed Pro limits
-- Automatically switches to custom_max if needed
+- Automatically switches to custom if needed
 - Shows notification when switching occurs
 
 **Known Subscription Users**
@@ -721,7 +721,7 @@ claude-monitor --plan max20
 **Unknown Limits**
 ```bash
 # Auto-detect from previous usage
-claude-monitor --plan custom_max
+claude-monitor --plan custom
 ```
 
 
