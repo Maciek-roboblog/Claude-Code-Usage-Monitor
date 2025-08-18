@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from rich.console import Console, RenderableType
 
+from claude_monitor.i18n import _
 from claude_monitor.terminal.themes import get_cost_style, get_velocity_indicator
 from claude_monitor.ui.layouts import HeaderManager
 
@@ -100,13 +101,15 @@ class ErrorDisplayComponent:
         header_manager = HeaderManager()
         screen_buffer.extend(header_manager.create_header(plan, timezone))
 
-        screen_buffer.append("[error]Failed to get usage data[/]")
+        screen_buffer.append(f"[error]{_('Failed to get usage data')}[/]")
         screen_buffer.append("")
-        screen_buffer.append("[warning]Possible causes:[/]")
-        screen_buffer.append("  • You're not logged into Claude")
-        screen_buffer.append("  • Network connection issues")
+        screen_buffer.append(f"[warning]{_('Possible causes:')}[/]")
+        screen_buffer.append(f"  • {_('You are not logged into Claude')}")
+        screen_buffer.append(f"  • {_('Network connection issues')}")
         screen_buffer.append("")
-        screen_buffer.append("[dim]Retrying in 3 seconds... (Ctrl+C to exit)[/]")
+        screen_buffer.append(
+            f"[dim]{_('Retrying in 3 seconds... (Ctrl+C to exit)')}[/]"
+        )
 
         return screen_buffer
 
@@ -138,23 +141,22 @@ class LoadingScreenComponent:
         screen_buffer.extend(header_manager.create_header(plan, timezone))
 
         screen_buffer.append("")
-        screen_buffer.append("[info]⏳ Loading...[/]")
+        screen_buffer.append(f"[info]⏳ {_('Loading...')}[/]")
         screen_buffer.append("")
 
         if custom_message:
             screen_buffer.append(f"[warning]{custom_message}[/]")
         else:
-            screen_buffer.append("[warning]Fetching Claude usage data...[/]")
+            screen_buffer.append(f"[warning]{_('Fetching Claude usage data...')}[/]")
 
         screen_buffer.append("")
 
         if plan == "custom" and not custom_message:
-            screen_buffer.append(
-                "[info]Calculating your P90 session limits from usage history...[/]"
-            )
+            text = _("Calculating your P90 session limits from usage history...")
+            screen_buffer.append(f"[info]{text}[/]")
             screen_buffer.append("")
 
-        screen_buffer.append("[dim]This may take a few seconds[/]")
+        screen_buffer.append(f"[dim]{_('This may take a few seconds')}[/]")
 
         return screen_buffer
 
