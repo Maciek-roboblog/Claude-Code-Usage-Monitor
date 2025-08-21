@@ -138,6 +138,16 @@ class Settings(BaseSettings):
         description="Display theme (light, dark, classic, auto)",
     )
 
+    start_date: Optional[str] = Field(
+        default=None,
+        description="Start date for filtering data (YYYY-MM-DD format)"
+    )
+
+    end_date: Optional[str] = Field(
+        default=None,
+        description="End date for filtering data (YYYY-MM-DD format)"
+    )
+
     custom_limit_tokens: Optional[int] = Field(
         default=None, gt=0, description="Token limit for custom plan"
     )
@@ -169,6 +179,11 @@ class Settings(BaseSettings):
     version: bool = Field(default=False, description="Show version information")
 
     clear: bool = Field(default=False, description="Clear saved configuration")
+
+    history: Literal["auto", "off", "readonly", "writeonly"] = Field(
+        default="auto",
+        description="History mode: auto (save+load), off (disable), readonly (load only), writeonly (save only)"
+    )
 
     @field_validator("plan", mode="before")
     @classmethod
@@ -239,6 +254,20 @@ class Settings(BaseSettings):
         if v_upper not in valid_levels:
             raise ValueError(f"Invalid log level: {v}")
         return v_upper
+
+    @field_validator("history", mode="before")
+    @classmethod
+    def validate_history(cls, v: Any) -> str:
+        """Validate and normalize history mode value."""
+        if isinstance(v, str):
+            v_lower = v.lower()
+            valid_modes = ["auto", "off", "readonly", "writeonly"]
+            if v_lower in valid_modes:
+                return v_lower
+            raise ValueError(
+                f"Invalid history mode: {v}. Must be one of: {', '.join(valid_modes)}"
+            )
+        return v
 
     @classmethod
     def settings_customise_sources(
@@ -350,5 +379,8 @@ class Settings(BaseSettings):
         args.log_level = self.log_level
         args.log_file = str(self.log_file) if self.log_file else None
         args.version = self.version
+        args.start_date = self.start_date
+        args.end_date = self.end_date
+        args.history = self.history
 
         return args

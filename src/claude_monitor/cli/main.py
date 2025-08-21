@@ -385,6 +385,29 @@ def _run_table_view(
     logger = logging.getLogger(__name__)
 
     try:
+        # Parse date filters early so they can be used for both current and historical data
+        from datetime import datetime, timedelta
+        from claude_monitor.utils.time_utils import TimezoneHandler
+        
+        tz = TimezoneHandler(args.timezone)
+        
+        def _parse_date(date_str: Optional[str]):
+            if not date_str:
+                return None
+            for fmt in ("%Y-%m-%d", "%Y.%m.%d", "%Y/%m/%d"):
+                try:
+                    return tz.ensure_timezone(datetime.strptime(date_str, fmt))
+                except ValueError:
+                    continue
+            print_themed(f"Invalid date format: {date_str}. Use YYYY-MM-DD.", style="warning")
+            return None
+        
+        start_dt = _parse_date(getattr(args, "start_date", None))
+        end_dt = _parse_date(getattr(args, "end_date", None))
+        
+        # Make end date inclusive by adding one day (entries use precise timestamps)
+        end_dt_inclusive = end_dt + timedelta(days=1) if end_dt else None
+
         # Create aggregator with appropriate mode
         aggregator = UsageAggregator(
             data_path=str(data_path),
@@ -395,9 +418,87 @@ def _run_table_view(
         # Create table controller
         controller = TableViewsController(console=console)
 
-        # Get aggregated data
+        # Get aggregated data with date filters
         logger.info(f"Loading {view_mode} usage data...")
-        aggregated_data = aggregator.aggregate()
+        aggregated_data = aggregator.aggregate(start_dt, end_dt_inclusive)
+
+        # Initialize history manager for daily and monthly views
+        history_mode = getattr(args, "history", "auto")
+        if history_mode != "off":
+            from claude_monitor.data.history_manager import HistoryManager
+            history_manager = HistoryManager()
+            
+            if view_mode == "daily":
+                # Load historical data if in auto or readonly mode
+                if history_mode in ["auto", "readonly"]:
+                    # Load historical data using the same date filters
+                    historical_data = history_manager.load_historical_daily_data(
+                        start_date=start_dt,
+                        end_date=end_dt_inclusive
+                    )
+                    
+                    if historical_data:
+                        print_themed(f"Loaded {len(historical_data)} days from history", style="info")
+                        
+                        # Merge with current data
+                        aggregated_data = history_manager.merge_with_current_data(
+                            aggregated_data, historical_data
+                        )
+                        print_themed(f"Displaying {len(aggregated_data)} total days", style="info")
+                
+                # Save current data to history if in auto or writeonly mode
+                if aggregated_data and history_mode in ["auto", "writeonly"]:
+                    saved_count = history_manager.save_daily_data(aggregated_data)
+                    if saved_count > 0:
+                        print_themed(f"Saved {saved_count} days to history", style="success")
+            
+            elif view_mode == "monthly":
+                # For monthly view, always work with daily data and aggregate to monthly
+                if history_mode in ["auto", "readonly"]:
+                    # Get current daily data first
+                    daily_aggregator = UsageAggregator(
+                        data_path=str(data_path),
+                        aggregation_mode="daily",
+                        timezone=args.timezone,
+                    )
+                    current_daily = daily_aggregator.aggregate(start_dt, end_dt_inclusive)
+                    
+                    # Load historical daily data
+                    daily_historical = history_manager.load_historical_daily_data(
+                        start_date=start_dt,
+                        end_date=end_dt_inclusive
+                    )
+                    
+                    # Save current daily data to history if in auto mode
+                    if history_mode == "auto" and current_daily:
+                        saved = history_manager.save_daily_data(current_daily)
+                        if saved > 0:
+                            print_themed(f"Saved {saved} days to history", style="success")
+                    
+                    # Merge current and historical daily data
+                    all_daily = []
+                    if current_daily and daily_historical:
+                        all_daily = history_manager.merge_with_current_data(
+                            current_daily, daily_historical
+                        )
+                        print_themed(f"Merged {len(current_daily)} current + {len(daily_historical)} historical days", style="info")
+                    elif current_daily:
+                        all_daily = current_daily
+                        print_themed(f"Using {len(current_daily)} current days", style="info")
+                    elif daily_historical:
+                        all_daily = daily_historical
+                        print_themed(f"Using {len(daily_historical)} historical days", style="info")
+                    
+                    # Always aggregate daily data into monthly
+                    if all_daily:
+                        monthly_from_daily = history_manager.aggregate_monthly_from_daily(all_daily)
+                        
+                        if monthly_from_daily:
+                            # Replace the initial aggregated_data with the one from daily
+                            aggregated_data = monthly_from_daily
+                            print_themed(f"Displaying {len(aggregated_data)} months aggregated from {len(all_daily)} days", style="info")
+                        else:
+                            print_themed("No monthly data could be aggregated from daily data", style="warning")
 
         if not aggregated_data:
             print_themed(f"No usage data found for {view_mode} view", style="warning")

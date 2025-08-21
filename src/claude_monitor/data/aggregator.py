@@ -266,8 +266,16 @@ class UsageAggregator:
             "entries_count": total_stats.count,
         }
 
-    def aggregate(self) -> List[Dict[str, Any]]:
+    def aggregate(
+        self,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
         """Main aggregation method that reads data and returns aggregated results.
+
+        Args:
+            start_date: Optional start date filter
+            end_date: Optional end date filter
 
         Returns:
             List of aggregated data based on aggregation_mode
@@ -288,10 +296,10 @@ class UsageAggregator:
             if entry.timestamp.tzinfo is None:
                 entry.timestamp = self.timezone_handler.ensure_timezone(entry.timestamp)
 
-        # Aggregate based on mode
+        # Aggregate based on mode with date filters
         if self.aggregation_mode == "daily":
-            return self.aggregate_daily(entries)
+            return self.aggregate_daily(entries, start_date, end_date)
         elif self.aggregation_mode == "monthly":
-            return self.aggregate_monthly(entries)
+            return self.aggregate_monthly(entries, start_date, end_date)
         else:
             raise ValueError(f"Invalid aggregation mode: {self.aggregation_mode}")
