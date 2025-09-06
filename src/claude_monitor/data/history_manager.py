@@ -40,20 +40,29 @@ class HistoryManager:
 
         Returns:
             Path to the daily data file
+
+        Raises:
+            ValueError: If date_str is not in valid YYYY-MM-DD format
         """
-        # Organize by year and month for better file management
+        import re
+
+        # Strict validation to prevent path traversal attacks
+        if not re.match(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$", date_str):
+            raise ValueError(f"Invalid date format: {date_str}. Must be YYYY-MM-DD")
+
+        # Parse and validate the date
         try:
             date = datetime.strptime(date_str, "%Y-%m-%d")
-            year = date.strftime("%Y")
-            month = date.strftime("%m")
+        except ValueError as e:
+            raise ValueError(f"Invalid date: {date_str}. {e}")
 
-            month_dir = self.daily_dir / year / month
-            month_dir.mkdir(parents=True, exist_ok=True)
+        year = date.strftime("%Y")
+        month = date.strftime("%m")
 
-            return month_dir / f"{date_str}.json"
-        except ValueError:
-            # Fallback for invalid date formats
-            return self.daily_dir / f"{date_str}.json"
+        month_dir = self.daily_dir / year / month
+        month_dir.mkdir(parents=True, exist_ok=True)
+
+        return month_dir / f"{date_str}.json"
 
     def save_daily_data(
         self, daily_data: List[Dict[str, Any]], overwrite: bool = False
@@ -85,7 +94,7 @@ class HistoryManager:
             if file_path.exists() and not overwrite:
                 # Load existing data to check if it needs updating
                 try:
-                    with open(file_path, "r") as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         existing_data = json.load(f)
 
                     # If the data is identical, skip
@@ -93,17 +102,38 @@ class HistoryManager:
                         self._saved_dates.add(date_str)
                         continue
 
-                    # If existing data has more information, keep it
-                    existing_tokens = existing_data.get(
-                        "input_tokens", 0
-                    ) + existing_data.get("output_tokens", 0)
-                    new_tokens = day_data.get("input_tokens", 0) + day_data.get(
-                        "output_tokens", 0
+                    # Compare total information to decide which data to keep
+                    # Sum all token counts for comparison
+                    existing_total_tokens = (
+                        existing_data.get("input_tokens", 0)
+                        + existing_data.get("output_tokens", 0)
+                        + existing_data.get("cache_creation_tokens", 0)
+                        + existing_data.get("cache_read_tokens", 0)
+                    )
+                    new_total_tokens = (
+                        day_data.get("input_tokens", 0)
+                        + day_data.get("output_tokens", 0)
+                        + day_data.get("cache_creation_tokens", 0)
+                        + day_data.get("cache_read_tokens", 0)
                     )
 
-                    if existing_tokens >= new_tokens:
+                    # Compare entries count and cost
+                    existing_entries = existing_data.get("entries_count", 0)
+                    new_entries = day_data.get("entries_count", 0)
+                    existing_cost = existing_data.get("total_cost", 0.0)
+                    new_cost = day_data.get("total_cost", 0.0)
+
+                    # Keep existing only if it has more total tokens, more entries, AND higher cost
+                    # This ensures we don't lose any valuable information
+                    if (
+                        existing_total_tokens > new_total_tokens
+                        and existing_entries >= new_entries
+                        and existing_cost >= new_cost
+                    ):
                         self._saved_dates.add(date_str)
                         continue
+
+                    # Otherwise, save the new data (it has more information)
 
                 except Exception as e:
                     logger.warning(f"Error reading existing data for {date_str}: {e}")
@@ -111,8 +141,8 @@ class HistoryManager:
             # Save the data
             try:
                 temp_file = file_path.with_suffix(".tmp")
-                with open(temp_file, "w") as f:
-                    json.dump(day_data, f, indent=2, default=str)
+                with open(temp_file, "w", encoding="utf-8") as f:
+                    json.dump(day_data, f, indent=2, default=str, ensure_ascii=False)
                 temp_file.replace(file_path)
 
                 self._saved_dates.add(date_str)
@@ -198,7 +228,7 @@ class HistoryManager:
                                 continue
 
                             # Load the data
-                            with open(file_path, "r") as f:
+                            with open(file_path, "r", encoding="utf-8") as f:
                                 data = json.load(f)
                                 historical_data.append(data)
 

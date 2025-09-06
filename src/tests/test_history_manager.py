@@ -46,9 +46,13 @@ class TestHistoryManager:
     ) -> None:
         """Test file path generation with invalid date format."""
         date_str = "invalid-date"
-        expected_path = history_manager.daily_dir / "invalid-date.json"
-        actual_path = history_manager._get_daily_file_path(date_str)
-        assert actual_path == expected_path
+        with pytest.raises(ValueError, match="Invalid date format"):
+            history_manager._get_daily_file_path(date_str)
+
+        # Test path traversal attempt
+        malicious_str = "../../../etc/passwd"
+        with pytest.raises(ValueError, match="Invalid date format"):
+            history_manager._get_daily_file_path(malicious_str)
 
     def test_save_daily_data(self, history_manager: HistoryManager) -> None:
         """Test saving daily data."""
@@ -349,13 +353,17 @@ class TestHistoryManager:
     def test_save_daily_data_with_existing_better_data(
         self, history_manager: HistoryManager
     ) -> None:
-        """Test that existing data with more tokens is preserved."""
-        # Save initial data with more tokens
+        """Test that existing data with more total tokens is preserved."""
+        # Save initial data with more total tokens
         initial_data = [
             {
                 "date": "2024-12-15",
                 "input_tokens": 2000,
                 "output_tokens": 1000,
+                "cache_creation_tokens": 100,
+                "cache_read_tokens": 50,
+                "total_cost": 0.10,
+                "entries_count": 20,
             }
         ]
         history_manager.save_daily_data(initial_data)
@@ -363,12 +371,16 @@ class TestHistoryManager:
         # Clear saved dates to allow checking existing file
         history_manager._saved_dates.clear()
 
-        # Try to save data with fewer tokens
+        # Try to save data with fewer total tokens
         new_data = [
             {
                 "date": "2024-12-15",
                 "input_tokens": 500,
                 "output_tokens": 250,
+                "cache_creation_tokens": 50,
+                "cache_read_tokens": 25,
+                "total_cost": 0.05,
+                "entries_count": 10,
             }
         ]
         saved_count = history_manager.save_daily_data(new_data, overwrite=False)
@@ -376,6 +388,51 @@ class TestHistoryManager:
 
         # Verify original data is preserved
         file_path = history_manager._get_daily_file_path("2024-12-15")
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             saved_data = json.load(f)
         assert saved_data["input_tokens"] == 2000
+        assert saved_data["total_cost"] == 0.10
+
+    def test_save_daily_data_updates_with_more_info(
+        self, history_manager: HistoryManager
+    ) -> None:
+        """Test that new data with more information replaces old data."""
+        # Save initial data
+        initial_data = [
+            {
+                "date": "2024-12-16",
+                "input_tokens": 1000,
+                "output_tokens": 500,
+                "cache_creation_tokens": 100,
+                "cache_read_tokens": 50,
+                "total_cost": 0.05,
+                "entries_count": 10,
+            }
+        ]
+        history_manager.save_daily_data(initial_data)
+
+        # Clear saved dates
+        history_manager._saved_dates.clear()
+
+        # Save new data with more total tokens
+        new_data = [
+            {
+                "date": "2024-12-16",
+                "input_tokens": 900,
+                "output_tokens": 600,
+                "cache_creation_tokens": 200,
+                "cache_read_tokens": 100,
+                "total_cost": 0.08,
+                "entries_count": 15,
+            }
+        ]
+        saved_count = history_manager.save_daily_data(new_data, overwrite=False)
+        assert saved_count == 1
+
+        # Verify new data was saved
+        file_path = history_manager._get_daily_file_path("2024-12-16")
+        with open(file_path, "r", encoding="utf-8") as f:
+            saved_data = json.load(f)
+        assert saved_data["input_tokens"] == 900
+        assert saved_data["cache_creation_tokens"] == 200
+        assert saved_data["total_cost"] == 0.08
