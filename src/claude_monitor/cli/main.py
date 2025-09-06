@@ -495,10 +495,22 @@ def _run_table_view(
                         all_daily = history_manager.merge_with_current_data(
                             current_daily, daily_historical
                         )
-                        print_themed(
-                            f"Merged {len(current_daily)} current + {len(daily_historical)} historical days",
-                            style="info",
-                        )
+                        # Show data source composition
+                        current_dates = {d.get("date") for d in current_daily}
+                        historical_dates = {d.get("date") for d in daily_historical}
+                        from_current = len(current_dates)
+                        from_history_only = len(historical_dates - current_dates)
+
+                        if from_history_only > 0:
+                            print_themed(
+                                f"Loaded {len(all_daily)} days total ({from_current} from current session, {from_history_only} from history)",
+                                style="info",
+                            )
+                        else:
+                            print_themed(
+                                f"Loaded {len(all_daily)} days from current session",
+                                style="info",
+                            )
                     elif current_daily:
                         all_daily = current_daily
                         print_themed(
