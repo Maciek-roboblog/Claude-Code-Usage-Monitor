@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 from typing import List
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -620,3 +621,123 @@ class TestUsageAggregator:
         assert monthly_result[0]["month"] == "2024-01"
         assert monthly_result[1]["month"] == "2024-02"
         assert monthly_result[2]["month"] == "2024-03"
+
+    def test_aggregate_daily_with_date_filters(
+        self, aggregator: UsageAggregator
+    ) -> None:
+        """Test aggregate_daily with date range filters."""
+        entries = []
+        # Create entries across 10 days
+        for i in range(10):
+            date = datetime(2024, 1, i + 1, 12, 0, tzinfo=timezone.utc)
+            entries.append(
+                UsageEntry(
+                    timestamp=date,
+                    input_tokens=100 * (i + 1),
+                    output_tokens=50 * (i + 1),
+                    cost_usd=0.001 * (i + 1),
+                    model="claude-3-haiku",
+                    message_id=f"msg_{i}",
+                    request_id=f"req_{i}",
+                )
+            )
+
+        # Filter for days 3-7 (Jan 3 to Jan 7)
+        start_date = datetime(2024, 1, 3, tzinfo=timezone.utc)
+        end_date = datetime(2024, 1, 8, tzinfo=timezone.utc)  # End is exclusive
+
+        result = aggregator.aggregate_daily(entries, start_date, end_date)
+
+        # Should have 5 days (Jan 3, 4, 5, 6, 7)
+        assert len(result) == 5
+        assert result[0]["date"] == "2024-01-03"
+        assert result[-1]["date"] == "2024-01-07"
+
+        # Verify token counts for first day (Jan 3 = day 3, 300 input tokens)
+        assert result[0]["input_tokens"] == 300
+        assert result[0]["output_tokens"] == 150
+
+    def test_aggregate_monthly_with_date_filters(
+        self, aggregator: UsageAggregator
+    ) -> None:
+        """Test aggregate_monthly with date range filters."""
+        entries = []
+        # Create entries spanning 3 months
+        for month in [11, 12]:
+            for day in [5, 15, 25]:
+                date = datetime(2024, month, day, tzinfo=timezone.utc)
+                entries.append(
+                    UsageEntry(
+                        timestamp=date,
+                        input_tokens=1000,
+                        output_tokens=500,
+                        cost_usd=0.01,
+                        model="claude-3-haiku",
+                        message_id=f"msg_{month}_{day}",
+                        request_id=f"req_{month}_{day}",
+                    )
+                )
+
+        # Also add January 2025 entries
+        for day in [5, 15]:
+            date = datetime(2025, 1, day, tzinfo=timezone.utc)
+            entries.append(
+                UsageEntry(
+                    timestamp=date,
+                    input_tokens=1000,
+                    output_tokens=500,
+                    cost_usd=0.01,
+                    model="claude-3-haiku",
+                    message_id=f"msg_2025_1_{day}",
+                    request_id=f"req_2025_1_{day}",
+                )
+            )
+
+        # Filter to December 2024 only
+        start_date = datetime(2024, 12, 1, tzinfo=timezone.utc)
+        end_date = datetime(2025, 1, 1, tzinfo=timezone.utc)
+
+        result = aggregator.aggregate_monthly(entries, start_date, end_date)
+
+        # Should have 1 month (December 2024)
+        assert len(result) == 1
+        assert result[0]["month"] == "2024-12"
+        assert result[0]["input_tokens"] == 3000  # 3 days * 1000
+        assert result[0]["output_tokens"] == 1500  # 3 days * 500
+
+    @patch("claude_monitor.data.reader.load_usage_entries")
+    def test_aggregate_with_date_filters(
+        self, mock_load: Mock, aggregator: UsageAggregator
+    ) -> None:
+        """Test main aggregate method with date filters."""
+        entries = []
+        for i in range(5):
+            date = datetime(2024, 1, i + 1, 12, 0, tzinfo=timezone.utc)
+            entries.append(
+                UsageEntry(
+                    timestamp=date,
+                    input_tokens=100,
+                    output_tokens=50,
+                    cost_usd=0.001,
+                    model="claude-3-haiku",
+                    message_id=f"msg_{i}",
+                    request_id=f"req_{i}",
+                )
+            )
+
+        mock_load.return_value = (entries, None)
+
+        # Test with date filters
+        start_date = datetime(2024, 1, 2, tzinfo=timezone.utc)
+        end_date = datetime(2024, 1, 4, tzinfo=timezone.utc)
+
+        result = aggregator.aggregate(start_date=start_date, end_date=end_date)
+
+        # Should have 2 days (Jan 2, 3)
+        assert len(result) == 2
+        assert result[0]["date"] == "2024-01-02"
+        assert result[1]["date"] == "2024-01-03"
+
+        # Test without filters - should return all
+        result_all = aggregator.aggregate()
+        assert len(result_all) == 5

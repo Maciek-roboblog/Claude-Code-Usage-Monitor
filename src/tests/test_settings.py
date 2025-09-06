@@ -666,3 +666,95 @@ class TestSettingsIntegration:
 
         # Should only return init_settings
         assert sources == ("init_settings",)
+
+    def test_new_date_fields(self) -> None:
+        """Test new start_date and end_date fields."""
+        # Test with valid dates
+        settings = Settings(
+            _cli_parse_args=[],
+            plan="pro",
+            start_date="2024-12-01",
+            end_date="2024-12-31",
+        )
+        assert settings.start_date == "2024-12-01"
+        assert settings.end_date == "2024-12-31"
+
+        # Test with None (optional fields)
+        settings = Settings(_cli_parse_args=[], plan="pro")
+        assert settings.start_date is None
+        assert settings.end_date is None
+
+        # Test different date formats
+        settings = Settings(
+            _cli_parse_args=[],
+            plan="pro",
+            start_date="2024.12.01",
+            end_date="2024/12/31",
+        )
+        assert settings.start_date == "2024.12.01"
+        assert settings.end_date == "2024/12/31"
+
+    def test_history_field(self) -> None:
+        """Test history field with all valid values."""
+        valid_modes = ["auto", "off", "readonly", "writeonly"]
+
+        for mode in valid_modes:
+            settings = Settings(_cli_parse_args=[], plan="pro", history=mode)
+            assert settings.history == mode
+
+        # Test default value
+        settings = Settings(_cli_parse_args=[], plan="pro")
+        assert settings.history == "auto"
+
+        # Test case insensitive validation
+        settings = Settings(_cli_parse_args=[], plan="pro", history="AUTO")
+        assert settings.history == "auto"
+
+        settings = Settings(_cli_parse_args=[], plan="pro", history="ReadOnly")
+        assert settings.history == "readonly"
+
+        # Test invalid value
+        with pytest.raises(ValueError, match="Invalid history mode"):
+            Settings(_cli_parse_args=[], plan="pro", history="invalid_mode")
+
+    def test_validate_history_validator(self) -> None:
+        """Test the validate_history field validator."""
+        # Test with string input
+        result = Settings.validate_history("WRITEONLY")
+        assert result == "writeonly"
+
+        result = Settings.validate_history("Off")
+        assert result == "off"
+
+        # Test invalid string
+        with pytest.raises(ValueError, match="Invalid history mode"):
+            Settings.validate_history("bad_mode")
+
+    def test_to_namespace_includes_new_fields(self) -> None:
+        """Test that new fields are included in to_namespace."""
+        settings = Settings(
+            _cli_parse_args=[],
+            plan="pro",
+            start_date="2024-12-01",
+            end_date="2024-12-31",
+            history="readonly",
+        )
+
+        namespace = settings.to_namespace()
+
+        assert hasattr(namespace, "start_date")
+        assert namespace.start_date == "2024-12-01"
+
+        assert hasattr(namespace, "end_date")
+        assert namespace.end_date == "2024-12-31"
+
+        assert hasattr(namespace, "history")
+        assert namespace.history == "readonly"
+
+        # Test with defaults
+        settings = Settings(_cli_parse_args=[], plan="pro")
+        namespace = settings.to_namespace()
+
+        assert namespace.start_date is None
+        assert namespace.end_date is None
+        assert namespace.history == "auto"
