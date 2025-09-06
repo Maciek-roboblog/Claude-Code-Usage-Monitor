@@ -267,9 +267,7 @@ class UsageAggregator:
         }
 
     def aggregate(
-        self,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
+        self, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None
     ) -> List[Dict[str, Any]]:
         """Main aggregation method that reads data and returns aggregated results.
 

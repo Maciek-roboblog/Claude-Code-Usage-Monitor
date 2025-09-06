@@ -139,13 +139,11 @@ class Settings(BaseSettings):
     )
 
     start_date: Optional[str] = Field(
-        default=None,
-        description="Start date for filtering data (YYYY-MM-DD format)"
+        default=None, description="Start date for filtering data (YYYY-MM-DD format)"
     )
 
     end_date: Optional[str] = Field(
-        default=None,
-        description="End date for filtering data (YYYY-MM-DD format)"
+        default=None, description="End date for filtering data (YYYY-MM-DD format)"
     )
 
     custom_limit_tokens: Optional[int] = Field(
@@ -182,7 +180,7 @@ class Settings(BaseSettings):
 
     history: Literal["auto", "off", "readonly", "writeonly"] = Field(
         default="auto",
-        description="History mode: auto (save+load), off (disable), readonly (load only), writeonly (save only)"
+        description="History mode: auto (save+load), off (disable), readonly (load only), writeonly (save only)",
     )
 
     @field_validator("plan", mode="before")
