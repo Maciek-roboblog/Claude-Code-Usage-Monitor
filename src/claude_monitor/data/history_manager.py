@@ -165,6 +165,8 @@ class HistoryManager:
     ) -> List[Dict[str, Any]]:
         """Load historical daily data within the specified range.
 
+        Both start_date and end_date are inclusive when specified.
+
         Args:
             start_date: Start date for data retrieval
             end_date: End date for data retrieval
@@ -221,10 +223,12 @@ class HistoryManager:
                                 else end_date
                             )
 
-                            # Check if within range
+                            # Check if within range (inclusive on both ends)
                             if compare_start and file_date < compare_start:
                                 continue
-                            if compare_end and file_date > compare_end:
+                            if (
+                                compare_end and file_date > compare_end
+                            ):  # > means end_date is inclusive
                                 continue
 
                             # Load the data

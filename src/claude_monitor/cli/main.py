@@ -408,8 +408,10 @@ def _run_table_view(
         start_dt = _parse_date(getattr(args, "start_date", None))
         end_dt = _parse_date(getattr(args, "end_date", None))
 
-        # Make end date inclusive by adding one day (entries use precise timestamps)
-        end_dt_inclusive = end_dt + timedelta(days=1) if end_dt else None
+        # Note: end_dt is already inclusive in history_manager
+        end_dt_inclusive = (
+            end_dt + timedelta(days=1) if end_dt else None
+        )  # For aggregator (needs exclusive end)
 
         # Create aggregator with appropriate mode
         aggregator = UsageAggregator(
@@ -437,7 +439,8 @@ def _run_table_view(
                 if history_mode in ["auto", "readonly"]:
                     # Load historical data using the same date filters
                     historical_data = history_manager.load_historical_daily_data(
-                        start_date=start_dt, end_date=end_dt_inclusive
+                        start_date=start_dt,
+                        end_date=end_dt,  # history_manager uses inclusive dates
                     )
 
                     if historical_data:
@@ -478,7 +481,8 @@ def _run_table_view(
 
                     # Load historical daily data
                     daily_historical = history_manager.load_historical_daily_data(
-                        start_date=start_dt, end_date=end_dt_inclusive
+                        start_date=start_dt,
+                        end_date=end_dt,  # history_manager uses inclusive dates
                     )
 
                     # Save current daily data to history if in auto mode
