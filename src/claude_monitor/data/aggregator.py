@@ -124,7 +124,9 @@ class UsageAggregator:
             period_key_func: Function to extract period key from timestamp
             period_type: Type of period ('date' or 'month')
             start_date: Optional start date filter (inclusive)
-            end_date: Optional end date filter (inclusive - includes the whole day)
+            end_date: Optional end date filter (inclusive by full day in the
+                configured timezone; implemented by excluding entries that are
+                on or after next day's midnight)
 
         Returns:
             List of aggregated data dictionaries

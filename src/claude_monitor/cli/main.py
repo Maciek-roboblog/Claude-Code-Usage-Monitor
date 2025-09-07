@@ -428,6 +428,9 @@ def _run_table_view(
         controller = TableViewsController(console=console)
 
         # Get aggregated data with date filters
+        # Note: end_date is treated as whole-day inclusive by the aggregator.
+        # Do not modify end_dt to 23:59:59 here; the aggregator excludes
+        # entries >= next day's midnight in the selected timezone.
         logger.info(f"Loading {view_mode} usage data...")
         aggregated_data = aggregator.aggregate(start_dt, end_dt)
 
@@ -471,82 +474,83 @@ def _run_table_view(
                         )
 
             elif view_mode == "monthly":
-                # For monthly view, always work with daily data and aggregate to monthly
-                if history_mode in ["auto", "readonly"]:
-                    # Get current daily data first
-                    daily_aggregator = UsageAggregator(
-                        data_path=str(data_path),
-                        aggregation_mode="daily",
-                        timezone=args.timezone,
-                    )
-                    current_daily = daily_aggregator.aggregate(start_dt, end_dt)
+                # For monthly view, always compute current daily data first
+                # (aggregator uses whole-day inclusive end-date semantics)
+                daily_aggregator = UsageAggregator(
+                    data_path=str(data_path),
+                    aggregation_mode="daily",
+                    timezone=args.timezone,
+                )
+                current_daily = daily_aggregator.aggregate(start_dt, end_dt)
 
-                    # Load historical daily data
+                # Load historical daily data only for auto/readonly modes
+                daily_historical: List[Dict[str, Any]] = []
+                if history_mode in ["auto", "readonly"]:
                     daily_historical = history_manager.load_historical_daily_data(
                         start_date=start_dt,
                         end_date=end_dt,  # history_manager uses inclusive dates
                     )
 
-                    # Save current daily data to history in auto or writeonly mode
-                    if history_mode in ["auto", "writeonly"] and current_daily:
-                        saved = history_manager.save_daily_data(current_daily)
-                        if saved > 0:
-                            print_themed(
-                                f"Saved {saved} days to history", style="success"
-                            )
-
-                    # Merge current and historical daily data
-                    all_daily = []
-                    if current_daily and daily_historical:
-                        all_daily = history_manager.merge_with_current_data(
-                            current_daily, daily_historical
-                        )
-                        # Show data source composition
-                        current_dates = {d.get("date") for d in current_daily}
-                        historical_dates = {d.get("date") for d in daily_historical}
-                        from_current = len(current_dates)
-                        from_history_only = len(historical_dates - current_dates)
-
-                        if from_history_only > 0:
-                            print_themed(
-                                f"Loaded {len(all_daily)} days total ({from_current} from current session, {from_history_only} from history)",
-                                style="info",
-                            )
-                        else:
-                            print_themed(
-                                f"Loaded {len(all_daily)} days from current session",
-                                style="info",
-                            )
-                    elif current_daily:
-                        all_daily = current_daily
+                # Save current daily data to history in auto or writeonly mode
+                if current_daily and history_mode in ["auto", "writeonly"]:
+                    saved = history_manager.save_daily_data(current_daily)
+                    if saved > 0:
                         print_themed(
-                            f"Using {len(current_daily)} current days", style="info"
+                            f"Saved {saved} days to history", style="success"
                         )
-                    elif daily_historical:
-                        all_daily = daily_historical
+
+                # Merge current and historical daily data
+                all_daily: List[Dict[str, Any]] = []
+                if current_daily and daily_historical:
+                    all_daily = history_manager.merge_with_current_data(
+                        current_daily, daily_historical
+                    )
+                    # Show data source composition
+                    current_dates = {d.get("date") for d in current_daily}
+                    historical_dates = {d.get("date") for d in daily_historical}
+                    from_current = len(current_dates)
+                    from_history_only = len(historical_dates - current_dates)
+
+                    if from_history_only > 0:
                         print_themed(
-                            f"Using {len(daily_historical)} historical days",
+                            f"Loaded {len(all_daily)} days total ({from_current} from current session, {from_history_only} from history)",
                             style="info",
                         )
-
-                    # Always aggregate daily data into monthly
-                    if all_daily:
-                        monthly_from_daily = (
-                            history_manager.aggregate_monthly_from_daily(all_daily)
+                    else:
+                        print_themed(
+                            f"Loaded {len(all_daily)} days from current session",
+                            style="info",
                         )
+                elif current_daily:
+                    all_daily = current_daily
+                    print_themed(
+                        f"Using {len(current_daily)} current days", style="info"
+                    )
+                elif daily_historical:
+                    all_daily = daily_historical
+                    print_themed(
+                        f"Using {len(daily_historical)} historical days",
+                        style="info",
+                    )
 
-                        if monthly_from_daily:
-                            # Replace the initial aggregated_data with the one from daily
-                            aggregated_data = monthly_from_daily
-                            print_themed(
-                                f"Displaying {len(aggregated_data)} months aggregated from {len(all_daily)} days",
-                                style="info",
-                            )
-                        else:
-                            print_themed(
-                                "No monthly data could be aggregated from daily data",
-                                style="warning",
-                            )
+                # Always aggregate daily data into monthly
+                if all_daily:
+                    monthly_from_daily = history_manager.aggregate_monthly_from_daily(
+                        all_daily
+                    )
+
+                    if monthly_from_daily:
+                        # Replace the initial aggregated_data with the one from daily
+                        aggregated_data = monthly_from_daily
+                        print_themed(
+                            f"Displaying {len(aggregated_data)} months aggregated from {len(all_daily)} days",
+                            style="info",
+                        )
+                    else:
+                        print_themed(
+                            "No monthly data could be aggregated from daily data",
+                            style="warning",
+                        )
 
         if not aggregated_data:
             print_themed(f"No usage data found for {view_mode} view", style="warning")
