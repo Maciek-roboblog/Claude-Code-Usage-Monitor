@@ -96,34 +96,24 @@ class HistoryManager:
                     if existing_data == day_data:
                         continue
 
-                    # Compare total information to decide which data to keep
-                    # Sum all token counts for comparison
-                    existing_total_tokens = (
-                        existing_data.get("input_tokens", 0)
-                        + existing_data.get("output_tokens", 0)
-                        + existing_data.get("cache_creation_tokens", 0)
-                        + existing_data.get("cache_read_tokens", 0)
+                    # Prefer existing if it is greater-or-equal across key metrics,
+                    # and strictly greater in at least one.
+                    fields = [
+                        "input_tokens",
+                        "output_tokens",
+                        "cache_creation_tokens",
+                        "cache_read_tokens",
+                        "entries_count",
+                    ]
+                    ge_all = all(
+                        existing_data.get(k, 0) >= day_data.get(k, 0) for k in fields
                     )
-                    new_total_tokens = (
-                        day_data.get("input_tokens", 0)
-                        + day_data.get("output_tokens", 0)
-                        + day_data.get("cache_creation_tokens", 0)
-                        + day_data.get("cache_read_tokens", 0)
+                    gt_any = any(
+                        existing_data.get(k, 0) > day_data.get(k, 0) for k in fields
+                    ) or existing_data.get("total_cost", 0.0) > day_data.get(
+                        "total_cost", 0.0
                     )
-
-                    # Compare entries count and cost
-                    existing_entries = existing_data.get("entries_count", 0)
-                    new_entries = day_data.get("entries_count", 0)
-                    existing_cost = existing_data.get("total_cost", 0.0)
-                    new_cost = day_data.get("total_cost", 0.0)
-
-                    # Keep existing only if it has more total tokens, more entries, AND higher cost
-                    # This ensures we don't lose any valuable information
-                    if (
-                        existing_total_tokens > new_total_tokens
-                        and existing_entries >= new_entries
-                        and existing_cost >= new_cost
-                    ):
+                    if ge_all and gt_any:
                         # Keep existing file; no write needed
                         continue
 

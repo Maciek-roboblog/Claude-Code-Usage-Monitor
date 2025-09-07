@@ -487,8 +487,8 @@ def _run_table_view(
                         end_date=end_dt,  # history_manager uses inclusive dates
                     )
 
-                    # Save current daily data to history if in auto mode
-                    if history_mode == "auto" and current_daily:
+                    # Save current daily data to history in auto or writeonly mode
+                    if history_mode in ["auto", "writeonly"] and current_daily:
                         saved = history_manager.save_daily_data(current_daily)
                         if saved > 0:
                             print_themed(
