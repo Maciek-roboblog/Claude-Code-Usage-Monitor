@@ -139,11 +139,13 @@ class Settings(BaseSettings):
     )
 
     start_date: Optional[str] = Field(
-        default=None, description="Start date for filtering data (YYYY-MM-DD format)"
+        default=None,
+        description="Start date for filtering data (formats: YYYY-MM-DD, YYYY.MM.DD, YYYY/MM/DD)",
     )
 
     end_date: Optional[str] = Field(
-        default=None, description="End date for filtering data (YYYY-MM-DD format)"
+        default=None,
+        description="End date for filtering data (formats: YYYY-MM-DD, YYYY.MM.DD, YYYY/MM/DD)",
     )
 
     custom_limit_tokens: Optional[int] = Field(

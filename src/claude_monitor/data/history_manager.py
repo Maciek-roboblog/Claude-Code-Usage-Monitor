@@ -10,7 +10,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +29,7 @@ class HistoryManager:
         self.daily_dir = self.data_dir / "daily"
         self.daily_dir.mkdir(parents=True, exist_ok=True)
 
-        # Keep track of which dates have been saved this session to avoid duplicates
-        self._saved_dates: Set[str] = set()
+        # Session-level saved-date tracking removed to avoid short-circuiting logic
 
     def _get_daily_file_path(self, date_str: str) -> Path:
         """Get the file path for a specific date's data.
@@ -84,10 +83,6 @@ class HistoryManager:
                 logger.warning("Daily data missing 'date' field, skipping")
                 continue
 
-            # Skip if already saved in this session (unless overwrite)
-            if not overwrite and date_str in self._saved_dates:
-                continue
-
             file_path = self._get_daily_file_path(date_str)
 
             # Check if file exists and whether to overwrite
@@ -97,9 +92,8 @@ class HistoryManager:
                     with open(file_path, "r", encoding="utf-8") as f:
                         existing_data = json.load(f)
 
-                    # If the data is identical, skip
+                    # If the data is identical, skip writing
                     if existing_data == day_data:
-                        self._saved_dates.add(date_str)
                         continue
 
                     # Compare total information to decide which data to keep
@@ -130,7 +124,7 @@ class HistoryManager:
                         and existing_entries >= new_entries
                         and existing_cost >= new_cost
                     ):
-                        self._saved_dates.add(date_str)
+                        # Keep existing file; no write needed
                         continue
 
                     # Otherwise, save the new data (it has more information)
@@ -145,7 +139,6 @@ class HistoryManager:
                     json.dump(day_data, f, indent=2, default=str, ensure_ascii=False)
                 temp_file.replace(file_path)
 
-                self._saved_dates.add(date_str)
                 saved_count += 1
                 logger.debug(f"Saved historical data for {date_str}")
 
@@ -165,15 +158,17 @@ class HistoryManager:
     ) -> List[Dict[str, Any]]:
         """Load historical daily data within the specified range.
 
-        Both start_date and end_date are inclusive when specified.
-
         Args:
-            start_date: Start date for data retrieval
-            end_date: End date for data retrieval
+            start_date: Start date for data retrieval (inclusive)
+            end_date: End date for data retrieval (inclusive)
             days_back: Alternative to date range - get last N days of data
 
         Returns:
             List of historical daily data dictionaries
+
+        Note:
+            Both start_date and end_date are inclusive. For example, specifying
+            end_date as 2024-12-15 will include the file for 2024-12-15.
         """
         historical_data = []
 

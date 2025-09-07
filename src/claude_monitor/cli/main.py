@@ -386,7 +386,7 @@ def _run_table_view(
 
     try:
         # Parse date filters early so they can be used for both current and historical data
-        from datetime import datetime, timedelta
+        from datetime import datetime
 
         from claude_monitor.utils.time_utils import TimezoneHandler
 
@@ -401,17 +401,21 @@ def _run_table_view(
                 except ValueError:
                     continue
             print_themed(
-                f"Invalid date format: {date_str}. Use YYYY-MM-DD.", style="warning"
+                f"Invalid date format: {date_str}. Use one of: YYYY-MM-DD, YYYY.MM.DD, YYYY/MM/DD.",
+                style="warning",
             )
             return None
 
         start_dt = _parse_date(getattr(args, "start_date", None))
         end_dt = _parse_date(getattr(args, "end_date", None))
 
-        # Note: end_dt is already inclusive in history_manager
-        end_dt_inclusive = (
-            end_dt + timedelta(days=1) if end_dt else None
-        )  # For aggregator (needs exclusive end)
+        # Validate date range
+        if start_dt and end_dt and start_dt > end_dt:
+            print_themed(
+                f"Error: start_date ({getattr(args, 'start_date', None)}) must be on or before end_date ({getattr(args, 'end_date', None)})",
+                style="error",
+            )
+            return
 
         # Create aggregator with appropriate mode
         aggregator = UsageAggregator(
@@ -425,7 +429,7 @@ def _run_table_view(
 
         # Get aggregated data with date filters
         logger.info(f"Loading {view_mode} usage data...")
-        aggregated_data = aggregator.aggregate(start_dt, end_dt_inclusive)
+        aggregated_data = aggregator.aggregate(start_dt, end_dt)
 
         # Initialize history manager for daily and monthly views
         history_mode = getattr(args, "history", "auto")
@@ -475,9 +479,7 @@ def _run_table_view(
                         aggregation_mode="daily",
                         timezone=args.timezone,
                     )
-                    current_daily = daily_aggregator.aggregate(
-                        start_dt, end_dt_inclusive
-                    )
+                    current_daily = daily_aggregator.aggregate(start_dt, end_dt)
 
                     # Load historical daily data
                     daily_historical = history_manager.load_historical_daily_data(

@@ -31,7 +31,6 @@ class TestHistoryManager:
         assert history_manager.data_dir == temp_dir
         assert history_manager.daily_dir == temp_dir / "daily"
         assert history_manager.daily_dir.exists()
-        assert history_manager._saved_dates == set()
 
     def test_get_daily_file_path(self, history_manager: HistoryManager) -> None:
         """Test file path generation for daily data."""
@@ -82,30 +81,40 @@ class TestHistoryManager:
     def test_save_daily_data_no_overwrite(
         self, history_manager: HistoryManager
     ) -> None:
-        """Test that save_daily_data doesn't overwrite by default."""
+        """Test that save_daily_data doesn't overwrite when existing data has more information."""
         daily_data = [
+            {
+                "date": "2024-12-15",
+                "input_tokens": 2000,
+                "output_tokens": 1000,
+                "total_cost": 0.030,
+                "entries_count": 10,
+            }
+        ]
+
+        # Save first time with more data
+        saved_count = history_manager.save_daily_data(daily_data)
+        assert saved_count == 1
+
+        # Try to save again with less data
+        less_data = [
             {
                 "date": "2024-12-15",
                 "input_tokens": 1000,
                 "output_tokens": 500,
                 "total_cost": 0.015,
+                "entries_count": 5,
             }
         ]
-
-        # Save first time
-        saved_count = history_manager.save_daily_data(daily_data)
-        assert saved_count == 1
-
-        # Modify data and try to save again
-        daily_data[0]["input_tokens"] = 2000
-        saved_count = history_manager.save_daily_data(daily_data, overwrite=False)
+        saved_count = history_manager.save_daily_data(less_data, overwrite=False)
         assert saved_count == 0  # Should not save again
 
         # Verify original data is preserved
         file_path = history_manager._get_daily_file_path("2024-12-15")
         with open(file_path, "r") as f:
             saved_data = json.load(f)
-        assert saved_data["input_tokens"] == 1000
+        assert saved_data["input_tokens"] == 2000
+        assert saved_data["output_tokens"] == 1000
 
     def test_save_daily_data_with_overwrite(
         self, history_manager: HistoryManager
@@ -368,9 +377,6 @@ class TestHistoryManager:
         ]
         history_manager.save_daily_data(initial_data)
 
-        # Clear saved dates to allow checking existing file
-        history_manager._saved_dates.clear()
-
         # Try to save data with fewer total tokens
         new_data = [
             {
@@ -410,9 +416,6 @@ class TestHistoryManager:
             }
         ]
         history_manager.save_daily_data(initial_data)
-
-        # Clear saved dates
-        history_manager._saved_dates.clear()
 
         # Save new data with more total tokens
         new_data = [

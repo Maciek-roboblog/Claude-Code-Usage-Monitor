@@ -349,9 +349,8 @@ class TestUsageAggregator:
     ) -> None:
         """Test daily aggregation with date filters."""
         start_date = datetime(2024, 1, 15, tzinfo=timezone.utc)
-        end_date = datetime(
-            2024, 1, 31, 23, 59, 59, tzinfo=timezone.utc
-        )  # Include the whole day
+        # end_date is inclusive - pass Jan 31 to include all of Jan 31
+        end_date = datetime(2024, 1, 31, tzinfo=timezone.utc)
 
         result = aggregator.aggregate_daily(sample_entries, start_date, end_date)
 
@@ -644,7 +643,8 @@ class TestUsageAggregator:
 
         # Filter for days 3-7 (Jan 3 to Jan 7)
         start_date = datetime(2024, 1, 3, tzinfo=timezone.utc)
-        end_date = datetime(2024, 1, 8, tzinfo=timezone.utc)  # End is exclusive
+        # end_date is inclusive - to get Jan 3-7, pass Jan 7
+        end_date = datetime(2024, 1, 7, tzinfo=timezone.utc)
 
         result = aggregator.aggregate_daily(entries, start_date, end_date)
 
@@ -729,7 +729,8 @@ class TestUsageAggregator:
 
         # Test with date filters
         start_date = datetime(2024, 1, 2, tzinfo=timezone.utc)
-        end_date = datetime(2024, 1, 4, tzinfo=timezone.utc)
+        # end_date is inclusive - to get Jan 2-3, pass Jan 3
+        end_date = datetime(2024, 1, 3, tzinfo=timezone.utc)
 
         result = aggregator.aggregate(start_date=start_date, end_date=end_date)
 
@@ -741,3 +742,49 @@ class TestUsageAggregator:
         # Test without filters - should return all
         result_all = aggregator.aggregate()
         assert len(result_all) == 5
+
+    def test_timezone_grouping_and_filters(self, tmp_path) -> None:
+        """Entries should be grouped and filtered using the selected timezone."""
+        from claude_monitor.core.models import UsageEntry
+
+        # Two entries around the UTC day boundary
+        e1 = UsageEntry(
+            timestamp=datetime(2023, 12, 31, 23, 30, tzinfo=timezone.utc),
+            input_tokens=100,
+            output_tokens=50,
+            cache_creation_tokens=0,
+            cache_read_tokens=0,
+            cost_usd=0.001,
+            model="m",
+            message_id="a",
+            request_id="a",
+        )
+        e2 = UsageEntry(
+            timestamp=datetime(2024, 1, 1, 0, 30, tzinfo=timezone.utc),
+            input_tokens=200,
+            output_tokens=100,
+            cache_creation_tokens=0,
+            cache_read_tokens=0,
+            cost_usd=0.002,
+            model="m",
+            message_id="b",
+            request_id="b",
+        )
+
+        entries = [e1, e2]
+
+        # Under UTC they should fall into different dates (2023-12-31 and 2024-01-01)
+        agg_utc = UsageAggregator(data_path=str(tmp_path), timezone="UTC")
+        res_utc = agg_utc.aggregate_daily(entries)
+        assert len(res_utc) == 2
+        assert res_utc[0]["date"] == "2023-12-31"
+        assert res_utc[1]["date"] == "2024-01-01"
+
+        # Under America/New_York (UTC-5) both timestamps belong to 2023-12-31
+        agg_est = UsageAggregator(data_path=str(tmp_path), timezone="America/New_York")
+        res_est = agg_est.aggregate_daily(entries)
+        assert len(res_est) == 1
+        assert res_est[0]["date"] == "2023-12-31"
+        # Validate totals
+        assert res_est[0]["input_tokens"] == 300
+        assert res_est[0]["output_tokens"] == 150

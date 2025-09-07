@@ -7,7 +7,7 @@ by day and month, similar to ccusage's functionality.
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional
 
 from claude_monitor.core.models import SessionBlock, UsageEntry, normalize_model_name
@@ -105,7 +105,9 @@ class UsageAggregator:
         self.data_path = data_path
         self.aggregation_mode = aggregation_mode
         self.timezone = timezone
-        self.timezone_handler = TimezoneHandler()
+        # Initialize handler with the user-selected timezone so subsequent
+        # conversions and localizations use it consistently.
+        self.timezone_handler = TimezoneHandler(timezone)
 
     def _aggregate_by_period(
         self,
@@ -121,23 +123,48 @@ class UsageAggregator:
             entries: List of usage entries
             period_key_func: Function to extract period key from timestamp
             period_type: Type of period ('date' or 'month')
-            start_date: Optional start date filter
-            end_date: Optional end date filter
+            start_date: Optional start date filter (inclusive)
+            end_date: Optional end date filter (inclusive - includes the whole day)
 
         Returns:
             List of aggregated data dictionaries
+
+        Note:
+            Both start_date and end_date are inclusive. If end_date is provided,
+            all entries from that entire day are included (up to 23:59:59.999999).
         """
         period_data: Dict[str, AggregatedPeriod] = {}
 
-        for entry in entries:
-            # Apply date filters
-            if start_date and entry.timestamp < start_date:
-                continue
-            if end_date and entry.timestamp > end_date:
-                continue
+        # Normalize filter boundaries into the configured timezone for
+        # consistent, intuitive "whole-day inclusive" semantics.
+        norm_start = (
+            self.timezone_handler.to_timezone(start_date, self.timezone)
+            if start_date
+            else None
+        )
+        norm_end = (
+            self.timezone_handler.to_timezone(end_date, self.timezone)
+            if end_date
+            else None
+        )
 
-            # Get period key
-            period_key = period_key_func(entry.timestamp)
+        for entry in entries:
+            # Convert entry timestamp to the configured timezone for filtering
+            # and period-key extraction.
+            ts_local = self.timezone_handler.to_timezone(entry.timestamp, self.timezone)
+
+            # Apply date filters (inclusive boundaries in local timezone)
+            if norm_start and ts_local < norm_start:
+                continue
+            # For end_date, include all entries up to the end of that day.
+            # Exclude entries >= next day's midnight in local timezone.
+            if norm_end:
+                next_day = norm_end + timedelta(days=1)
+                if ts_local >= next_day:
+                    continue
+
+            # Get period key using local time
+            period_key = period_key_func(ts_local)
 
             # Get or create period aggregate
             if period_key not in period_data:
