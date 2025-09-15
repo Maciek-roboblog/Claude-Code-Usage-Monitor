@@ -33,6 +33,7 @@ class LastUsedParams:
                 "time_format": settings.time_format,
                 "refresh_rate": settings.refresh_rate,
                 "reset_hour": settings.reset_hour,
+                "view": settings.view,
                 "timestamp": datetime.now().isoformat(),
             }
 
@@ -101,6 +102,11 @@ class Settings(BaseSettings):
     plan: Literal["pro", "max5", "max20", "custom"] = Field(
         default="custom",
         description="Plan type (pro, max5, max20, custom)",
+    )
+
+    view: Literal["realtime", "daily", "monthly", "session"] = Field(
+        default="realtime",
+        description="View mode (realtime, daily, monthly, session)",
     )
 
     @staticmethod
@@ -175,6 +181,20 @@ class Settings(BaseSettings):
                 return v_lower
             raise ValueError(
                 f"Invalid plan: {v}. Must be one of: {', '.join(valid_plans)}"
+            )
+        return v
+
+    @field_validator("view", mode="before")
+    @classmethod
+    def validate_view(cls, v: Any) -> str:
+        """Validate and normalize view value."""
+        if isinstance(v, str):
+            v_lower = v.lower()
+            valid_views = ["realtime", "daily", "monthly", "session"]
+            if v_lower in valid_views:
+                return v_lower
+            raise ValueError(
+                f"Invalid view: {v}. Must be one of: {', '.join(valid_views)}"
             )
         return v
 
@@ -319,6 +339,7 @@ class Settings(BaseSettings):
         args = argparse.Namespace()
 
         args.plan = self.plan
+        args.view = self.view
         args.timezone = self.timezone
         args.theme = self.theme
         args.refresh_rate = self.refresh_rate

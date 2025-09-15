@@ -5,12 +5,27 @@ This module provides formatting functions for currency, time, and display output
 
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from claude_monitor.utils.time_utils import format_display_time as _format_display_time
 from claude_monitor.utils.time_utils import get_time_format_preference
 
 logger = logging.getLogger(__name__)
+
+
+def format_number(value: Union[int, float], decimals: int = 0) -> str:
+    """Format number with thousands separator.
+
+    Args:
+        value: Number to format
+        decimals: Number of decimal places (default: 0)
+
+    Returns:
+        Formatted number string with thousands separator
+    """
+    if decimals > 0:
+        return f"{value:,.{decimals}f}"
+    return f"{int(value):,}"
 
 
 def format_currency(amount: float, currency: str = "USD") -> str:

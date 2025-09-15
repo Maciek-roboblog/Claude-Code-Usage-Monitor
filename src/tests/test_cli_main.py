@@ -77,10 +77,18 @@ class TestMain:
                 patch("claude_monitor.terminal.manager.setup_terminal"),
                 patch("claude_monitor.terminal.themes.get_themed_console"),
                 patch("claude_monitor.ui.display_controller.DisplayController"),
-                patch("claude_monitor.monitoring.orchestrator.MonitoringOrchestrator"),
-                patch("time.sleep", side_effect=KeyboardInterrupt),
+                patch(
+                    "claude_monitor.monitoring.orchestrator.MonitoringOrchestrator"
+                ) as mock_orchestrator,
+                patch("signal.pause", side_effect=KeyboardInterrupt()),
+                patch("time.sleep", side_effect=KeyboardInterrupt()),
                 patch("sys.exit"),
             ):  # Don't actually exit
+                # Configure mocks to not interfere with the KeyboardInterrupt
+                mock_orchestrator.return_value.wait_for_initial_data.return_value = True
+                mock_orchestrator.return_value.start.return_value = None
+                mock_orchestrator.return_value.stop.return_value = None
+
                 result = main(["--plan", "pro"])
                 assert result == 0
         finally:

@@ -662,6 +662,19 @@ def get_velocity_indicator(burn_rate: float) -> Dict[str, str]:
 _theme_manager: ThemeManager = ThemeManager()
 
 
+def get_theme(name: Optional[str] = None) -> Theme:
+    """Get Rich theme by name or auto-detect.
+
+    Args:
+        name: Theme name ('light', 'dark', 'classic') or None for auto-detection
+
+    Returns:
+        Rich Theme object
+    """
+    theme_config = _theme_manager.get_theme(name)
+    return theme_config.rich_theme
+
+
 def get_themed_console(force_theme: Optional[Union[str, bool]] = None) -> Console:
     """Get themed console - backward compatibility wrapper.
 

@@ -3,10 +3,14 @@
 import argparse
 import contextlib
 import logging
+import signal
 import sys
+import time
 import traceback
 from pathlib import Path
 from typing import Any, Callable, Dict, List, NoReturn, Optional, Union
+
+from rich.console import Console
 
 from claude_monitor import __version__
 from claude_monitor.cli.bootstrap import (
@@ -17,6 +21,7 @@ from claude_monitor.cli.bootstrap import (
 )
 from claude_monitor.core.plans import Plans, PlanType, get_token_limit
 from claude_monitor.core.settings import Settings
+from claude_monitor.data.aggregator import UsageAggregator
 from claude_monitor.data.analysis import analyze_usage
 from claude_monitor.error_handling import report_error
 from claude_monitor.monitoring.orchestrator import MonitoringOrchestrator
@@ -29,6 +34,7 @@ from claude_monitor.terminal.manager import (
 )
 from claude_monitor.terminal.themes import get_themed_console, print_themed
 from claude_monitor.ui.display_controller import DisplayController
+from claude_monitor.ui.table_views import TableViewsController
 
 # Type aliases for CLI callbacks
 DataUpdateCallback = Callable[[Dict[str, Any]], None]
@@ -103,6 +109,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 def _run_monitoring(args: argparse.Namespace) -> None:
     """Main monitoring implementation without facade."""
+    view_mode = getattr(args, "view", "realtime")
+
     if hasattr(args, "theme") and args.theme:
         console = get_themed_console(force_theme=args.theme.lower())
     else:
@@ -120,6 +128,11 @@ def _run_monitoring(args: argparse.Namespace) -> None:
         data_path: Path = data_paths[0]
         logger = logging.getLogger(__name__)
         logger.info(f"Using data path: {data_path}")
+
+        # Handle different view modes
+        if view_mode in ["daily", "monthly"]:
+            _run_table_view(args, data_path, view_mode, console)
+            return
 
         token_limit: int = _get_initial_token_limit(args, str(data_path))
 
@@ -151,9 +164,9 @@ def _run_monitoring(args: argparse.Namespace) -> None:
             live_display.update(loading_display)
 
             orchestrator = MonitoringOrchestrator(
-                update_interval=args.refresh_rate
-                if hasattr(args, "refresh_rate")
-                else 10,
+                update_interval=(
+                    args.refresh_rate if hasattr(args, "refresh_rate") else 10
+                ),
                 data_path=str(data_path),
             )
             orchestrator.set_args(args)
@@ -214,10 +227,13 @@ def _run_monitoring(args: argparse.Namespace) -> None:
                 logger.warning("Timeout waiting for initial data")
 
             # Main loop - live display is already active
-            while True:
-                import time
-
-                time.sleep(1)
+            # Use signal.pause() for more efficient waiting
+            try:
+                signal.pause()
+            except AttributeError:
+                # Fallback for Windows which doesn't support signal.pause()
+                while True:
+                    time.sleep(1)
         finally:
             # Stop monitoring first
             if "orchestrator" in locals():
@@ -360,6 +376,58 @@ def validate_cli_environment() -> Optional[str]:
 
     except Exception as e:
         return f"Environment validation failed: {e}"
+
+
+def _run_table_view(
+    args: argparse.Namespace, data_path: Path, view_mode: str, console: Console
+) -> None:
+    """Run table view mode (daily/monthly)."""
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Create aggregator with appropriate mode
+        aggregator = UsageAggregator(
+            data_path=str(data_path),
+            aggregation_mode=view_mode,
+            timezone=args.timezone,
+        )
+
+        # Create table controller
+        controller = TableViewsController(console=console)
+
+        # Get aggregated data
+        logger.info(f"Loading {view_mode} usage data...")
+        aggregated_data = aggregator.aggregate()
+
+        if not aggregated_data:
+            print_themed(f"No usage data found for {view_mode} view", style="warning")
+            return
+
+        # Display the table
+        controller.display_aggregated_view(
+            data=aggregated_data,
+            view_mode=view_mode,
+            timezone=args.timezone,
+            plan=args.plan,
+            token_limit=_get_initial_token_limit(args, data_path),
+        )
+
+        # Wait for user to press Ctrl+C
+        print_themed("\nPress Ctrl+C to exit", style="info")
+        try:
+            # Use signal.pause() for more efficient waiting
+            try:
+                signal.pause()
+            except AttributeError:
+                # Fallback for Windows which doesn't support signal.pause()
+                while True:
+                    time.sleep(1)
+        except KeyboardInterrupt:
+            print_themed("\nExiting...", style="info")
+
+    except Exception as e:
+        logger.error(f"Error in table view: {e}", exc_info=True)
+        print_themed(f"Error displaying {view_mode} view: {e}", style="error")
 
 
 if __name__ == "__main__":

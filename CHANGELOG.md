@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.1.0] - 2025-07-23
+
+### 🆕 New Features
+- **📊 Usage Analysis Views**: Added `--view` parameter for different time aggregation periods
+  - `--view realtime` (default): Live monitoring with real-time updates
+  - `--view daily`: Daily token usage aggregated in comprehensive table format
+  - `--view monthly`: Monthly token usage aggregated for long-term trend analysis
+
+### 📝 Use Cases
+- **Daily Analysis**: Track daily usage patterns and identify peak consumption periods
+- **Monthly Planning**: Long-term budget analysis and trend identification
+- **Usage Optimization**: Historical data analysis for better resource planning
+
 ## [3.0.0] - 2025-01-13
 
 ### 🚨 Breaking Changes

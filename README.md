@@ -188,6 +188,7 @@ claude-monitor --help
 |-----------|------|---------|-------------|
 | --plan | string | custom | Plan type: pro, max5, max20, or custom |
 | --custom-limit-tokens | int | None | Token limit for custom plan (must be > 0) |
+| --view | string | realtime | View type: realtime, daily, or monthly |
 | --timezone | string | auto | Timezone (auto-detected). Examples: UTC, America/New_York, Europe/London |
 | --time-format | string | auto | Time format: 12h, 24h, or auto |
 | --theme | string | auto | Display theme: light, dark, classic, or auto |
@@ -223,6 +224,7 @@ The tool can be invoked using any of these commands:
 The monitor automatically saves your preferences to avoid re-specifying them on each run:
 
 **What Gets Saved:**
+- View type (--view)
 - Theme preferences (--theme)
 - Timezone settings (--timezone)
 - Time format (--time-format)
@@ -303,6 +305,20 @@ claude-monitor --reset-hour 3
 
 # Reset at 10 PM
 claude-monitor --reset-hour 22
+```
+
+#### Usage View Configuration
+
+```bash
+# Real-time monitoring with live updates (Default)
+claude-monitor --view realtime
+
+# Daily token usage aggregated in table format
+claude-monitor --view daily
+
+# Monthly token usage aggregated in table format
+claude-monitor --view monthly
+
 ```
 
 #### Performance and Display Configuration
@@ -459,6 +475,11 @@ Claude Config Files → Data Layer → Analysis Engine → UI Components → Ter
 - **Data Tables**: Sortable columns with model-specific statistics
 - **Layout Manager**: Responsive design that adapts to terminal size
 - **Theme System**: Auto-detects terminal background for optimal readability
+
+#### 📈 Multiple Usage Views
+- **Realtime View** (Default): Live monitoring with progress bars, current session data, and burn rate analysis
+- **Daily View**: Aggregated daily statistics showing Date, Models, Input/Output/Cache tokens, Total tokens, and Cost
+- **Monthly View**: Monthly aggregated data for long-term trend analysis and budget planning
 
 #### 🔮 Machine Learning Predictions
 - **P90 Calculator**: 90th percentile analysis for intelligent limit detection
@@ -649,6 +670,28 @@ claude-monitor
 
 # Press Ctrl+C after checking status
 ```
+
+#### 📊 Usage Analysis Views
+**Scenario**: Analyzing your token usage patterns over different time periods.
+
+```bash
+# View daily usage breakdown with detailed statistics
+claude-monitor --view daily
+
+# Analyze monthly token consumption trends
+claude-monitor --view monthly --plan max20
+
+# Export daily usage data to log file for analysis
+claude-monitor --view daily --log-file ~/daily-usage.log
+
+# Review usage in different timezone
+claude-monitor --view daily --timezone America/New_York
+```
+
+**Use Cases**:
+- **Realtime**: Live monitoring of current session and burn rate
+- **Daily**: Analyze daily consumption patterns and identify peak usage days
+- **Monthly**: Long-term trend analysis and monthly budget planning
 
 
 ### Plan Selection Strategies

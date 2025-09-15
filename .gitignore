@@ -212,3 +212,7 @@ logs/
 /src/Functionality_Coverage_Claude-Code-Usage-Monitor_Missing_From_claude_monitor.md
 /TODO.md
 *Zone.Identifier
+
+# Local linting scripts
+lint*.py
+lint*.sh

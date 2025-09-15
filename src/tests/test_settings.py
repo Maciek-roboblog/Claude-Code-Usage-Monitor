@@ -42,15 +42,21 @@ class TestLastUsedParams:
 
     def test_save_success(self) -> None:
         """Test successful saving of parameters."""
-        # Create mock settings
-        mock_settings = Mock()
-        mock_settings.plan = "pro"
-        mock_settings.theme = "dark"
-        mock_settings.timezone = "UTC"
-        mock_settings.time_format = "24h"
-        mock_settings.refresh_rate = 5
-        mock_settings.reset_hour = 12
-        mock_settings.custom_limit_tokens = 1000
+        # Create mock settings with type object
+        mock_settings = type(
+            "MockSettings",
+            (),
+            {
+                "plan": "pro",
+                "theme": "dark",
+                "timezone": "UTC",
+                "time_format": "24h",
+                "refresh_rate": 5,
+                "reset_hour": 12,
+                "custom_limit_tokens": 1000,
+                "view": "realtime",
+            },
+        )()
 
         # Save parameters
         self.last_used.save(mock_settings)
@@ -69,18 +75,25 @@ class TestLastUsedParams:
         assert data["refresh_rate"] == 5
         assert data["reset_hour"] == 12
         assert data["custom_limit_tokens"] == 1000
+        assert data["view"] == "realtime"
         assert "timestamp" in data
 
     def test_save_without_custom_limit(self) -> None:
         """Test saving without custom limit tokens."""
-        mock_settings = Mock()
-        mock_settings.plan = "pro"
-        mock_settings.theme = "light"
-        mock_settings.timezone = "UTC"
-        mock_settings.time_format = "12h"
-        mock_settings.refresh_rate = 10
-        mock_settings.reset_hour = None
-        mock_settings.custom_limit_tokens = None
+        mock_settings = type(
+            "MockSettings",
+            (),
+            {
+                "plan": "pro",
+                "theme": "light",
+                "timezone": "UTC",
+                "time_format": "12h",
+                "refresh_rate": 10,
+                "reset_hour": None,
+                "custom_limit_tokens": None,
+                "view": "realtime",
+            },
+        )()
 
         self.last_used.save(mock_settings)
 
@@ -96,14 +109,20 @@ class TestLastUsedParams:
         non_existent_dir = self.temp_dir / "non-existent"
         last_used = LastUsedParams(non_existent_dir)
 
-        mock_settings = Mock()
-        mock_settings.plan = "pro"
-        mock_settings.theme = "dark"
-        mock_settings.timezone = "UTC"
-        mock_settings.time_format = "24h"
-        mock_settings.refresh_rate = 5
-        mock_settings.reset_hour = 12
-        mock_settings.custom_limit_tokens = None
+        mock_settings = type(
+            "MockSettings",
+            (),
+            {
+                "plan": "pro",
+                "theme": "dark",
+                "timezone": "UTC",
+                "time_format": "24h",
+                "refresh_rate": 5,
+                "reset_hour": 12,
+                "custom_limit_tokens": None,
+                "view": "realtime",
+            },
+        )()
 
         last_used.save(mock_settings)
 
@@ -123,6 +142,7 @@ class TestLastUsedParams:
             mock_settings.refresh_rate = 5
             mock_settings.reset_hour = 12
             mock_settings.custom_limit_tokens = None
+            mock_settings.view = "realtime"
 
             # Should not raise exception
             self.last_used.save(mock_settings)
@@ -141,6 +161,7 @@ class TestLastUsedParams:
             "reset_hour": 8,
             "custom_limit_tokens": 2000,
             "timestamp": "2024-01-01T12:00:00",
+            "view": "realtime",
         }
 
         with open(self.last_used.params_file, "w") as f:
@@ -415,6 +436,7 @@ class TestSettings:
             "timezone": "Europe/Warsaw",
             "refresh_rate": 15,
             "custom_limit_tokens": 5000,
+            "view": "realtime",
         }
 
         with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
@@ -447,6 +469,7 @@ class TestSettings:
             "theme": "dark",
             "timezone": "Europe/Warsaw",
             "refresh_rate": 15,
+            "view": "realtime",
         }
 
         with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
