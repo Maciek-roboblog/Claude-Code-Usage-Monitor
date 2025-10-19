@@ -385,18 +385,48 @@ class SessionDisplayComponent:
         per_model_stats: dict[str, Any],
         kwargs: dict[str, Any],
     ) -> None:
-        """Add weekly hour limits section to screen buffer.
+        """Add weekly hour limits section to screen buffer with dynamic model detection.
+
+        Updated Oct 2025: Now dynamically detects model versions (e.g., Sonnet 4.5, Opus 4.1)
+        from actual usage data and displays appropriate weekly limits.
 
         Args:
             screen_buffer: Screen buffer to append to
             plan: Current plan name
-            per_model_stats: Per-model usage statistics
+            per_model_stats: Per-model usage statistics (contains model names)
             kwargs: Additional parameters including weekly usage data
         """
-        from claude_monitor.core.plans import Plans
+        from claude_monitor.core.models import (
+            get_model_display_name_with_version,
+            parse_model_family,
+        )
+        from claude_monitor.core.plans import (
+            Plans,
+            PlanType,
+            get_weekly_limits_for_model,
+        )
 
         plan_config = Plans.get_plan_by_name(plan)
-        if not plan_config or not plan_config.has_weekly_limits:
+        if not plan_config:
+            return
+
+        # Get plan type for limit lookup
+        try:
+            plan_type = PlanType.from_string(plan)
+        except ValueError:
+            return
+
+        # Extract models from per_model_stats and find those with weekly limits
+        models_with_limits: dict[str, tuple[int, int]] = {}
+        model_emojis = {"sonnet": "🤖", "opus": "💎", "haiku": "⚡"}
+
+        for model_name in per_model_stats.keys():
+            limits = get_weekly_limits_for_model(model_name, plan_type)
+            if limits:
+                models_with_limits[model_name] = limits
+
+        # If no models have weekly limits, don't show the section
+        if not models_with_limits:
             return
 
         screen_buffer.append("")
@@ -406,42 +436,30 @@ class SessionDisplayComponent:
         )
         screen_buffer.append(f"[separator]{'─' * 60}[/]")
 
-        # Get weekly usage from kwargs (or use mock data for display)
-        weekly_sonnet4_used = kwargs.get("weekly_sonnet4_used", 0)
-        weekly_opus4_used = kwargs.get("weekly_opus4_used", 0)
+        # Display limits for each model dynamically
+        for model_name, (min_h, max_h) in models_with_limits.items():
+            # Get display name (e.g., "Sonnet 4.5", "Opus 4.1")
+            display_name = get_model_display_name_with_version(model_name)
 
-        # Sonnet 4 weekly limit
-        if plan_config.weekly_sonnet4_hours:
-            min_h, max_h = plan_config.weekly_sonnet4_hours
-            if min_h > 0 or max_h > 0:
-                # Use max as the limit for percentage calculation
-                sonnet4_percentage = (
-                    percentage(weekly_sonnet4_used, max_h) if max_h > 0 else 0
-                )
-                sonnet4_bar = self._render_wide_progress_bar(sonnet4_percentage)
-                screen_buffer.append(
-                    f"🤖 [value]Sonnet 4 Weekly:[/]     {sonnet4_bar} {sonnet4_percentage:4.1f}%    [value]{weekly_sonnet4_used}h[/] / [dim]{min_h}-{max_h}h[/]"
-                )
-                screen_buffer.append("")
+            # Get emoji for model family
+            family = parse_model_family(model_name)
+            emoji = model_emojis.get(family, "🤖")
 
-        # Opus 4 weekly limit
-        if plan_config.weekly_opus4_hours:
-            min_h, max_h = plan_config.weekly_opus4_hours
-            if min_h > 0 or max_h > 0:
-                opus4_percentage = (
-                    percentage(weekly_opus4_used, max_h) if max_h > 0 else 0
-                )
-                opus4_bar = self._render_wide_progress_bar(opus4_percentage)
-                screen_buffer.append(
-                    f"💎 [value]Opus 4 Weekly:[/]       {opus4_bar} {opus4_percentage:4.1f}%    [value]{weekly_opus4_used}h[/] / [dim]{min_h}-{max_h}h[/]"
-                )
-                screen_buffer.append("")
-            elif min_h == 0 and max_h == 0:
-                # Plan doesn't support Opus 4
-                screen_buffer.append(
-                    f"💎 [value]Opus 4 Weekly:[/]       [dim]Not available on {plan_config.display_name} plan[/]"
-                )
-                screen_buffer.append("")
+            # Get weekly usage from kwargs (model-specific if available)
+            # Format: weekly_{family}_used or weekly_{family}4_used for backward compat
+            usage_key = f"weekly_{family}_used"
+            weekly_used = kwargs.get(usage_key, kwargs.get(f"weekly_{family}4_used", 0))
+
+            # Calculate percentage
+            model_percentage = percentage(weekly_used, max_h) if max_h > 0 else 0
+            model_bar = self._render_wide_progress_bar(model_percentage)
+
+            # Display the limit with actual model version
+            screen_buffer.append(
+                f"{emoji} [value]{display_name} Weekly:[/]     {model_bar} {model_percentage:4.1f}%    "
+                f"[value]{weekly_used}h[/] / [dim]{min_h}-{max_h}h[/]"
+            )
+            screen_buffer.append("")
 
         screen_buffer.append(f"[separator]{'─' * 60}[/]")
 

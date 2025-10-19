@@ -6,7 +6,7 @@ Shared constants (defaults, common limits, threshold) are exposed on the Plans c
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 
 class PlanType(Enum):
@@ -120,6 +120,72 @@ _DEFAULTS: Dict[str, Any] = {
     "cost_limit": PLAN_LIMITS[PlanType.CUSTOM]["cost_limit"],
     "message_limit": PLAN_LIMITS[PlanType.PRO]["message_limit"],
 }
+
+# Weekly hour limits by model family and generation
+# Format: (family, generation) -> (plan_type -> (min_hours, max_hours))
+# Introduced Aug 2025: Anthropic now tracks weekly usage in hours, not tokens
+# This mapping supports dynamic detection of model versions (4.5, 4.1, etc.)
+WEEKLY_LIMITS_BY_MODEL_FAMILY: Dict[Tuple[str, int], Dict[PlanType, Tuple[int, int]]] = {
+    ("sonnet", 4): {  # Sonnet 4.x (includes 4.5, 4.0, etc.)
+        PlanType.PRO: (40, 80),
+        PlanType.MAX5: (140, 280),
+        PlanType.MAX20: (240, 480),
+        PlanType.CUSTOM: (0, 0),  # Custom plans have no predefined limits
+    },
+    ("opus", 4): {  # Opus 4.x (includes 4.1, 4.0, etc.)
+        PlanType.PRO: (0, 0),  # Opus 4 not available on Pro
+        PlanType.MAX5: (15, 35),
+        PlanType.MAX20: (24, 40),
+        PlanType.CUSTOM: (0, 0),
+    },
+    ("haiku", 4): {  # Haiku 4.x (includes 4.5, 4.0, etc.)
+        # Haiku typically doesn't have weekly hour limits (free/unlimited)
+        PlanType.PRO: (0, 0),
+        PlanType.MAX5: (0, 0),
+        PlanType.MAX20: (0, 0),
+        PlanType.CUSTOM: (0, 0),
+    },
+    # Future models (5.x, 6.x) can be added here as they are released
+}
+
+
+def get_weekly_limits_for_model(
+    model_name: str, plan_type: PlanType
+) -> Optional[Tuple[int, int]]:
+    """Get weekly hour limits for a specific model and plan.
+
+    Args:
+        model_name: Full model name (e.g., 'claude-sonnet-4-5-20250929')
+        plan_type: Plan type (PRO, MAX5, MAX20, CUSTOM)
+
+    Returns:
+        Tuple of (min_hours, max_hours) or None if not found
+
+    Examples:
+        >>> get_weekly_limits_for_model("claude-sonnet-4-5-20250929", PlanType.PRO)
+        (40, 80)
+        >>> get_weekly_limits_for_model("claude-opus-4-1-20250815", PlanType.MAX5)
+        (15, 35)
+    """
+    from claude_monitor.core.models import parse_model_family, parse_model_generation
+
+    family = parse_model_family(model_name)
+    generation = parse_model_generation(model_name)
+
+    if not family or not generation:
+        return None
+
+    key = (family, generation)
+    if key in WEEKLY_LIMITS_BY_MODEL_FAMILY:
+        plan_limits = WEEKLY_LIMITS_BY_MODEL_FAMILY[key]
+        if plan_type in plan_limits:
+            limits = plan_limits[plan_type]
+            # Return None if limits are (0, 0) which means not available/unlimited
+            if limits == (0, 0):
+                return None
+            return limits
+
+    return None
 
 
 class Plans:
