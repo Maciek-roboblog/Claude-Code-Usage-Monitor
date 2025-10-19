@@ -28,46 +28,90 @@ class PlanType(Enum):
 
 @dataclass(frozen=True)
 class PlanConfig:
-    """Immutable configuration for a Claude subscription plan."""
+    """Immutable configuration for a Claude subscription plan.
+
+    Updated Oct 2025: Added weekly hour limits for Sonnet 4 and Opus 4.
+    Weekly limits were introduced by Anthropic in August 2025 as a new
+    rate limiting mechanism separate from 5-hour session token limits.
+    """
 
     name: str
     token_limit: int
     cost_limit: float
     message_limit: int
     display_name: str
+    weekly_sonnet4_hours: Optional[tuple[int, int]] = None  # (min, max) hours/week
+    weekly_opus4_hours: Optional[tuple[int, int]] = None  # (min, max) hours/week
 
     @property
     def formatted_token_limit(self) -> str:
-        """Human-readable token limit (e.g., '19k' instead of '19000')."""
+        """Human-readable token limit (e.g., '44k' instead of '44000')."""
         if self.token_limit >= 1_000:
             return f"{self.token_limit // 1_000}k"
         return str(self.token_limit)
 
+    @property
+    def has_weekly_limits(self) -> bool:
+        """Check if this plan has weekly hour limits defined."""
+        return self.weekly_sonnet4_hours is not None or self.weekly_opus4_hours is not None
+
+    @property
+    def formatted_weekly_sonnet4(self) -> str:
+        """Human-readable Sonnet 4 weekly limit (e.g., '40-80h/week')."""
+        if not self.weekly_sonnet4_hours:
+            return "N/A"
+        min_h, max_h = self.weekly_sonnet4_hours
+        if min_h == max_h == 0:
+            return "Not available"
+        return f"{min_h}-{max_h}h/week"
+
+    @property
+    def formatted_weekly_opus4(self) -> str:
+        """Human-readable Opus 4 weekly limit (e.g., '15-35h/week')."""
+        if not self.weekly_opus4_hours:
+            return "N/A"
+        min_h, max_h = self.weekly_opus4_hours
+        if min_h == max_h == 0:
+            return "Not available"
+        return f"{min_h}-{max_h}h/week"
+
 
 PLAN_LIMITS: Dict[PlanType, Dict[str, Any]] = {
     PlanType.PRO: {
-        "token_limit": 19_000,
+        "token_limit": 44_000,  # Updated Oct 2025: ~44k tokens per 5h session
         "cost_limit": 18.0,
         "message_limit": 250,
         "display_name": "Pro",
+        # Weekly limits introduced Aug 2025 (measured in hours, not tokens)
+        "weekly_sonnet4_hours": (40, 80),  # Range: min-max hours per week
+        "weekly_opus4_hours": (0, 0),  # Opus 4 not available on Pro plan
     },
     PlanType.MAX5: {
         "token_limit": 88_000,
         "cost_limit": 35.0,
         "message_limit": 1_000,
         "display_name": "Max5",
+        # Weekly limits introduced Aug 2025
+        "weekly_sonnet4_hours": (140, 280),
+        "weekly_opus4_hours": (15, 35),
     },
     PlanType.MAX20: {
         "token_limit": 220_000,
         "cost_limit": 140.0,
         "message_limit": 2_000,
         "display_name": "Max20",
+        # Weekly limits introduced Aug 2025
+        "weekly_sonnet4_hours": (240, 480),
+        "weekly_opus4_hours": (24, 40),
     },
     PlanType.CUSTOM: {
         "token_limit": 44_000,
         "cost_limit": 50.0,
         "message_limit": 250,
         "display_name": "Custom",
+        # Custom plans don't have predefined weekly limits
+        "weekly_sonnet4_hours": None,
+        "weekly_opus4_hours": None,
     },
 }
 
@@ -84,12 +128,16 @@ class Plans:
     DEFAULT_TOKEN_LIMIT: int = _DEFAULTS["token_limit"]
     DEFAULT_COST_LIMIT: float = _DEFAULTS["cost_limit"]
     DEFAULT_MESSAGE_LIMIT: int = _DEFAULTS["message_limit"]
-    COMMON_TOKEN_LIMITS: List[int] = [19_000, 88_000, 220_000, 880_000]
+    # Updated Oct 2025: Corrected common token limits based on current plans
+    COMMON_TOKEN_LIMITS: List[int] = [44_000, 88_000, 220_000]
     LIMIT_DETECTION_THRESHOLD: float = 0.95
 
     @classmethod
     def _build_config(cls, plan_type: PlanType) -> PlanConfig:
-        """Instantiate PlanConfig from the PLAN_LIMITS dictionary."""
+        """Instantiate PlanConfig from the PLAN_LIMITS dictionary.
+
+        Updated Oct 2025: Now includes weekly hour limits for Sonnet 4 and Opus 4.
+        """
         data = PLAN_LIMITS[plan_type]
         return PlanConfig(
             name=plan_type.value,
@@ -97,6 +145,8 @@ class Plans:
             cost_limit=data["cost_limit"],
             message_limit=data["message_limit"],
             display_name=data["display_name"],
+            weekly_sonnet4_hours=data.get("weekly_sonnet4_hours"),
+            weekly_opus4_hours=data.get("weekly_opus4_hours"),
         )
 
     @classmethod
