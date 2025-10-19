@@ -59,6 +59,7 @@ class DisplayController:
             "entries": active_block.get("entries", []),
             "start_time_str": active_block.get("startTime"),
             "end_time_str": active_block.get("endTime"),
+            "projection_data": active_block.get("projectionData"),
         }
 
     def _calculate_token_limits(self, args: Any, token_limit: int) -> Tuple[int, int]:
@@ -390,6 +391,7 @@ class DisplayController:
             "show_exceed_notification": notifications["show_exceed_notification"],
             "show_tokens_will_run_out": notifications["show_cost_will_exceed"],
             "original_limit": original_limit,
+            "projection_data": session_data.get("projection_data"),
         }
 
     def _calculate_model_distribution(

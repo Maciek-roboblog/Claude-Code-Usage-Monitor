@@ -251,6 +251,11 @@ class SessionDisplayComponent:
                 screen_buffer.append(f"🤖 [value]Model Distribution:[/]   {model_bar}")
             screen_buffer.append(f"[separator]{'─' * 60}[/]")
 
+            # Session Projections Section (if available)
+            self._add_projection_section(
+                screen_buffer, kwargs.get("projection_data"), token_limit, kwargs
+            )
+
             # Weekly Limits Section (Introduced August 2025 by Anthropic)
             self._add_weekly_limits_section(screen_buffer, plan, per_model_stats, kwargs)
 
@@ -377,6 +382,87 @@ class SessionDisplayComponent:
 
         if notifications_added:
             screen_buffer.append("")
+
+    def _add_projection_section(
+        self,
+        screen_buffer: list[str],
+        projection_data: Optional[dict[str, Any]],
+        token_limit: int,
+        kwargs: dict[str, Any],
+    ) -> None:
+        """Add session projection section showing estimated end-of-session usage.
+
+        Displays projected token and cost usage if current burn rate continues
+        until session reset, helping users anticipate if they'll exceed limits.
+
+        Args:
+            screen_buffer: Buffer to append display lines to
+            projection_data: Dictionary with totalTokens, totalCost, remainingMinutes
+            token_limit: Current token limit for the session
+            kwargs: Additional parameters (cost_limit_p90, etc.)
+        """
+        if not projection_data:
+            return
+
+        projected_tokens = projection_data.get("totalTokens", 0)
+        projected_cost = projection_data.get("totalCost", 0.0)
+        remaining_minutes = projection_data.get("remainingMinutes", 0)
+
+        if projected_tokens <= 0:
+            return
+
+        screen_buffer.append("")
+        screen_buffer.append("[bold]🔮 Session Projections[/bold]")
+        screen_buffer.append(
+            "[dim]Estimated usage if current burn rate continues to session end[/dim]"
+        )
+        screen_buffer.append(f"[separator]{'─' * 60}[/]")
+
+        # Token projection bar
+        token_percentage = (
+            min(100, percentage(projected_tokens, token_limit))
+            if token_limit > 0
+            else 0
+        )
+        token_projection_bar = self._render_wide_progress_bar(token_percentage)
+
+        # Determine if will exceed
+        will_exceed_tokens = projected_tokens > token_limit
+        tokens_status = "[error]⚠️  WILL EXCEED[/]" if will_exceed_tokens else "[success]✓ Within limit[/]"
+
+        screen_buffer.append(
+            f"📊 [value]Projected Tokens:[/]    {token_projection_bar} {token_percentage:4.1f}%    "
+            f"[value]{projected_tokens:,}[/] / [dim]{token_limit:,}[/]"
+        )
+        screen_buffer.append(f"   {tokens_status}")
+        screen_buffer.append("")
+
+        # Cost projection (if cost limit is available)
+        cost_limit = kwargs.get("cost_limit_p90")
+        if cost_limit and cost_limit > 0:
+            cost_percentage = min(100, percentage(projected_cost, cost_limit))
+            cost_projection_bar = self._render_wide_progress_bar(cost_percentage)
+
+            will_exceed_cost = projected_cost > cost_limit
+            cost_status = (
+                "[error]⚠️  WILL EXCEED[/]" if will_exceed_cost else "[success]✓ Within limit[/]"
+            )
+
+            screen_buffer.append(
+                f"💰 [value]Projected Cost:[/]      {cost_projection_bar} {cost_percentage:4.1f}%    "
+                f"[value]${projected_cost:.2f}[/] / [dim]${cost_limit:.2f}[/]"
+            )
+            screen_buffer.append(f"   {cost_status}")
+            screen_buffer.append("")
+
+        # Remaining time
+        remaining_hours = int(remaining_minutes // 60)
+        remaining_mins = int(remaining_minutes % 60)
+        screen_buffer.append(
+            f"⏱️  [value]Time Remaining:[/]      [dim]{remaining_hours}h {remaining_mins}m until session reset[/]"
+        )
+
+        screen_buffer.append(f"[separator]{'─' * 60}[/]")
 
     def _add_weekly_limits_section(
         self,
