@@ -251,6 +251,9 @@ class SessionDisplayComponent:
                 screen_buffer.append(f"🤖 [value]Model Distribution:[/]   {model_bar}")
             screen_buffer.append(f"[separator]{'─' * 60}[/]")
 
+            # Weekly Limits Section (Introduced August 2025 by Anthropic)
+            self._add_weekly_limits_section(screen_buffer, plan, per_model_stats, kwargs)
+
             velocity_emoji = VelocityIndicator.get_velocity_emoji(burn_rate)
             screen_buffer.append(
                 f"🔥 [value]Burn Rate:[/]              [warning]{burn_rate:.1f}[/] [dim]tokens/min[/] {velocity_emoji}"
@@ -374,6 +377,73 @@ class SessionDisplayComponent:
 
         if notifications_added:
             screen_buffer.append("")
+
+    def _add_weekly_limits_section(
+        self,
+        screen_buffer: list[str],
+        plan: str,
+        per_model_stats: dict[str, Any],
+        kwargs: dict[str, Any],
+    ) -> None:
+        """Add weekly hour limits section to screen buffer.
+
+        Args:
+            screen_buffer: Screen buffer to append to
+            plan: Current plan name
+            per_model_stats: Per-model usage statistics
+            kwargs: Additional parameters including weekly usage data
+        """
+        from claude_monitor.core.plans import Plans
+
+        plan_config = Plans.get_plan_by_name(plan)
+        if not plan_config or not plan_config.has_weekly_limits:
+            return
+
+        screen_buffer.append("")
+        screen_buffer.append("[bold]📅 Weekly Hour Limits[/bold]")
+        screen_buffer.append(
+            "[dim]Rolling 7-day window tracking (Introduced August 2025)[/dim]"
+        )
+        screen_buffer.append(f"[separator]{'─' * 60}[/]")
+
+        # Get weekly usage from kwargs (or use mock data for display)
+        weekly_sonnet4_used = kwargs.get("weekly_sonnet4_used", 0)
+        weekly_opus4_used = kwargs.get("weekly_opus4_used", 0)
+
+        # Sonnet 4 weekly limit
+        if plan_config.weekly_sonnet4_hours:
+            min_h, max_h = plan_config.weekly_sonnet4_hours
+            if min_h > 0 or max_h > 0:
+                # Use max as the limit for percentage calculation
+                sonnet4_percentage = (
+                    percentage(weekly_sonnet4_used, max_h) if max_h > 0 else 0
+                )
+                sonnet4_bar = self._render_wide_progress_bar(sonnet4_percentage)
+                screen_buffer.append(
+                    f"🤖 [value]Sonnet 4 Weekly:[/]     {sonnet4_bar} {sonnet4_percentage:4.1f}%    [value]{weekly_sonnet4_used}h[/] / [dim]{min_h}-{max_h}h[/]"
+                )
+                screen_buffer.append("")
+
+        # Opus 4 weekly limit
+        if plan_config.weekly_opus4_hours:
+            min_h, max_h = plan_config.weekly_opus4_hours
+            if min_h > 0 or max_h > 0:
+                opus4_percentage = (
+                    percentage(weekly_opus4_used, max_h) if max_h > 0 else 0
+                )
+                opus4_bar = self._render_wide_progress_bar(opus4_percentage)
+                screen_buffer.append(
+                    f"💎 [value]Opus 4 Weekly:[/]       {opus4_bar} {opus4_percentage:4.1f}%    [value]{weekly_opus4_used}h[/] / [dim]{min_h}-{max_h}h[/]"
+                )
+                screen_buffer.append("")
+            elif min_h == 0 and max_h == 0:
+                # Plan doesn't support Opus 4
+                screen_buffer.append(
+                    f"💎 [value]Opus 4 Weekly:[/]       [dim]Not available on {plan_config.display_name} plan[/]"
+                )
+                screen_buffer.append("")
+
+        screen_buffer.append(f"[separator]{'─' * 60}[/]")
 
     def format_no_active_session_screen(
         self,

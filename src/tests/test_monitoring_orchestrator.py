@@ -389,7 +389,7 @@ class TestMonitoringOrchestratorFetchAndProcess:
         # Check callback was called with correct data
         call_args = callback1.call_args[0][0]
         assert call_args["data"] == test_data
-        assert call_args["token_limit"] == 19000  # Default PRO plan limit
+        assert call_args["token_limit"] == 44000  # Updated Oct 2025: PRO plan limit
 
     def test_fetch_and_process_callback_error(
         self, orchestrator: MonitoringOrchestrator
