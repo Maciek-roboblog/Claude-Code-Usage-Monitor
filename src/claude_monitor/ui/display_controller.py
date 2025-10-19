@@ -170,6 +170,26 @@ class DisplayController:
         )
         reset_time_local = tz_handler.convert_to_timezone(reset_time, timezone_to_use)
 
+        # Session end time (5h session will run out at reset_time)
+        session_end_local = reset_time_local
+
+        # Calculate next weekly reset (next Monday 00:00)
+        try:
+            display_tz = pytz.timezone(args.timezone)
+        except pytz.exceptions.UnknownTimeZoneError:
+            display_tz = pytz.timezone("Europe/Warsaw")
+
+        current_local = current_time.astimezone(display_tz)
+
+        # Calculate days until next Monday (0=Monday, 6=Sunday)
+        days_until_monday = (7 - current_local.weekday()) % 7
+        if days_until_monday == 0 and current_local.hour > 0:
+            # If it's Monday but past midnight, go to next Monday
+            days_until_monday = 7
+
+        next_monday = current_local + timedelta(days=days_until_monday)
+        week_reset_local = next_monday.replace(hour=0, minute=0, second=0, microsecond=0)
+
         # Format times
         time_format = get_time_format_preference(args)
         predicted_end_str = format_display_time(
@@ -178,13 +198,16 @@ class DisplayController:
         reset_time_str = format_display_time(
             reset_time_local, time_format, include_seconds=False
         )
+        session_end_str = format_display_time(
+            session_end_local, time_format, include_seconds=False
+        )
+
+        # Format week reset with day name
+        week_reset_str = week_reset_local.strftime("%A ") + format_display_time(
+            week_reset_local, time_format, include_seconds=False
+        )
 
         # Current time display
-        try:
-            display_tz = pytz.timezone(args.timezone)
-        except pytz.exceptions.UnknownTimeZoneError:
-            display_tz = pytz.timezone("Europe/Warsaw")
-
         current_time_display = current_time.astimezone(display_tz)
         current_time_str = format_display_time(
             current_time_display, time_format, include_seconds=True
@@ -193,6 +216,8 @@ class DisplayController:
         return {
             "predicted_end_str": predicted_end_str,
             "reset_time_str": reset_time_str,
+            "session_end_str": session_end_str,
+            "week_reset_str": week_reset_str,
             "current_time_str": current_time_str,
         }
 
@@ -386,6 +411,8 @@ class DisplayController:
             "entries": session_data["entries"],
             "predicted_end_str": display_times["predicted_end_str"],
             "reset_time_str": display_times["reset_time_str"],
+            "session_end_str": display_times["session_end_str"],
+            "week_reset_str": display_times["week_reset_str"],
             "current_time_str": display_times["current_time_str"],
             "show_switch_notification": notifications["show_switch_notification"],
             "show_exceed_notification": notifications["show_exceed_notification"],

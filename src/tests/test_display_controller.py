@@ -827,6 +827,8 @@ class TestDisplayControllerAdvanced:
                             mock_format.return_value = {
                                 "predicted_end_str": "14:30",
                                 "reset_time_str": "13:30",
+                                "session_end_str": "13:30",
+                                "week_reset_str": "Monday 00:00",
                                 "current_time_str": "12:30",
                             }
 
