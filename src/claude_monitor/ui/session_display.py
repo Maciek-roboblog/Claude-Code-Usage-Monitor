@@ -146,7 +146,6 @@ class SessionDisplayComponent:
         predicted_end_str: str,
         reset_time_str: str,
         session_end_str: str,
-        week_reset_str: str,
         current_time_str: str,
         show_switch_notification: bool = False,
         show_exceed_notification: bool = False,
@@ -328,9 +327,6 @@ class SessionDisplayComponent:
         )
         screen_buffer.append(
             f"   [info]Session will run out:[/]   [warning]{session_end_str}[/]"
-        )
-        screen_buffer.append(
-            f"   [info]Week session resets:[/]    [success]{week_reset_str}[/]"
         )
         screen_buffer.append("")
 
