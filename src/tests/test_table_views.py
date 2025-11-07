@@ -479,3 +479,86 @@ class TestTableViewsController:
         # Monthly table with empty data
         monthly_table = controller.create_monthly_table([], empty_totals, "UTC")
         assert monthly_table.row_count == 2  # Separator + totals
+
+    def test_format_period_value_month(self, controller: TableViewsController) -> None:
+        """Test formatting month period value with date_format."""
+        # Test without date_format (should return original)
+        result = controller._format_period_value("2024-01", "month")
+        assert result == "2024-01"
+
+        # Test with date_format
+        result = controller._format_period_value(
+            "2024-01", "month", date_format="%d %b - %a", timezone="UTC"
+        )
+        # January 1, 2024 is a Monday
+        assert result == "01 Jan - Mon"
+
+        # Test with different format
+        result = controller._format_period_value(
+            "2024-11", "month", date_format="%d %b - %a", timezone="UTC"
+        )
+        # November 1, 2024 is a Friday
+        assert result == "01 Nov - Fri"
+
+    def test_format_period_value_date(self, controller: TableViewsController) -> None:
+        """Test formatting date period value with date_format."""
+        # Test without date_format (should return original)
+        result = controller._format_period_value("2024-01-15", "date")
+        assert result == "2024-01-15"
+
+        # Test with date_format
+        result = controller._format_period_value(
+            "2024-01-15", "date", date_format="%d %b - %a", timezone="UTC"
+        )
+        # January 15, 2024 is a Monday
+        assert result == "15 Jan - Mon"
+
+    def test_monthly_table_with_date_format(
+        self,
+        controller: TableViewsController,
+        sample_monthly_data: List[Dict[str, Any]],
+        sample_totals: Dict[str, Any],
+    ) -> None:
+        """Test monthly table with date_format parameter."""
+        table = controller.create_monthly_table(
+            sample_monthly_data,
+            sample_totals,
+            "UTC",
+            date_format="%d %b - %a",
+        )
+
+        assert isinstance(table, Table)
+        # Column width should be adjusted when date_format is provided
+        assert table.columns[0].width == 20
+
+    def test_daily_table_with_date_format(
+        self,
+        controller: TableViewsController,
+        sample_daily_data: List[Dict[str, Any]],
+        sample_totals: Dict[str, Any],
+    ) -> None:
+        """Test daily table with date_format parameter."""
+        table = controller.create_daily_table(
+            sample_daily_data, sample_totals, "UTC", date_format="%d %b - %a"
+        )
+
+        assert isinstance(table, Table)
+        assert table.title == "Claude Code Token Usage Report - Daily (UTC)"
+
+    def test_create_aggregate_table_with_date_format(
+        self,
+        controller: TableViewsController,
+        sample_monthly_data: List[Dict[str, Any]],
+        sample_totals: Dict[str, Any],
+    ) -> None:
+        """Test create_aggregate_table with date_format."""
+        table = controller.create_aggregate_table(
+            sample_monthly_data,
+            sample_totals,
+            "monthly",
+            "UTC",
+            date_format="%d %b - %a",
+        )
+
+        assert isinstance(table, Table)
+        assert table.title == "Claude Code Token Usage Report - Monthly (UTC)"

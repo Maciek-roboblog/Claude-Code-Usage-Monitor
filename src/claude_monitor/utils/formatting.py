@@ -28,6 +28,37 @@ def format_number(value: Union[int, float], decimals: int = 0) -> str:
     return f"{int(value):,}"
 
 
+def format_number_abbreviated(value: Union[int, float]) -> str:
+    """Format number with 'k' suffix for thousands.
+
+    Examples:
+        273155 -> "273k"
+        48875924 -> "48,875k"
+        1000 -> "1k"
+        500 -> "500"
+
+    Args:
+        value: Number to format
+
+    Returns:
+        Formatted number string with 'k' suffix for values >= 1000
+    """
+    int_value = int(value)
+    
+    if int_value < 1000:
+        return str(int_value)
+    
+    # Divide by 1000 and format with commas, then add 'k'
+    thousands = int_value / 1000
+    # Format the thousands part with commas if needed
+    if thousands >= 1000:
+        # For values like 1,234,567 -> "1,234k"
+        return f"{int(thousands):,}k"
+    else:
+        # For values like 273 -> "273k"
+        return f"{int(thousands)}k"
+
+
 def format_currency(amount: float, currency: str = "USD") -> str:
     """Format currency amount with appropriate symbol and formatting.
 

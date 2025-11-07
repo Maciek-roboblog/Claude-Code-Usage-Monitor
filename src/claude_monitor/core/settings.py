@@ -161,6 +161,16 @@ class Settings(BaseSettings):
 
     log_file: Optional[Path] = Field(default=None, description="Log file path")
 
+    date_format: Optional[str] = Field(
+        default=None,
+        description="Date format string (strftime format) for monthly/daily views. Example: '%d %b - %a' for '07 Nov - Fri'",
+    )
+
+    abbreviate_tokens: bool = Field(
+        default=False,
+        description="Abbreviate token counts with 'k' suffix (e.g., '273k' instead of '273,155')",
+    )
+
     debug: bool = Field(
         default=False,
         description="Enable debug logging (equivalent to --log-level DEBUG)",
@@ -349,6 +359,8 @@ class Settings(BaseSettings):
         args.time_format = self.time_format
         args.log_level = self.log_level
         args.log_file = str(self.log_file) if self.log_file else None
+        args.date_format = self.date_format
+        args.abbreviate_tokens = self.abbreviate_tokens
         args.version = self.version
 
         return args

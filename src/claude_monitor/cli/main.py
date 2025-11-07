@@ -410,6 +410,8 @@ def _run_table_view(
             timezone=args.timezone,
             plan=args.plan,
             token_limit=_get_initial_token_limit(args, data_path),
+            date_format=getattr(args, "date_format", None),
+            abbreviate_tokens=getattr(args, "abbreviate_tokens", False),
         )
 
         # Wait for user to press Ctrl+C

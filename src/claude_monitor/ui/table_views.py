@@ -5,8 +5,10 @@ in table format using Rich library.
 """
 
 import logging
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
+import pytz
 from rich.align import Align
 from rich.console import Console
 from rich.panel import Panel
@@ -14,7 +16,11 @@ from rich.table import Table
 from rich.text import Text
 
 # Removed theme import - using direct styles
-from claude_monitor.utils.formatting import format_currency, format_number
+from claude_monitor.utils.formatting import (
+    format_currency,
+    format_number,
+    format_number_abbreviated,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -84,8 +90,67 @@ class TableViewsController:
 
         return table
 
+    def _format_period_value(
+        self,
+        period_value: str,
+        period_key: str,
+        date_format: Optional[str] = None,
+        timezone: str = "UTC",
+    ) -> str:
+        """Format period value (date or month) using optional date_format.
+
+        Args:
+            period_value: The period value string (e.g., "2024-01" or "2024-01-15")
+            period_key: The period key type ('date' or 'month')
+            date_format: Optional strftime format string
+            timezone: Timezone for date conversion
+
+        Returns:
+            Formatted period string
+        """
+        if not date_format:
+            return period_value
+
+        try:
+            # Parse the period value based on its format
+            if period_key == "month":
+                # Format: "YYYY-MM" - parse as first day of month
+                year, month = period_value.split("-")
+                dt = datetime(int(year), int(month), 1)
+            elif period_key == "date":
+                # Format: "YYYY-MM-DD"
+                dt = datetime.strptime(period_value, "%Y-%m-%d")
+            else:
+                return period_value
+
+            # Convert to specified timezone
+            try:
+                tz = pytz.timezone(timezone)
+                # For naive datetime, localize to target timezone directly
+                # This ensures the date represents the correct day in that timezone
+                if dt.tzinfo is None:
+                    dt = tz.localize(dt)
+                else:
+                    dt = dt.astimezone(tz)
+            except Exception as e:
+                # If timezone conversion fails, use naive datetime
+                logger.debug(f"Timezone conversion failed: {e}")
+                pass
+
+            # Format using strftime
+            return dt.strftime(date_format)
+        except Exception as e:
+            logger.debug(f"Failed to format period value '{period_value}': {e}")
+            return period_value
+
     def _add_data_rows(
-        self, table: Table, data_list: List[Dict[str, Any]], period_key: str
+        self,
+        table: Table,
+        data_list: List[Dict[str, Any]],
+        period_key: str,
+        date_format: Optional[str] = None,
+        timezone: str = "UTC",
+        abbreviate_tokens: bool = False,
     ) -> None:
         """Add data rows to the table.
 
@@ -93,7 +158,13 @@ class TableViewsController:
             table: Table to add rows to
             data_list: List of data dictionaries
             period_key: Key to use for period column ('date' or 'month')
+            date_format: Optional strftime format string for period display
+            timezone: Timezone for date formatting
+            abbreviate_tokens: Whether to abbreviate token counts with 'k' suffix
         """
+        # Choose formatting function based on abbreviate_tokens flag
+        format_func = format_number_abbreviated if abbreviate_tokens else format_number
+
         for data in data_list:
             models_text = self._format_models(data["models_used"])
             total_tokens = (
@@ -103,24 +174,35 @@ class TableViewsController:
                 + data["cache_read_tokens"]
             )
 
+            # Format period value if date_format is provided
+            period_display = self._format_period_value(
+                data[period_key], period_key, date_format, timezone
+            )
+
             table.add_row(
-                data[period_key],
+                period_display,
                 models_text,
-                format_number(data["input_tokens"]),
-                format_number(data["output_tokens"]),
-                format_number(data["cache_creation_tokens"]),
-                format_number(data["cache_read_tokens"]),
-                format_number(total_tokens),
+                format_func(data["input_tokens"]),
+                format_func(data["output_tokens"]),
+                format_func(data["cache_creation_tokens"]),
+                format_func(data["cache_read_tokens"]),
+                format_func(total_tokens),
                 format_currency(data["total_cost"]),
             )
 
-    def _add_totals_row(self, table: Table, totals: Dict[str, Any]) -> None:
+    def _add_totals_row(
+        self, table: Table, totals: Dict[str, Any], abbreviate_tokens: bool = False
+    ) -> None:
         """Add totals row to the table.
 
         Args:
             table: Table to add totals to
             totals: Dictionary with total statistics
+            abbreviate_tokens: Whether to abbreviate token counts with 'k' suffix
         """
+        # Choose formatting function based on abbreviate_tokens flag
+        format_func = format_number_abbreviated if abbreviate_tokens else format_number
+
         # Add separator
         table.add_row("", "", "", "", "", "", "", "")
 
@@ -128,13 +210,11 @@ class TableViewsController:
         table.add_row(
             Text("Total", style=self.accent_style),
             "",
-            Text(format_number(totals["input_tokens"]), style=self.accent_style),
-            Text(format_number(totals["output_tokens"]), style=self.accent_style),
-            Text(
-                format_number(totals["cache_creation_tokens"]), style=self.accent_style
-            ),
-            Text(format_number(totals["cache_read_tokens"]), style=self.accent_style),
-            Text(format_number(totals["total_tokens"]), style=self.accent_style),
+            Text(format_func(totals["input_tokens"]), style=self.accent_style),
+            Text(format_func(totals["output_tokens"]), style=self.accent_style),
+            Text(format_func(totals["cache_creation_tokens"]), style=self.accent_style),
+            Text(format_func(totals["cache_read_tokens"]), style=self.accent_style),
+            Text(format_func(totals["total_tokens"]), style=self.accent_style),
             Text(format_currency(totals["total_cost"]), style=self.success_style),
         )
 
@@ -143,6 +223,8 @@ class TableViewsController:
         daily_data: List[Dict[str, Any]],
         totals: Dict[str, Any],
         timezone: str = "UTC",
+        date_format: Optional[str] = None,
+        abbreviate_tokens: bool = False,
     ) -> Table:
         """Create a daily statistics table.
 
@@ -150,6 +232,8 @@ class TableViewsController:
             daily_data: List of daily aggregated data
             totals: Total statistics
             timezone: Timezone for display
+            date_format: Optional strftime format string for date display
+            abbreviate_tokens: Whether to abbreviate token counts with 'k' suffix
 
         Returns:
             Rich Table object
@@ -162,10 +246,12 @@ class TableViewsController:
         )
 
         # Add data rows
-        self._add_data_rows(table, daily_data, "date")
+        self._add_data_rows(
+            table, daily_data, "date", date_format, timezone, abbreviate_tokens
+        )
 
         # Add totals
-        self._add_totals_row(table, totals)
+        self._add_totals_row(table, totals, abbreviate_tokens)
 
         return table
 
@@ -174,6 +260,8 @@ class TableViewsController:
         monthly_data: List[Dict[str, Any]],
         totals: Dict[str, Any],
         timezone: str = "UTC",
+        date_format: Optional[str] = None,
+        abbreviate_tokens: bool = False,
     ) -> Table:
         """Create a monthly statistics table.
 
@@ -181,22 +269,28 @@ class TableViewsController:
             monthly_data: List of monthly aggregated data
             totals: Total statistics
             timezone: Timezone for display
+            date_format: Optional strftime format string for month display
+            abbreviate_tokens: Whether to abbreviate token counts with 'k' suffix
 
         Returns:
             Rich Table object
         """
         # Create base table
+        # Use smaller width for date column (12 chars fits "01 Oct - Wed")
+        period_width = 12 if date_format else 10
         table = self._create_base_table(
             title=f"Claude Code Token Usage Report - Monthly ({timezone})",
             period_column_name="Month",
-            period_column_width=10,
+            period_column_width=period_width,
         )
 
         # Add data rows
-        self._add_data_rows(table, monthly_data, "month")
+        self._add_data_rows(
+            table, monthly_data, "month", date_format, timezone, abbreviate_tokens
+        )
 
         # Add totals
-        self._add_totals_row(table, totals)
+        self._add_totals_row(table, totals, abbreviate_tokens)
 
         return table
 
@@ -293,6 +387,8 @@ class TableViewsController:
         totals: Dict[str, Any],
         view_type: str,
         timezone: str = "UTC",
+        date_format: Optional[str] = None,
+        abbreviate_tokens: bool = False,
     ) -> Table:
         """Create a table for either daily or monthly aggregated data.
 
@@ -301,6 +397,8 @@ class TableViewsController:
             totals: Total statistics
             view_type: Type of view ('daily' or 'monthly')
             timezone: Timezone for display
+            date_format: Optional strftime format string for period display
+            abbreviate_tokens: Whether to abbreviate token counts with 'k' suffix
 
         Returns:
             Rich Table object
@@ -309,9 +407,13 @@ class TableViewsController:
             ValueError: If view_type is not 'daily' or 'monthly'
         """
         if view_type == "daily":
-            return self.create_daily_table(aggregate_data, totals, timezone)
+            return self.create_daily_table(
+                aggregate_data, totals, timezone, date_format, abbreviate_tokens
+            )
         elif view_type == "monthly":
-            return self.create_monthly_table(aggregate_data, totals, timezone)
+            return self.create_monthly_table(
+                aggregate_data, totals, timezone, date_format, abbreviate_tokens
+            )
         else:
             raise ValueError(f"Invalid view type: {view_type}")
 
@@ -323,6 +425,8 @@ class TableViewsController:
         plan: str,
         token_limit: int,
         console: Optional[Console] = None,
+        date_format: Optional[str] = None,
+        abbreviate_tokens: bool = False,
     ) -> None:
         """Display aggregated view with table and summary.
 
@@ -333,6 +437,8 @@ class TableViewsController:
             plan: Plan type
             token_limit: Token limit for the plan
             console: Optional Console instance
+            date_format: Optional strftime format string for period display
+            abbreviate_tokens: Whether to abbreviate token counts with 'k' suffix
         """
         if not data:
             no_data_display = self.create_no_data_display(view_mode)
@@ -369,7 +475,9 @@ class TableViewsController:
         summary_panel = self.create_summary_panel(view_mode, totals, period)
 
         # Create and display table
-        table = self.create_aggregate_table(data, totals, view_mode, timezone)
+        table = self.create_aggregate_table(
+            data, totals, view_mode, timezone, date_format, abbreviate_tokens
+        )
 
         # Display using console if provided
         if console:

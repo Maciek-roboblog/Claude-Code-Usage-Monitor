@@ -6,6 +6,7 @@ from unittest.mock import Mock, patch
 from claude_monitor.utils.formatting import (
     format_currency,
     format_display_time,
+    format_number_abbreviated,
     format_time,
     get_time_format_preference,
 )
@@ -328,6 +329,39 @@ class TestFormattingAdvanced:
             result = _get_pref(mock_args)
             assert result is True
             mock_pref.assert_called_once_with(mock_args)
+
+
+class TestFormatNumberAbbreviated:
+    """Test cases for format_number_abbreviated function."""
+
+    def test_format_number_abbreviated_small_values(self) -> None:
+        """Test format_number_abbreviated with values less than 1000."""
+        # Values less than 1000 should not be abbreviated
+        assert format_number_abbreviated(0) == "0"
+        assert format_number_abbreviated(500) == "500"
+        assert format_number_abbreviated(999) == "999"
+
+    def test_format_number_abbreviated_thousands(self) -> None:
+        """Test format_number_abbreviated with thousands."""
+        # Values >= 1000 should be abbreviated with 'k'
+        assert format_number_abbreviated(1000) == "1k"
+        assert format_number_abbreviated(273155) == "273k"
+        assert format_number_abbreviated(999999) == "999k"
+
+    def test_format_number_abbreviated_millions(self) -> None:
+        """Test format_number_abbreviated with millions."""
+        # Large values should use comma separators
+        assert format_number_abbreviated(48875924) == "48,875k"
+        assert format_number_abbreviated(1234567) == "1,234k"
+        assert format_number_abbreviated(1000000) == "1,000k"
+        assert format_number_abbreviated(12345678) == "12,345k"
+
+    def test_format_number_abbreviated_float_values(self) -> None:
+        """Test format_number_abbreviated with float values."""
+        # Float values should be converted to int
+        assert format_number_abbreviated(273155.7) == "273k"
+        assert format_number_abbreviated(1000.9) == "1k"
+        assert format_number_abbreviated(999.9) == "999"
 
 
 class TestFormattingErrorHandling:
