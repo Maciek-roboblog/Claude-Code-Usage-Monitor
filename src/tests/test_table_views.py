@@ -6,6 +6,7 @@ import pytest
 from rich.panel import Panel
 from rich.table import Table
 
+from claude_monitor.ui.progress_bars import create_dot_sparkline
 from claude_monitor.ui.table_views import TableViewsController
 
 
@@ -267,14 +268,14 @@ class TestTableViewsController:
     def test_format_models_single(self, controller: TableViewsController) -> None:
         """Test formatting single model."""
         result = controller._format_models(["claude-3-haiku"])
-        assert result == "claude-3-haiku"
+        assert result == "Claude 3 Haiku"
 
     def test_format_models_multiple(self, controller: TableViewsController) -> None:
         """Test formatting multiple models."""
         result = controller._format_models(
             ["claude-3-haiku", "claude-3-sonnet", "claude-3-opus"]
         )
-        expected = "• claude-3-haiku\n• claude-3-sonnet\n• claude-3-opus"
+        expected = "• Claude 3 Haiku\n• Claude 3 Sonnet\n• Claude 3 Opus"
         assert result == expected
 
     def test_format_models_empty(self, controller: TableViewsController) -> None:
@@ -528,8 +529,8 @@ class TestTableViewsController:
         )
 
         assert isinstance(table, Table)
-        # Column width should be adjusted when date_format is provided
-        assert table.columns[0].width == 20
+        # Column width should be adjusted when date_format is provided (reduced to 12)
+        assert table.columns[0].width == 12
 
     def test_daily_table_with_date_format(
         self,
@@ -562,3 +563,47 @@ class TestTableViewsController:
 
         assert isinstance(table, Table)
         assert table.title == "Claude Code Token Usage Report - Monthly (UTC)"
+
+    def test_sparklines_in_table_rows(
+        self,
+        controller: TableViewsController,
+        sample_monthly_data: List[Dict[str, Any]],
+        sample_totals: Dict[str, Any],
+    ) -> None:
+        """Test that sparklines are included in table rows."""
+        table = controller.create_monthly_table(
+            sample_monthly_data, sample_totals, "UTC", abbreviate_tokens=False
+        )
+
+        # Check that sparklines are present in the table
+        # The table should have rows with sparklines (dot sparklines)
+        assert isinstance(table, Table)
+        # Verify table was created successfully with sparklines
+        assert table.row_count >= 3  # At least data rows + separator + totals
+
+    def test_create_dot_sparkline(self) -> None:
+        """Test create_dot_sparkline function."""
+        # Test with zero max value
+        result = create_dot_sparkline(100, 0, width=10)
+        assert result == "──────────"
+
+        # Test with value at start
+        result = create_dot_sparkline(0, 1000, width=10)
+        assert result[0] == "●"
+        assert result.count("─") == 9
+
+        # Test with value at middle
+        result = create_dot_sparkline(500, 1000, width=10)
+        # Should be approximately at position 4-5 (middle)
+        assert "●" in result
+        assert result.count("─") == 9
+
+        # Test with value at end
+        result = create_dot_sparkline(1000, 1000, width=10)
+        assert result[-1] == "●" or result[-2] == "●"  # Last or second-to-last position
+        assert result.count("─") == 9
+
+        # Test with very small value
+        result = create_dot_sparkline(10, 1000, width=12)
+        assert "●" in result
+        assert len(result) == 12

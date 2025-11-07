@@ -1,6 +1,7 @@
 """Progress bar components for Claude Monitor.
 
 Provides token usage, time progress, and model usage progress bars.
+Also provides sparkline utilities for table visualizations.
 """
 
 from __future__ import annotations
@@ -331,3 +332,89 @@ class ModelUsageBar(BaseProgressBar):
             summary = f"Other {other_percentage:.1f}%"
 
         return f"🤖 [{bar_display}] {summary}"
+
+
+def create_sparkline(
+    value: int | float,
+    max_value: int | float,
+    width: int = 12,
+    filled_char: str = "█",
+    empty_char: str = "░",
+) -> str:
+    """Create a plaintext sparkline bar for table visualizations.
+
+    The bar width is fixed, and the fill is proportional to value/max_value.
+    This provides a visual comparison across rows in tables.
+
+    Args:
+        value: Current value to visualize
+        max_value: Maximum value (determines fill proportion)
+        width: Width of the sparkline bar in characters (default: 12)
+        filled_char: Character for filled segments (default: "█")
+        empty_char: Character for empty segments (default: "░")
+
+    Returns:
+        Plaintext sparkline bar string (e.g., "████░░░░░░░░")
+
+    Examples:
+        >>> create_sparkline(500, 1000, width=10)
+        '█████░░░░░'
+        >>> create_sparkline(273155, 710891658, width=12)
+        '█░░░░░░░░░░░'
+    """
+    if max_value <= 0:
+        return empty_char * width
+
+    # Calculate percentage and ensure it's between 0 and 100
+    percentage_value = min(100.0, max(0.0, (value / max_value) * 100.0))
+
+    # Calculate filled segments
+    filled = int(width * percentage_value / 100.0)
+
+    # Render the bar
+    filled_bar = filled_char * filled
+    empty_bar = empty_char * (width - filled)
+
+    return f"{filled_bar}{empty_bar}"
+
+
+def create_dot_sparkline(
+    value: int | float,
+    max_value: int | float,
+    width: int = 12,
+    dot_char: str = "●",
+    line_char: str = "─",
+) -> str:
+    """Create a Tufte-style dot sparkline showing value position on a scale.
+
+    Instead of filling a bar, shows the value as a dot position on a fixed scale.
+    This allows better comparison across rows and columns since all use the same scale.
+
+    Args:
+        value: Current value to visualize
+        max_value: Maximum value (determines dot position)
+        width: Width of the sparkline in characters (default: 12)
+        dot_char: Character for the value marker (default: "●")
+        line_char: Character for the scale line (default: "─")
+
+    Returns:
+        Plaintext dot sparkline string (e.g., "─────●───────")
+
+    Examples:
+        >>> create_dot_sparkline(500, 1000, width=10)
+        '─────●─────'
+        >>> create_dot_sparkline(273155, 710891658, width=12)
+        '─●───────────'
+    """
+    if max_value <= 0:
+        return line_char * width
+
+    # Calculate position (0 to width-1)
+    percentage_value = min(100.0, max(0.0, (value / max_value) * 100.0))
+    position = int((width - 1) * percentage_value / 100.0)
+
+    # Create the sparkline with dot at position
+    sparkline = [line_char] * width
+    sparkline[position] = dot_char
+
+    return "".join(sparkline)

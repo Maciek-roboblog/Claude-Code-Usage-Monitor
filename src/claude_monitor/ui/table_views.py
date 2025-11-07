@@ -16,11 +16,13 @@ from rich.table import Table
 from rich.text import Text
 
 # Removed theme import - using direct styles
+from claude_monitor.ui.progress_bars import create_dot_sparkline
 from claude_monitor.utils.formatting import (
     format_currency,
     format_number,
     format_number_abbreviated,
 )
+from claude_monitor.utils.model_utils import get_model_display_name
 
 logger = logging.getLogger(__name__)
 
@@ -165,6 +167,18 @@ class TableViewsController:
         # Choose formatting function based on abbreviate_tokens flag
         format_func = format_number_abbreviated if abbreviate_tokens else format_number
 
+        # Calculate max TOTAL tokens across all rows for universal sparkline scaling
+        # This allows comparison across rows AND columns (Tufte principle: same scale)
+        max_total_tokens = max(
+            (
+                d["input_tokens"]
+                + d["output_tokens"]
+                + d["cache_creation_tokens"]
+                + d["cache_read_tokens"]
+            )
+            for d in data_list
+        ) if data_list else 1
+
         for data in data_list:
             models_text = self._format_models(data["models_used"])
             total_tokens = (
@@ -179,14 +193,43 @@ class TableViewsController:
                 data[period_key], period_key, date_format, timezone
             )
 
+            # Create dot sparklines using universal scale (max_total_tokens)
+            # This allows comparing Input vs Output within a row AND across rows
+            input_sparkline = create_dot_sparkline(
+                data["input_tokens"], max_total_tokens, width=12
+            )
+            output_sparkline = create_dot_sparkline(
+                data["output_tokens"], max_total_tokens, width=12
+            )
+            cache_create_sparkline = create_dot_sparkline(
+                data["cache_creation_tokens"], max_total_tokens, width=12
+            )
+            cache_read_sparkline = create_dot_sparkline(
+                data["cache_read_tokens"], max_total_tokens, width=12
+            )
+            total_sparkline = create_dot_sparkline(
+                total_tokens, max_total_tokens, width=12
+            )
+
+            # Combine formatted number with sparkline on new line
+            input_display = f"{format_func(data['input_tokens'])}\n{input_sparkline}"
+            output_display = f"{format_func(data['output_tokens'])}\n{output_sparkline}"
+            cache_create_display = (
+                f"{format_func(data['cache_creation_tokens'])}\n{cache_create_sparkline}"
+            )
+            cache_read_display = (
+                f"{format_func(data['cache_read_tokens'])}\n{cache_read_sparkline}"
+            )
+            total_display = f"{format_func(total_tokens)}\n{total_sparkline}"
+
             table.add_row(
                 period_display,
                 models_text,
-                format_func(data["input_tokens"]),
-                format_func(data["output_tokens"]),
-                format_func(data["cache_creation_tokens"]),
-                format_func(data["cache_read_tokens"]),
-                format_func(total_tokens),
+                input_display,
+                output_display,
+                cache_create_display,
+                cache_read_display,
+                total_display,
                 format_currency(data["total_cost"]),
             )
 
@@ -331,28 +374,40 @@ class TableViewsController:
         return panel
 
     def _format_models(self, models: List[str]) -> str:
-        """Format model names for display.
+        """Format model names for display using normalized display names.
 
         Args:
-            models: List of model names
+            models: List of model names (can be full model strings)
 
         Returns:
-            Formatted string of model names
+            Formatted string of model names using display-friendly names
         """
         if not models:
             return "No models"
 
-        # Create bullet list
-        if len(models) == 1:
-            return models[0]
-        elif len(models) <= 3:
-            return "\n".join([f"• {model}" for model in models])
+        # Convert to display names and remove duplicates
+        display_names = []
+        seen = set()
+        for model in models:
+            display_name = get_model_display_name(model)
+            if display_name and display_name not in seen:
+                display_names.append(display_name)
+                seen.add(display_name)
+
+        if not display_names:
+            return "No models"
+
+        # Create bullet list with display names
+        if len(display_names) == 1:
+            return display_names[0]
+        elif len(display_names) <= 3:
+            return "\n".join([f"• {name}" for name in display_names])
         else:
-            # Truncate long lists
-            first_two = models[:2]
-            remaining_count = len(models) - 2
-            formatted = "\n".join([f"• {model}" for model in first_two])
-            formatted += f"\n• ...and {remaining_count} more"
+            # Show first two and count of remaining
+            first_two = display_names[:2]
+            remaining_count = len(display_names) - 2
+            formatted = "\n".join([f"• {name}" for name in first_two])
+            formatted += f"\n• +{remaining_count} more"
             return formatted
 
     def create_no_data_display(self, view_type: str) -> Panel:
