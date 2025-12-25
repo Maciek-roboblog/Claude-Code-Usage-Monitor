@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 from claude_monitor.core.calculations import BurnRateCalculator
 from claude_monitor.core.models import CostMode, SessionBlock, UsageEntry
 from claude_monitor.data.analyzer import SessionAnalyzer
-from claude_monitor.data.reader import load_usage_entries
+from claude_monitor.data.reader import DataSource, load_usage_entries_unified
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,7 @@ def analyze_usage(
     use_cache: bool = True,
     quick_start: bool = False,
     data_path: Optional[str] = None,
+    data_source: str = "auto",
 ) -> Dict[str, Any]:
     """
     Main entry point to generate response_final.json.
@@ -35,13 +36,14 @@ def analyze_usage(
         use_cache: Use cached data when available
         quick_start: Use minimal data for quick startup (last 24h only)
         data_path: Optional path to Claude data directory
+        data_source: Data source to use ("auto", "claude", "opencode")
 
     Returns:
         Dictionary with analyzed blocks
     """
     logger.info(
         f"analyze_usage called with hours_back={hours_back}, use_cache={use_cache}, "
-        f"quick_start={quick_start}, data_path={data_path}"
+        f"quick_start={quick_start}, data_path={data_path}, data_source={data_source}"
     )
 
     if quick_start and hours_back is None:
@@ -50,15 +52,28 @@ def analyze_usage(
     elif quick_start:
         logger.info(f"Quick start mode: loading last {hours_back} hours")
 
+    # Convert string source to DataSource enum
+    source_map = {
+        "auto": DataSource.AUTO,
+        "all": DataSource.ALL,
+        "claude": DataSource.CLAUDE,
+        "opencode": DataSource.OPENCODE,
+    }
+    source_enum = source_map.get(data_source.lower(), DataSource.AUTO)
+
     start_time = datetime.now()
-    entries, raw_entries = load_usage_entries(
+    entries, raw_entries, detected_source = load_usage_entries_unified(
         data_path=data_path,
         hours_back=hours_back,
         mode=CostMode.AUTO,
         include_raw=True,
+        source=source_enum,
     )
     load_time = (datetime.now() - start_time).total_seconds()
-    logger.info(f"Data loaded in {load_time:.3f}s")
+    logger.info(
+        f"Data loaded in {load_time:.3f}s from {detected_source.value} "
+        f"({len(entries)} entries)"
+    )
 
     start_time = datetime.now()
     analyzer = SessionAnalyzer(session_duration_hours=5)
@@ -93,6 +108,7 @@ def analyze_usage(
         "transform_time_seconds": transform_time,
         "cache_used": use_cache,
         "quick_start": quick_start,
+        "data_source": detected_source.value,
     }
 
     result = _create_result(blocks, entries, metadata)

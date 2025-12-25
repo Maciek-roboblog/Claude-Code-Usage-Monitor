@@ -1,13 +1,14 @@
 """Simplified data reader for Claude Monitor.
 
 Combines functionality from file_reader, filter, mapper, and processor
-into a single cohesive module.
+into a single cohesive module. Supports both Claude Code and OpenCode data sources.
 """
 
 import json
 import logging
 from datetime import datetime, timedelta
 from datetime import timezone as tz
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -26,7 +27,20 @@ FIELD_MODEL = "model"
 TOKEN_INPUT = "input_tokens"
 TOKEN_OUTPUT = "output_tokens"
 
+# Default data paths
+CLAUDE_CODE_PATH = "~/.claude/projects"
+OPENCODE_STORAGE_PATH = "~/.local/share/opencode/storage"
+
 logger = logging.getLogger(__name__)
+
+
+class DataSource(Enum):
+    """Data source types for usage data."""
+
+    AUTO = "auto"  # Auto-detect and combine all available sources
+    ALL = "all"  # Explicitly use all available sources (same as AUTO)
+    CLAUDE = "claude"  # Claude Code only (~/.claude/projects)
+    OPENCODE = "opencode"  # OpenCode only (~/.local/share/opencode/storage)
 
 
 def load_usage_entries(
@@ -319,4 +333,182 @@ class UsageEntryMapper:
         return {
             "message_id": data.get("message_id") or message.get("id", ""),
             "request_id": data.get("request_id") or data.get("requestId", "unknown"),
+        }
+
+
+# =============================================================================
+# Unified Data Loading with Multi-Source Support
+# =============================================================================
+
+
+def detect_available_sources() -> List[DataSource]:
+    """Detect which data sources are available.
+
+    Returns:
+        List of available DataSource enums
+    """
+    available: List[DataSource] = []
+
+    # Check for Claude Code installation
+    claude_path = Path(CLAUDE_CODE_PATH).expanduser()
+    if claude_path.exists() and list(claude_path.rglob("*.jsonl")):
+        logger.info("Detected Claude Code data source")
+        available.append(DataSource.CLAUDE)
+
+    # Check for OpenCode installation
+    opencode_path = Path(OPENCODE_STORAGE_PATH).expanduser() / "message"
+    if opencode_path.exists():
+        try:
+            if any(opencode_path.iterdir()):
+                logger.info("Detected OpenCode data source")
+                available.append(DataSource.OPENCODE)
+        except (PermissionError, OSError):
+            pass
+
+    return available
+
+
+def detect_data_source() -> DataSource:
+    """Detect which data source is available (legacy compatibility).
+
+    For backward compatibility, returns a single source.
+    Prefers OpenCode if available, otherwise Claude Code.
+
+    Returns:
+        DataSource enum indicating the detected source
+    """
+    available = detect_available_sources()
+
+    if DataSource.OPENCODE in available:
+        return DataSource.OPENCODE
+    if DataSource.CLAUDE in available:
+        return DataSource.CLAUDE
+
+    # Default to Claude Code path (legacy behavior)
+    logger.warning("No data source detected, defaulting to Claude Code")
+    return DataSource.CLAUDE
+
+
+def load_usage_entries_unified(
+    data_path: Optional[str] = None,
+    hours_back: Optional[int] = None,
+    mode: CostMode = CostMode.AUTO,
+    include_raw: bool = False,
+    source: DataSource = DataSource.AUTO,
+) -> Tuple[List[UsageEntry], Optional[List[Dict[str, Any]]], DataSource]:
+    """Load usage entries from Claude Code, OpenCode, or both.
+
+    This is the unified entry point that supports multiple data sources
+    with automatic detection and merging.
+
+    Args:
+        data_path: Optional custom data path (overrides auto-detection)
+        hours_back: Only include entries from last N hours
+        mode: Cost calculation mode
+        include_raw: Whether to return raw JSON data alongside entries
+        source: Data source to use (AUTO/ALL combines all available sources)
+
+    Returns:
+        Tuple of (usage_entries, raw_data, primary_source)
+        When multiple sources are combined, primary_source indicates the first source used.
+    """
+    from claude_monitor.data.opencode_reader import load_opencode_entries
+
+    all_entries: List[UsageEntry] = []
+    all_raw: Optional[List[Dict[str, Any]]] = [] if include_raw else None
+    primary_source: DataSource = DataSource.CLAUDE
+
+    # Handle AUTO/ALL - combine all available sources
+    if source in (DataSource.AUTO, DataSource.ALL):
+        available = detect_available_sources()
+
+        if not available:
+            logger.warning("No data sources available")
+            return [], None, DataSource.CLAUDE
+
+        # Set primary source (first available)
+        primary_source = available[0]
+
+        # Load from Claude Code if available
+        if DataSource.CLAUDE in available:
+            entries, raw_data = load_usage_entries(
+                data_path=data_path,
+                hours_back=hours_back,
+                mode=mode,
+                include_raw=include_raw,
+            )
+            all_entries.extend(entries)
+            if include_raw and raw_data and all_raw is not None:
+                all_raw.extend(raw_data)
+            logger.info(f"Loaded {len(entries)} entries from Claude Code")
+
+        # Load from OpenCode if available
+        if DataSource.OPENCODE in available:
+            entries, raw_data = load_opencode_entries(
+                data_path=None,  # Use default OpenCode path
+                hours_back=hours_back,
+                mode=mode,
+                include_raw=include_raw,
+            )
+            all_entries.extend(entries)
+            if include_raw and raw_data and all_raw is not None:
+                all_raw.extend(raw_data)
+            logger.info(f"Loaded {len(entries)} entries from OpenCode")
+
+    # Handle single source selection
+    elif source == DataSource.OPENCODE:
+        entries, raw_data = load_opencode_entries(
+            data_path=data_path,
+            hours_back=hours_back,
+            mode=mode,
+            include_raw=include_raw,
+        )
+        all_entries.extend(entries)
+        if include_raw and raw_data and all_raw is not None:
+            all_raw.extend(raw_data)
+        primary_source = DataSource.OPENCODE
+
+    else:  # DataSource.CLAUDE
+        entries, raw_data = load_usage_entries(
+            data_path=data_path,
+            hours_back=hours_back,
+            mode=mode,
+            include_raw=include_raw,
+        )
+        all_entries.extend(entries)
+        if include_raw and raw_data and all_raw is not None:
+            all_raw.extend(raw_data)
+        primary_source = DataSource.CLAUDE
+
+    # Sort combined entries by timestamp
+    all_entries.sort(key=lambda e: e.timestamp)
+
+    logger.info(f"Total entries loaded: {len(all_entries)}")
+    return all_entries, all_raw, primary_source
+
+
+def get_data_source_info(source: DataSource) -> Dict[str, Any]:
+    """Get information about a data source.
+
+    Args:
+        source: The data source to get info for
+
+    Returns:
+        Dictionary with path, exists, and description
+    """
+    if source == DataSource.OPENCODE:
+        path = Path(OPENCODE_STORAGE_PATH).expanduser()
+        return {
+            "path": str(path),
+            "exists": (path / "message").exists(),
+            "description": "OpenCode (~/.local/share/opencode/storage)",
+            "source": "opencode",
+        }
+    else:
+        path = Path(CLAUDE_CODE_PATH).expanduser()
+        return {
+            "path": str(path),
+            "exists": path.exists(),
+            "description": "Claude Code (~/.claude/projects)",
+            "source": "claude",
         }

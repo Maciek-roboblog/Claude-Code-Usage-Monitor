@@ -168,6 +168,7 @@ def _run_monitoring(args: argparse.Namespace) -> None:
                     args.refresh_rate if hasattr(args, "refresh_rate") else 10
                 ),
                 data_path=str(data_path),
+                data_source=getattr(args, "data_source", "auto"),
             )
             orchestrator.set_args(args)
 
@@ -390,6 +391,7 @@ def _run_table_view(
             data_path=str(data_path),
             aggregation_mode=view_mode,
             timezone=args.timezone,
+            data_source=getattr(args, "data_source", "auto"),
         )
 
         # Create table controller

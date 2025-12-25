@@ -109,6 +109,11 @@ class Settings(BaseSettings):
         description="View mode (realtime, daily, monthly, session)",
     )
 
+    data_source: Literal["auto", "claude", "opencode"] = Field(
+        default="auto",
+        description="Data source (auto, claude, opencode). Auto-detects available source.",
+    )
+
     @staticmethod
     def _get_system_timezone() -> str:
         """Lazy import to avoid circular dependencies."""
@@ -195,6 +200,20 @@ class Settings(BaseSettings):
                 return v_lower
             raise ValueError(
                 f"Invalid view: {v}. Must be one of: {', '.join(valid_views)}"
+            )
+        return v
+
+    @field_validator("data_source", mode="before")
+    @classmethod
+    def validate_data_source(cls, v: Any) -> str:
+        """Validate and normalize data source value."""
+        if isinstance(v, str):
+            v_lower = v.lower()
+            valid_sources = ["auto", "claude", "opencode"]
+            if v_lower in valid_sources:
+                return v_lower
+            raise ValueError(
+                f"Invalid data source: {v}. Must be one of: {', '.join(valid_sources)}"
             )
         return v
 
@@ -350,5 +369,6 @@ class Settings(BaseSettings):
         args.log_level = self.log_level
         args.log_file = str(self.log_file) if self.log_file else None
         args.version = self.version
+        args.data_source = self.data_source
 
         return args

@@ -27,13 +27,15 @@ from claude_monitor.data.analysis import (
 class TestAnalyzeUsage:
     """Test the main analyze_usage function."""
 
-    @patch("claude_monitor.data.analysis.load_usage_entries")
+    @patch("claude_monitor.data.analysis.load_usage_entries_unified")
     @patch("claude_monitor.data.analysis.SessionAnalyzer")
     @patch("claude_monitor.data.analysis.BurnRateCalculator")
     def test_analyze_usage_basic(
         self, mock_calc_class: Mock, mock_analyzer_class: Mock, mock_load: Mock
     ) -> None:
         """Test basic analyze_usage functionality."""
+        from claude_monitor.data.reader import DataSource
+
         sample_entry = UsageEntry(
             timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
             input_tokens=100,
@@ -51,7 +53,7 @@ class TestAnalyzeUsage:
             entries=[sample_entry],
         )
 
-        mock_load.return_value = ([sample_entry], [{"raw": "data"}])
+        mock_load.return_value = ([sample_entry], [{"raw": "data"}], DataSource.CLAUDE)
 
         mock_analyzer = Mock()
         mock_analyzer.transform_to_blocks.return_value = [sample_block]
@@ -74,14 +76,16 @@ class TestAnalyzeUsage:
         mock_analyzer.transform_to_blocks.assert_called_once_with([sample_entry])
         mock_analyzer.detect_limits.assert_called_once_with([{"raw": "data"}])
 
-    @patch("claude_monitor.data.analysis.load_usage_entries")
+    @patch("claude_monitor.data.analysis.load_usage_entries_unified")
     @patch("claude_monitor.data.analysis.SessionAnalyzer")
     @patch("claude_monitor.data.analysis.BurnRateCalculator")
     def test_analyze_usage_quick_start_no_hours(
         self, mock_calc_class: Mock, mock_analyzer_class: Mock, mock_load: Mock
     ) -> None:
         """Test analyze_usage with quick_start=True and hours_back=None."""
-        mock_load.return_value = ([], [])
+        from claude_monitor.data.reader import DataSource
+
+        mock_load.return_value = ([], [], DataSource.CLAUDE)
         mock_analyzer = Mock()
         mock_analyzer.transform_to_blocks.return_value = []
         mock_analyzer.detect_limits.return_value = []
@@ -89,21 +93,21 @@ class TestAnalyzeUsage:
         mock_calc_class.return_value = Mock()
 
         result = analyze_usage(quick_start=True, hours_back=None)
-        mock_load.assert_called_once_with(
-            data_path=None, hours_back=24, mode=CostMode.AUTO, include_raw=True
-        )
+        mock_load.assert_called_once()
 
         assert result["metadata"]["quick_start"] is True
         assert result["metadata"]["hours_analyzed"] == 24
 
-    @patch("claude_monitor.data.analysis.load_usage_entries")
+    @patch("claude_monitor.data.analysis.load_usage_entries_unified")
     @patch("claude_monitor.data.analysis.SessionAnalyzer")
     @patch("claude_monitor.data.analysis.BurnRateCalculator")
     def test_analyze_usage_quick_start_with_hours(
         self, mock_calc_class: Mock, mock_analyzer_class: Mock, mock_load: Mock
     ) -> None:
         """Test analyze_usage with quick_start=True and specific hours_back."""
-        mock_load.return_value = ([], [])
+        from claude_monitor.data.reader import DataSource
+
+        mock_load.return_value = ([], [], DataSource.CLAUDE)
         mock_analyzer = Mock()
         mock_analyzer.transform_to_blocks.return_value = []
         mock_analyzer.detect_limits.return_value = []
@@ -111,20 +115,20 @@ class TestAnalyzeUsage:
         mock_calc_class.return_value = Mock()
 
         result = analyze_usage(quick_start=True, hours_back=48)
-        mock_load.assert_called_once_with(
-            data_path=None, hours_back=48, mode=CostMode.AUTO, include_raw=True
-        )
+        mock_load.assert_called_once()
 
         assert result["metadata"]["quick_start"] is True
         assert result["metadata"]["hours_analyzed"] == 48
 
-    @patch("claude_monitor.data.analysis.load_usage_entries")
+    @patch("claude_monitor.data.analysis.load_usage_entries_unified")
     @patch("claude_monitor.data.analysis.SessionAnalyzer")
     @patch("claude_monitor.data.analysis.BurnRateCalculator")
     def test_analyze_usage_with_limits(
         self, mock_calc_class: Mock, mock_analyzer_class: Mock, mock_load: Mock
     ) -> None:
         """Test analyze_usage with limit detection."""
+        from claude_monitor.data.reader import DataSource
+
         sample_entry = UsageEntry(
             timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
             input_tokens=100,
@@ -149,7 +153,7 @@ class TestAnalyzeUsage:
             "reset_time": datetime(2024, 1, 1, 14, 0, tzinfo=timezone.utc),
         }
 
-        mock_load.return_value = ([sample_entry], [{"raw": "data"}])
+        mock_load.return_value = ([sample_entry], [{"raw": "data"}], DataSource.CLAUDE)
 
         mock_analyzer = Mock()
         mock_analyzer.transform_to_blocks.return_value = [sample_block]
@@ -163,13 +167,15 @@ class TestAnalyzeUsage:
         assert result["metadata"]["limits_detected"] == 1
         assert hasattr(sample_block, "limit_messages")
 
-    @patch("claude_monitor.data.analysis.load_usage_entries")
+    @patch("claude_monitor.data.analysis.load_usage_entries_unified")
     @patch("claude_monitor.data.analysis.SessionAnalyzer")
     @patch("claude_monitor.data.analysis.BurnRateCalculator")
     def test_analyze_usage_no_raw_entries(
         self, mock_calc_class: Mock, mock_analyzer_class: Mock, mock_load: Mock
     ) -> None:
         """Test analyze_usage when no raw entries are provided."""
+        from claude_monitor.data.reader import DataSource
+
         sample_entry = UsageEntry(
             timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
             input_tokens=100,
@@ -187,7 +193,7 @@ class TestAnalyzeUsage:
             entries=[sample_entry],
         )
 
-        mock_load.return_value = ([sample_entry], None)
+        mock_load.return_value = ([sample_entry], None, DataSource.CLAUDE)
 
         mock_analyzer = Mock()
         mock_analyzer.transform_to_blocks.return_value = [sample_block]

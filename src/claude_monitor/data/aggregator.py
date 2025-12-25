@@ -93,7 +93,11 @@ class UsageAggregator:
     """Aggregates usage data for daily and monthly reports."""
 
     def __init__(
-        self, data_path: str, aggregation_mode: str = "daily", timezone: str = "UTC"
+        self,
+        data_path: str,
+        aggregation_mode: str = "daily",
+        timezone: str = "UTC",
+        data_source: str = "auto",
     ):
         """Initialize the aggregator.
 
@@ -101,10 +105,12 @@ class UsageAggregator:
             data_path: Path to the data directory
             aggregation_mode: Mode of aggregation ('daily' or 'monthly')
             timezone: Timezone string for date formatting
+            data_source: Data source to use ("auto", "claude", "opencode")
         """
         self.data_path = data_path
         self.aggregation_mode = aggregation_mode
         self.timezone = timezone
+        self.data_source = data_source
         self.timezone_handler = TimezoneHandler()
 
     def _aggregate_by_period(
@@ -272,12 +278,25 @@ class UsageAggregator:
         Returns:
             List of aggregated data based on aggregation_mode
         """
-        from claude_monitor.data.reader import load_usage_entries
+        from claude_monitor.data.reader import DataSource, load_usage_entries_unified
 
         logger.info(f"Starting aggregation in {self.aggregation_mode} mode")
 
-        # Load usage entries
-        entries, _ = load_usage_entries(data_path=self.data_path)
+        # Convert string source to DataSource enum
+        source_map = {
+            "auto": DataSource.AUTO,
+            "all": DataSource.ALL,
+            "claude": DataSource.CLAUDE,
+            "opencode": DataSource.OPENCODE,
+        }
+        source_enum = source_map.get(self.data_source.lower(), DataSource.AUTO)
+
+        # Load usage entries from all available sources
+        entries, _, detected_source = load_usage_entries_unified(
+            data_path=self.data_path,
+            source=source_enum,
+        )
+        logger.info(f"Loaded {len(entries)} entries from {detected_source.value}")
 
         if not entries:
             logger.warning("No usage entries found")
