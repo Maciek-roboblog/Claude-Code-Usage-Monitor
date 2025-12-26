@@ -443,9 +443,11 @@ def load_usage_entries_unified(
             logger.info(f"Loaded {len(entries)} entries from Claude Code")
 
         # Load from OpenCode if available
+        # Note: OpenCode always uses its own default path (~/.local/share/opencode/storage)
+        # in AUTO mode. The data_path parameter only applies to Claude Code.
         if DataSource.OPENCODE in available:
             entries, raw_data = load_opencode_entries(
-                data_path=None,  # Use default OpenCode path
+                data_path=None,  # OpenCode uses its own default path in AUTO mode
                 hours_back=hours_back,
                 mode=mode,
                 include_raw=include_raw,
@@ -496,6 +498,14 @@ def get_data_source_info(source: DataSource) -> Dict[str, Any]:
     Returns:
         Dictionary with path, exists, and description
     """
+    if source in (DataSource.AUTO, DataSource.ALL):
+        available = detect_available_sources()
+        return {
+            "path": "multiple",
+            "exists": len(available) > 0,
+            "description": f"Auto-detected sources: {[s.value for s in available]}",
+            "source": "auto",
+        }
     if source == DataSource.OPENCODE:
         path = Path(OPENCODE_STORAGE_PATH).expanduser()
         return {

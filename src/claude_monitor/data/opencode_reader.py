@@ -175,6 +175,9 @@ def _process_message_file(
 
     # Check for duplicate
     msg_id = data.get("id", "")
+    if not msg_id:
+        # Generate a unique ID from file path if missing
+        msg_id = str(file_path)
     if msg_id in processed_ids:
         return None, None
 
