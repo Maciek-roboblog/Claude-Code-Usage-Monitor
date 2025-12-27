@@ -55,6 +55,7 @@ class TestLastUsedParams:
                 "reset_hour": 12,
                 "custom_limit_tokens": 1000,
                 "view": "realtime",
+                "data_source": "auto",
             },
         )()
 
@@ -76,6 +77,7 @@ class TestLastUsedParams:
         assert data["reset_hour"] == 12
         assert data["custom_limit_tokens"] == 1000
         assert data["view"] == "realtime"
+        assert data["data_source"] == "auto"
         assert "timestamp" in data
 
     def test_save_without_custom_limit(self) -> None:
@@ -92,6 +94,7 @@ class TestLastUsedParams:
                 "reset_hour": None,
                 "custom_limit_tokens": None,
                 "view": "realtime",
+                "data_source": "auto",
             },
         )()
 
@@ -121,6 +124,7 @@ class TestLastUsedParams:
                 "reset_hour": 12,
                 "custom_limit_tokens": None,
                 "view": "realtime",
+                "data_source": "auto",
             },
         )()
 
@@ -143,6 +147,7 @@ class TestLastUsedParams:
             mock_settings.reset_hour = 12
             mock_settings.custom_limit_tokens = None
             mock_settings.view = "realtime"
+            mock_settings.data_source = "auto"
 
             # Should not raise exception
             self.last_used.save(mock_settings)

@@ -19,6 +19,7 @@ from claude_monitor.core.data_processors import (
 )
 from claude_monitor.core.models import CostMode, UsageEntry
 from claude_monitor.core.pricing import PricingCalculator
+from claude_monitor.data.opencode_reader import OPENCODE_STORAGE_PATH
 from claude_monitor.error_handling import report_file_error
 from claude_monitor.utils.time_utils import TimezoneHandler
 
@@ -27,9 +28,8 @@ FIELD_MODEL = "model"
 TOKEN_INPUT = "input_tokens"
 TOKEN_OUTPUT = "output_tokens"
 
-# Default data paths
+# Default data path for Claude Code
 CLAUDE_CODE_PATH = "~/.claude/projects"
-OPENCODE_STORAGE_PATH = "~/.local/share/opencode/storage"
 
 logger = logging.getLogger(__name__)
 
@@ -351,7 +351,7 @@ def detect_available_sources() -> List[DataSource]:
 
     # Check for Claude Code installation
     claude_path = Path(CLAUDE_CODE_PATH).expanduser()
-    if claude_path.exists() and list(claude_path.rglob("*.jsonl")):
+    if claude_path.exists() and any(claude_path.rglob("*.jsonl")):
         logger.info("Detected Claude Code data source")
         available.append(DataSource.CLAUDE)
 

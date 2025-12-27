@@ -30,18 +30,13 @@ class TestOpenCodeDetection:
         message_dir.mkdir(parents=True)
         (message_dir / "ses_test").mkdir()
 
+        # Patch OPENCODE_STORAGE_PATH to use the tmp_path directly (no ~ expansion needed)
         with patch(
             "claude_monitor.data.opencode_reader.OPENCODE_STORAGE_PATH",
             str(tmp_path),
         ):
-            # Create a mock that returns the tmp_path
-            with patch(
-                "claude_monitor.data.opencode_reader.Path.expanduser",
-                return_value=tmp_path,
-            ):
-                result = detect_opencode_installation()
-                # Note: This might still return False due to expanduser behavior
-                # The actual test is more about the function structure
+            result = detect_opencode_installation()
+            assert result is True, "Should detect OpenCode when message dir exists"
 
     def test_detect_opencode_installation_not_exists(self) -> None:
         """Test detection when OpenCode storage doesn't exist."""

@@ -34,6 +34,7 @@ class LastUsedParams:
                 "refresh_rate": settings.refresh_rate,
                 "reset_hour": settings.reset_hour,
                 "view": settings.view,
+                "data_source": settings.data_source,
                 "timestamp": datetime.now().isoformat(),
             }
 

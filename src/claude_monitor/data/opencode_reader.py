@@ -50,11 +50,9 @@ def load_opencode_entries(
 
     pricing_calculator = PricingCalculator()
 
-    cutoff_time = None
     if hours_back:
-        cutoff_time = datetime.now(tz.utc) - timedelta(hours=hours_back)
-        # Convert to milliseconds timestamp for comparison
-        cutoff_ms = int(cutoff_time.timestamp() * 1000)
+        cutoff_dt = datetime.now(tz.utc) - timedelta(hours=hours_back)
+        cutoff_ms = int(cutoff_dt.timestamp() * 1000)
     else:
         cutoff_ms = None
 

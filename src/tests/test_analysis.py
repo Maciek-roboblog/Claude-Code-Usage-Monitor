@@ -73,6 +73,9 @@ class TestAnalyzeUsage:
         assert result["total_tokens"] == 150
         assert result["total_cost"] == 0.001
         mock_load.assert_called_once()
+        call_kwargs = mock_load.call_args[1]
+        assert call_kwargs["hours_back"] == 24
+        assert call_kwargs["source"] == DataSource.AUTO
         mock_analyzer.transform_to_blocks.assert_called_once_with([sample_entry])
         mock_analyzer.detect_limits.assert_called_once_with([{"raw": "data"}])
 
@@ -94,6 +97,9 @@ class TestAnalyzeUsage:
 
         result = analyze_usage(quick_start=True, hours_back=None)
         mock_load.assert_called_once()
+        call_kwargs = mock_load.call_args[1]
+        assert call_kwargs["hours_back"] == 24  # Quick start defaults to 24 hours
+        assert call_kwargs["source"] == DataSource.AUTO
 
         assert result["metadata"]["quick_start"] is True
         assert result["metadata"]["hours_analyzed"] == 24
@@ -116,6 +122,9 @@ class TestAnalyzeUsage:
 
         result = analyze_usage(quick_start=True, hours_back=48)
         mock_load.assert_called_once()
+        call_kwargs = mock_load.call_args[1]
+        assert call_kwargs["hours_back"] == 48  # User-specified hours preserved
+        assert call_kwargs["source"] == DataSource.AUTO
 
         assert result["metadata"]["quick_start"] is True
         assert result["metadata"]["hours_analyzed"] == 48

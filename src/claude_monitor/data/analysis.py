@@ -59,7 +59,11 @@ def analyze_usage(
         "claude": DataSource.CLAUDE,
         "opencode": DataSource.OPENCODE,
     }
-    source_enum = source_map.get(data_source.lower(), DataSource.AUTO)
+    data_source_lower = data_source.lower()
+    source_enum = source_map.get(data_source_lower)
+    if source_enum is None:
+        logger.warning(f"Unknown data_source '{data_source}', defaulting to 'auto'")
+        source_enum = DataSource.AUTO
 
     start_time = datetime.now()
     entries, raw_entries, detected_source = load_usage_entries_unified(
