@@ -27,11 +27,71 @@ class PricingCalculator:
     """
 
     FALLBACK_PRICING: Dict[str, Dict[str, float]] = {
-        "opus": {
+        "opus-4-5": {
+            "input": 5.0,
+            "output": 25.0,
+            "cache_creation": 6.25,
+            "cache_read": 0.5,
+        },
+        "sonnet-4-5": {
+            "input": 3.0,
+            "output": 15.0,
+            "cache_creation": 3.75,
+            "cache_read": 0.3,
+        },
+        "haiku-4-5": {
+            "input": 1.0,
+            "output": 5.0,
+            "cache_creation": 1.25,
+            "cache_read": 0.1,
+        },
+        "opus-4": {
             "input": 15.0,
             "output": 75.0,
             "cache_creation": 18.75,
             "cache_read": 1.5,
+        },
+        "sonnet-4": {
+            "input": 3.0,
+            "output": 15.0,
+            "cache_creation": 3.75,
+            "cache_read": 0.3,
+        },
+        "haiku-3-5": {
+            "input": 0.8,
+            "output": 4.0,
+            "cache_creation": 1.0,
+            "cache_read": 0.08,
+        },
+        "sonnet-3-5": {
+            "input": 3.0,
+            "output": 15.0,
+            "cache_creation": 3.75,
+            "cache_read": 0.3,
+        },
+        "opus-3": {
+            "input": 15.0,
+            "output": 75.0,
+            "cache_creation": 18.75,
+            "cache_read": 1.5,
+        },
+        "sonnet-3": {
+            "input": 3.0,
+            "output": 15.0,
+            "cache_creation": 3.75,
+            "cache_read": 0.3,
+        },
+        "haiku-3": {
+            "input": 0.25,
+            "output": 1.25,
+            "cache_creation": 0.3,
+            "cache_read": 0.03,
+        },
+        "opus": {
+            "input": 5.0,
+            "output": 25.0,
+            "cache_creation": 6.25,
+            "cache_read": 0.5,
         },
         "sonnet": {
             "input": 3.0,
@@ -40,10 +100,10 @@ class PricingCalculator:
             "cache_read": 0.3,
         },
         "haiku": {
-            "input": 0.25,
-            "output": 1.25,
-            "cache_creation": 0.3,
-            "cache_read": 0.03,
+            "input": 1.0,
+            "output": 5.0,
+            "cache_creation": 1.25,
+            "cache_read": 0.1,
         },
     }
 
@@ -56,15 +116,17 @@ class PricingCalculator:
             custom_pricing: Optional custom pricing dictionary to override defaults.
                           Should follow same structure as MODEL_PRICING.
         """
-        # Use fallback pricing if no custom pricing provided
         self.pricing: Dict[str, Dict[str, float]] = custom_pricing or {
-            "claude-3-opus": self.FALLBACK_PRICING["opus"],
-            "claude-3-sonnet": self.FALLBACK_PRICING["sonnet"],
-            "claude-3-haiku": self.FALLBACK_PRICING["haiku"],
-            "claude-3-5-sonnet": self.FALLBACK_PRICING["sonnet"],
-            "claude-3-5-haiku": self.FALLBACK_PRICING["haiku"],
-            "claude-sonnet-4-20250514": self.FALLBACK_PRICING["sonnet"],
-            "claude-opus-4-20250514": self.FALLBACK_PRICING["opus"],
+            "claude-opus-4-5": self.FALLBACK_PRICING["opus-4-5"],
+            "claude-sonnet-4-5": self.FALLBACK_PRICING["sonnet-4-5"],
+            "claude-haiku-4-5": self.FALLBACK_PRICING["haiku-4-5"],
+            "claude-opus-4": self.FALLBACK_PRICING["opus-4"],
+            "claude-sonnet-4": self.FALLBACK_PRICING["sonnet-4"],
+            "claude-3-5-sonnet": self.FALLBACK_PRICING["sonnet-3-5"],
+            "claude-3-5-haiku": self.FALLBACK_PRICING["haiku-3-5"],
+            "claude-3-opus": self.FALLBACK_PRICING["opus-3"],
+            "claude-3-sonnet": self.FALLBACK_PRICING["sonnet-3"],
+            "claude-3-haiku": self.FALLBACK_PRICING["haiku-3"],
         }
         self._cost_cache: Dict[str, float] = {}
 
@@ -132,6 +194,13 @@ class PricingCalculator:
         self._cost_cache[cache_key] = cost
         return cost
 
+    def _ensure_cache_pricing(self, pricing: Dict[str, float]) -> Dict[str, float]:
+        if "cache_creation" not in pricing:
+            pricing["cache_creation"] = pricing["input"] * 1.25
+        if "cache_read" not in pricing:
+            pricing["cache_read"] = pricing["input"] * 0.1
+        return pricing
+
     def _get_pricing_for_model(
         self, model: str, strict: bool = False
     ) -> Dict[str, float]:
@@ -152,34 +221,48 @@ class PricingCalculator:
 
         # Check configured pricing
         if normalized in self.pricing:
-            pricing = self.pricing[normalized]
-            # Ensure cache pricing exists
-            if "cache_creation" not in pricing:
-                pricing["cache_creation"] = pricing["input"] * 1.25
-            if "cache_read" not in pricing:
-                pricing["cache_read"] = pricing["input"] * 0.1
-            return pricing
+            return self._ensure_cache_pricing(self.pricing[normalized])
 
-        # Check original model name
         if model in self.pricing:
-            pricing = self.pricing[model]
-            if "cache_creation" not in pricing:
-                pricing["cache_creation"] = pricing["input"] * 1.25
-            if "cache_read" not in pricing:
-                pricing["cache_read"] = pricing["input"] * 0.1
-            return pricing
+            return self._ensure_cache_pricing(self.pricing[model])
 
-        # If strict mode, raise KeyError for unknown models
         if strict:
             raise KeyError(f"Unknown model: {model}")
 
-        # Fallback to hardcoded pricing based on model type
+        return self._get_fallback_pricing(model)
+
+    def _get_fallback_pricing(self, model: str) -> Dict[str, float]:
         model_lower = model.lower()
+
+        is_4_5 = "4-5" in model_lower or "4.5" in model_lower
+        is_4 = not is_4_5 and (
+            "4-" in model_lower or "-4-" in model_lower or "4.1" in model_lower
+        )
+        is_3_5 = "3-5" in model_lower or "3.5" in model_lower
+
         if "opus" in model_lower:
-            return self.FALLBACK_PRICING["opus"]
+            if is_4_5:
+                return self.FALLBACK_PRICING["opus-4-5"]
+            if is_4:
+                return self.FALLBACK_PRICING["opus-4"]
+            return self.FALLBACK_PRICING["opus-3"]
+
         if "haiku" in model_lower:
-            return self.FALLBACK_PRICING["haiku"]
-        # Default to Sonnet pricing
+            if is_4_5:
+                return self.FALLBACK_PRICING["haiku-4-5"]
+            if is_3_5:
+                return self.FALLBACK_PRICING["haiku-3-5"]
+            return self.FALLBACK_PRICING["haiku-3"]
+
+        if "sonnet" in model_lower:
+            if is_4_5:
+                return self.FALLBACK_PRICING["sonnet-4-5"]
+            if is_4:
+                return self.FALLBACK_PRICING["sonnet-4"]
+            if is_3_5:
+                return self.FALLBACK_PRICING["sonnet-3-5"]
+            return self.FALLBACK_PRICING["sonnet-3"]
+
         return self.FALLBACK_PRICING["sonnet"]
 
     def calculate_cost_for_entry(
