@@ -69,6 +69,49 @@ class UsageProjection:
 
 
 @dataclass
+class WeeklyUsage:
+    """Rolling 7-day weekly usage tracking for quota monitoring."""
+
+    week_start: datetime
+    week_end: datetime
+    tokens_used: int = 0
+    cost_used: float = 0.0
+    token_limit: int = 0
+    cost_limit: float = 0.0
+    days_elapsed: float = 0.0
+    per_model_tokens: Dict[str, int] = field(default_factory=dict)
+
+    @property
+    def tokens_remaining(self) -> int:
+        """Tokens remaining in weekly quota."""
+        return max(0, self.token_limit - self.tokens_used)
+
+    @property
+    def usage_percentage(self) -> float:
+        """Percentage of weekly quota used."""
+        if self.token_limit <= 0:
+            return 0.0
+        return min(100.0, (self.tokens_used / self.token_limit) * 100)
+
+    @property
+    def days_remaining(self) -> float:
+        """Days remaining in rolling 7-day window."""
+        return max(0.0, 7.0 - self.days_elapsed)
+
+    @property
+    def daily_burn_rate(self) -> float:
+        """Average tokens per day based on current usage."""
+        if self.days_elapsed <= 0:
+            return 0.0
+        return self.tokens_used / self.days_elapsed
+
+    @property
+    def projected_weekly_total(self) -> int:
+        """Projected total tokens at end of week based on current burn rate."""
+        return int(self.tokens_used + (self.daily_burn_rate * self.days_remaining))
+
+
+@dataclass
 class SessionBlock:
     """Aggregated session block representing a 5-hour period."""
 

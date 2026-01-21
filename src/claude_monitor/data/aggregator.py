@@ -1,16 +1,22 @@
-"""Data aggregator for daily and monthly statistics.
+"""Data aggregator for daily, weekly, and monthly statistics.
 
 This module provides functionality to aggregate Claude usage data
-by day and month, similar to ccusage's functionality.
+by day, week, and month, similar to ccusage's functionality.
+Includes rolling 7-day aggregation for weekly quota tracking.
 """
 
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Dict, List, Optional
 
-from claude_monitor.core.models import SessionBlock, UsageEntry, normalize_model_name
+from claude_monitor.core.models import (
+    SessionBlock,
+    UsageEntry,
+    WeeklyUsage,
+    normalize_model_name,
+)
 from claude_monitor.utils.time_utils import TimezoneHandler
 
 logger = logging.getLogger(__name__)
@@ -202,6 +208,100 @@ class UsageAggregator:
             end_date,
         )
 
+    def aggregate_weekly(
+        self,
+        entries: List[UsageEntry],
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> List[Dict[str, Any]]:
+        """Aggregate usage data by ISO week (Monday-Sunday).
+
+        Args:
+            entries: List of usage entries
+            start_date: Optional start date filter
+            end_date: Optional end date filter
+
+        Returns:
+            List of weekly aggregated data
+        """
+
+        def get_week_key(timestamp: datetime) -> str:
+            # ISO week format: YYYY-Www (e.g., 2025-W03)
+            iso_year, iso_week, _ = timestamp.isocalendar()
+            return f"{iso_year}-W{iso_week:02d}"
+
+        return self._aggregate_by_period(
+            entries,
+            get_week_key,
+            "week",
+            start_date,
+            end_date,
+        )
+
+    def aggregate_rolling_week(
+        self,
+        entries: List[UsageEntry],
+        token_limit: int = 0,
+        cost_limit: float = 0.0,
+    ) -> WeeklyUsage:
+        """Aggregate usage for the rolling 7-day window (quota tracking).
+
+        This calculates usage for the past 7 days from now, which is how
+        Claude's weekly quota system works (rolling window, not calendar week).
+
+        Args:
+            entries: List of usage entries
+            token_limit: Weekly token limit for the plan
+            cost_limit: Weekly cost limit for the plan
+
+        Returns:
+            WeeklyUsage object with quota tracking data
+        """
+        now = datetime.now(timezone.utc)
+        week_start = now - timedelta(days=7)
+        week_end = now
+
+        # Filter entries to last 7 days
+        weekly_entries = [
+            e for e in entries if week_start <= e.timestamp <= week_end
+        ]
+
+        # Calculate totals
+        total_tokens = 0
+        total_cost = 0.0
+        per_model_tokens: Dict[str, int] = defaultdict(int)
+
+        for entry in weekly_entries:
+            entry_tokens = (
+                entry.input_tokens
+                + entry.output_tokens
+                + entry.cache_creation_tokens
+                + entry.cache_read_tokens
+            )
+            total_tokens += entry_tokens
+            total_cost += entry.cost_usd
+
+            model = normalize_model_name(entry.model) if entry.model else "unknown"
+            per_model_tokens[model] += entry_tokens
+
+        # Calculate days elapsed (from first entry to now, capped at 7)
+        if weekly_entries:
+            earliest = min(e.timestamp for e in weekly_entries)
+            days_elapsed = min(7.0, (now - earliest).total_seconds() / 86400)
+        else:
+            days_elapsed = 0.0
+
+        return WeeklyUsage(
+            week_start=week_start,
+            week_end=week_end,
+            tokens_used=total_tokens,
+            cost_used=total_cost,
+            token_limit=token_limit,
+            cost_limit=cost_limit,
+            days_elapsed=days_elapsed,
+            per_model_tokens=dict(per_model_tokens),
+        )
+
     def aggregate_from_blocks(
         self, blocks: List[SessionBlock], view_type: str = "daily"
     ) -> List[Dict[str, Any]]:
@@ -209,15 +309,15 @@ class UsageAggregator:
 
         Args:
             blocks: List of session blocks
-            view_type: Type of aggregation ('daily' or 'monthly')
+            view_type: Type of aggregation ('daily', 'weekly', or 'monthly')
 
         Returns:
             List of aggregated data
         """
         # Validate view type
-        if view_type not in ["daily", "monthly"]:
+        if view_type not in ["daily", "weekly", "monthly"]:
             raise ValueError(
-                f"Invalid view type: {view_type}. Must be 'daily' or 'monthly'"
+                f"Invalid view type: {view_type}. Must be 'daily', 'weekly', or 'monthly'"
             )
 
         # Extract all entries from blocks
@@ -229,6 +329,8 @@ class UsageAggregator:
         # Aggregate based on view type
         if view_type == "daily":
             return self.aggregate_daily(all_entries)
+        elif view_type == "weekly":
+            return self.aggregate_weekly(all_entries)
         else:
             return self.aggregate_monthly(all_entries)
 
@@ -291,6 +393,8 @@ class UsageAggregator:
         # Aggregate based on mode
         if self.aggregation_mode == "daily":
             return self.aggregate_daily(entries)
+        elif self.aggregation_mode == "weekly":
+            return self.aggregate_weekly(entries)
         elif self.aggregation_mode == "monthly":
             return self.aggregate_monthly(entries)
         else:

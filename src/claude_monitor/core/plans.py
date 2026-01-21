@@ -35,6 +35,8 @@ class PlanConfig:
     cost_limit: float
     message_limit: int
     display_name: str
+    weekly_token_limit: int = 0
+    weekly_cost_limit: float = 0.0
 
     @property
     def formatted_token_limit(self) -> str:
@@ -43,6 +45,17 @@ class PlanConfig:
             return f"{self.token_limit // 1_000}k"
         return str(self.token_limit)
 
+    @property
+    def formatted_weekly_token_limit(self) -> str:
+        """Human-readable weekly token limit (e.g., '2.3B' or '500M')."""
+        if self.weekly_token_limit >= 1_000_000_000:
+            return f"{self.weekly_token_limit / 1_000_000_000:.1f}B"
+        if self.weekly_token_limit >= 1_000_000:
+            return f"{self.weekly_token_limit / 1_000_000:.0f}M"
+        if self.weekly_token_limit >= 1_000:
+            return f"{self.weekly_token_limit // 1_000}k"
+        return str(self.weekly_token_limit)
+
 
 PLAN_LIMITS: Dict[PlanType, Dict[str, Any]] = {
     PlanType.PRO: {
@@ -50,24 +63,36 @@ PLAN_LIMITS: Dict[PlanType, Dict[str, Any]] = {
         "cost_limit": 18.0,
         "message_limit": 250,
         "display_name": "Pro",
+        # Pro has limited weekly capacity (no separate weekly limit published)
+        "weekly_token_limit": 500_000_000,  # ~500M estimated
+        "weekly_cost_limit": 400.0,
     },
     PlanType.MAX5: {
         "token_limit": 88_000,
         "cost_limit": 35.0,
         "message_limit": 1_000,
         "display_name": "Max5",
+        # Max5: ~5x Pro capacity, estimated 1.2B weekly
+        "weekly_token_limit": 1_200_000_000,
+        "weekly_cost_limit": 800.0,
     },
     PlanType.MAX20: {
         "token_limit": 220_000,
         "cost_limit": 140.0,
         "message_limit": 2_000,
         "display_name": "Max20",
+        # Max20: ~8x the 5-hour block limit (~290M) = ~2.3B weekly
+        "weekly_token_limit": 2_300_000_000,
+        "weekly_cost_limit": 1600.0,
     },
     PlanType.CUSTOM: {
         "token_limit": 44_000,
         "cost_limit": 50.0,
         "message_limit": 250,
         "display_name": "Custom",
+        # Custom: P90-based, default to Pro-like weekly
+        "weekly_token_limit": 500_000_000,
+        "weekly_cost_limit": 400.0,
     },
 }
 
@@ -97,6 +122,8 @@ class Plans:
             cost_limit=data["cost_limit"],
             message_limit=data["message_limit"],
             display_name=data["display_name"],
+            weekly_token_limit=data.get("weekly_token_limit", 0),
+            weekly_cost_limit=data.get("weekly_cost_limit", 0.0),
         )
 
     @classmethod
@@ -201,3 +228,29 @@ def get_cost_limit(plan: str) -> float:
         Cost limit for the plan in USD
     """
     return Plans.get_cost_limit(plan)
+
+
+def get_weekly_token_limit(plan: str) -> int:
+    """Get weekly rolling token limit for a plan.
+
+    Args:
+        plan: Plan type ('pro', 'max5', 'max20', 'custom')
+
+    Returns:
+        Weekly token limit for the plan
+    """
+    cfg = Plans.get_plan_by_name(plan)
+    return cfg.weekly_token_limit if cfg else 500_000_000
+
+
+def get_weekly_cost_limit(plan: str) -> float:
+    """Get weekly rolling cost limit for a plan.
+
+    Args:
+        plan: Plan type ('pro', 'max5', 'max20', 'custom')
+
+    Returns:
+        Weekly cost limit for the plan in USD
+    """
+    cfg = Plans.get_plan_by_name(plan)
+    return cfg.weekly_cost_limit if cfg else 400.0

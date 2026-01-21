@@ -104,9 +104,9 @@ class Settings(BaseSettings):
         description="Plan type (pro, max5, max20, custom)",
     )
 
-    view: Literal["realtime", "daily", "monthly", "session"] = Field(
+    view: Literal["realtime", "daily", "weekly", "monthly", "session"] = Field(
         default="realtime",
-        description="View mode (realtime, daily, monthly, session)",
+        description="View mode (realtime, daily, weekly, monthly, session)",
     )
 
     @staticmethod
@@ -190,7 +190,7 @@ class Settings(BaseSettings):
         """Validate and normalize view value."""
         if isinstance(v, str):
             v_lower = v.lower()
-            valid_views = ["realtime", "daily", "monthly", "session"]
+            valid_views = ["realtime", "daily", "weekly", "monthly", "session"]
             if v_lower in valid_views:
                 return v_lower
             raise ValueError(

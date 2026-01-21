@@ -19,7 +19,13 @@ from claude_monitor.cli.bootstrap import (
     setup_environment,
     setup_logging,
 )
-from claude_monitor.core.plans import Plans, PlanType, get_token_limit
+from claude_monitor.core.plans import (
+    Plans,
+    PlanType,
+    get_token_limit,
+    get_weekly_token_limit,
+    get_weekly_cost_limit,
+)
 from claude_monitor.core.settings import Settings
 from claude_monitor.data.aggregator import UsageAggregator
 from claude_monitor.data.analysis import analyze_usage
@@ -130,7 +136,7 @@ def _run_monitoring(args: argparse.Namespace) -> None:
         logger.info(f"Using data path: {data_path}")
 
         # Handle different view modes
-        if view_mode in ["daily", "monthly"]:
+        if view_mode in ["daily", "weekly", "monthly"]:
             _run_table_view(args, data_path, view_mode, console)
             return
 
@@ -381,7 +387,7 @@ def validate_cli_environment() -> Optional[str]:
 def _run_table_view(
     args: argparse.Namespace, data_path: Path, view_mode: str, console: Console
 ) -> None:
-    """Run table view mode (daily/monthly)."""
+    """Run table view mode (daily/weekly/monthly)."""
     logger = logging.getLogger(__name__)
 
     try:
@@ -403,6 +409,21 @@ def _run_table_view(
             print_themed(f"No usage data found for {view_mode} view", style="warning")
             return
 
+        # For weekly view, also calculate rolling 7-day quota usage
+        weekly_usage = None
+        if view_mode == "weekly":
+            from claude_monitor.data.reader import load_usage_entries
+
+            entries, _ = load_usage_entries(data_path=str(data_path))
+            if entries:
+                weekly_token_limit = get_weekly_token_limit(args.plan)
+                weekly_cost_limit = get_weekly_cost_limit(args.plan)
+                weekly_usage = aggregator.aggregate_rolling_week(
+                    entries,
+                    token_limit=weekly_token_limit,
+                    cost_limit=weekly_cost_limit,
+                )
+
         # Display the table
         controller.display_aggregated_view(
             data=aggregated_data,
@@ -410,6 +431,7 @@ def _run_table_view(
             timezone=args.timezone,
             plan=args.plan,
             token_limit=_get_initial_token_limit(args, data_path),
+            weekly_usage=weekly_usage,
         )
 
         # Wait for user to press Ctrl+C

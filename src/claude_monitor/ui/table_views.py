@@ -1,7 +1,7 @@
-"""Table views for daily and monthly statistics display.
+"""Table views for daily, weekly, and monthly statistics display.
 
 This module provides UI components for displaying aggregated usage data
-in table format using Rich library.
+in table format using Rich library, including weekly quota tracking.
 """
 
 import logging
@@ -10,10 +10,11 @@ from typing import Any, Dict, List, Optional, Union
 from rich.align import Align
 from rich.console import Console
 from rich.panel import Panel
+from rich.progress import BarColumn, Progress, TextColumn
 from rich.table import Table
 from rich.text import Text
 
-# Removed theme import - using direct styles
+from claude_monitor.core.models import WeeklyUsage
 from claude_monitor.utils.formatting import format_currency, format_number
 
 logger = logging.getLogger(__name__)
@@ -200,6 +201,182 @@ class TableViewsController:
 
         return table
 
+    def create_weekly_table(
+        self,
+        weekly_data: List[Dict[str, Any]],
+        totals: Dict[str, Any],
+        timezone: str = "UTC",
+    ) -> Table:
+        """Create a weekly statistics table (ISO weeks).
+
+        Args:
+            weekly_data: List of weekly aggregated data
+            totals: Total statistics
+            timezone: Timezone for display
+
+        Returns:
+            Rich Table object
+        """
+        # Create base table
+        table = self._create_base_table(
+            title=f"Claude Code Token Usage Report - Weekly ({timezone})",
+            period_column_name="Week",
+            period_column_width=12,
+        )
+
+        # Add data rows
+        self._add_data_rows(table, weekly_data, "week")
+
+        # Add totals
+        self._add_totals_row(table, totals)
+
+        return table
+
+    def create_weekly_quota_panel(
+        self,
+        weekly_usage: WeeklyUsage,
+        plan_name: str = "custom",
+    ) -> Panel:
+        """Create a panel showing rolling 7-day weekly quota usage.
+
+        Args:
+            weekly_usage: WeeklyUsage data object
+            plan_name: Name of the plan for display
+
+        Returns:
+            Rich Panel object with quota visualization
+        """
+        lines = []
+
+        # Header
+        lines.append(
+            Text("📅 Rolling 7-Day Weekly Quota", style="bold cyan")
+        )
+        lines.append(Text(""))
+
+        # Progress bar visualization
+        pct = weekly_usage.usage_percentage
+        bar_width = 30
+        filled = int(bar_width * min(pct, 100) / 100)
+        empty = bar_width - filled
+
+        # Color based on usage level
+        if pct < 50:
+            bar_color = "green"
+        elif pct < 80:
+            bar_color = "yellow"
+        else:
+            bar_color = "red"
+
+        bar = Text()
+        bar.append("   ")
+        bar.append("█" * filled, style=bar_color)
+        bar.append("░" * empty, style="dim")
+        bar.append(f" {pct:.1f}%", style=bar_color)
+        lines.append(bar)
+        lines.append(Text(""))
+
+        # Token stats
+        def format_tokens(n: int) -> str:
+            if n >= 1_000_000_000:
+                return f"{n / 1_000_000_000:.1f}B"
+            if n >= 1_000_000:
+                return f"{n / 1_000_000:.1f}M"
+            if n >= 1_000:
+                return f"{n / 1_000:.0f}K"
+            return str(n)
+
+        lines.append(
+            Text(
+                f"   Used: {format_tokens(weekly_usage.tokens_used)} / "
+                f"{format_tokens(weekly_usage.token_limit)} tokens",
+                style=self.value_style,
+            )
+        )
+        lines.append(
+            Text(
+                f"   Remaining: {format_tokens(weekly_usage.tokens_remaining)}",
+                style=self.success_style,
+            )
+        )
+        lines.append(
+            Text(
+                f"   Cost: {format_currency(weekly_usage.cost_used)}",
+                style=self.value_style,
+            )
+        )
+        lines.append(Text(""))
+
+        # Burn rate and projections
+        if weekly_usage.daily_burn_rate > 0:
+            lines.append(Text("📊 Burn Rate", style="bold cyan"))
+            lines.append(
+                Text(
+                    f"   {format_tokens(int(weekly_usage.daily_burn_rate))}/day",
+                    style=self.value_style,
+                )
+            )
+            lines.append(
+                Text(
+                    f"   Projected weekly: {format_tokens(weekly_usage.projected_weekly_total)}",
+                    style=self.accent_style,
+                )
+            )
+            lines.append(Text(""))
+
+        # Model breakdown
+        if weekly_usage.per_model_tokens:
+            lines.append(Text("🤖 By Model", style="bold cyan"))
+            total = weekly_usage.tokens_used or 1
+            for model, tokens in sorted(
+                weekly_usage.per_model_tokens.items(),
+                key=lambda x: x[1],
+                reverse=True,
+            ):
+                model_pct = (tokens / total) * 100
+                # Shorten model name
+                short_name = model.replace("claude-", "").replace("-20", "")
+                lines.append(
+                    Text(
+                        f"   {short_name}: {format_tokens(tokens)} ({model_pct:.0f}%)",
+                        style=self.value_style,
+                    )
+                )
+            lines.append(Text(""))
+
+        # Warnings
+        if pct >= 80:
+            lines.append(
+                Text(
+                    "⚠️  Approaching weekly limit! Consider using Haiku for lighter tasks.",
+                    style="yellow",
+                )
+            )
+        elif pct >= 100:
+            lines.append(
+                Text(
+                    "🚨 Weekly quota exceeded - expect rate limiting",
+                    style="red bold",
+                )
+            )
+
+        # Combine all lines
+        content = Text()
+        for line in lines:
+            content.append(line)
+            content.append("\n")
+
+        panel = Panel(
+            content,
+            title=f"Weekly Quota ({plan_name.upper()})",
+            title_align="left",
+            border_style=self.border_style,
+            expand=True,
+            padding=(1, 2),
+        )
+
+        return panel
+
     def create_summary_panel(
         self, view_type: str, totals: Dict[str, Any], period: str
     ) -> Panel:
@@ -294,22 +471,24 @@ class TableViewsController:
         view_type: str,
         timezone: str = "UTC",
     ) -> Table:
-        """Create a table for either daily or monthly aggregated data.
+        """Create a table for aggregated data (daily, weekly, or monthly).
 
         Args:
-            aggregate_data: List of aggregated data (daily or monthly)
+            aggregate_data: List of aggregated data
             totals: Total statistics
-            view_type: Type of view ('daily' or 'monthly')
+            view_type: Type of view ('daily', 'weekly', or 'monthly')
             timezone: Timezone for display
 
         Returns:
             Rich Table object
 
         Raises:
-            ValueError: If view_type is not 'daily' or 'monthly'
+            ValueError: If view_type is not valid
         """
         if view_type == "daily":
             return self.create_daily_table(aggregate_data, totals, timezone)
+        elif view_type == "weekly":
+            return self.create_weekly_table(aggregate_data, totals, timezone)
         elif view_type == "monthly":
             return self.create_monthly_table(aggregate_data, totals, timezone)
         else:
@@ -323,16 +502,18 @@ class TableViewsController:
         plan: str,
         token_limit: int,
         console: Optional[Console] = None,
+        weekly_usage: Optional[WeeklyUsage] = None,
     ) -> None:
         """Display aggregated view with table and summary.
 
         Args:
             data: Aggregated data
-            view_mode: View type ('daily' or 'monthly')
+            view_mode: View type ('daily', 'weekly', or 'monthly')
             timezone: Timezone string
             plan: Plan type
             token_limit: Token limit for the plan
             console: Optional Console instance
+            weekly_usage: Optional WeeklyUsage for quota panel (weekly view)
         """
         if not data:
             no_data_display = self.create_no_data_display(view_mode)
@@ -362,8 +543,21 @@ class TableViewsController:
         # Determine period for summary
         if view_mode == "daily":
             period = f"{data[0]['date']} to {data[-1]['date']}" if data else "No data"
+        elif view_mode == "weekly":
+            period = f"{data[0]['week']} to {data[-1]['week']}" if data else "No data"
         else:  # monthly
             period = f"{data[0]['month']} to {data[-1]['month']}" if data else "No data"
+
+        # For weekly view, show quota panel first if available
+        if view_mode == "weekly" and weekly_usage:
+            quota_panel = self.create_weekly_quota_panel(weekly_usage, plan)
+            if console:
+                console.print(quota_panel)
+                console.print()
+            else:
+                from rich import print as rprint
+                rprint(quota_panel)
+                rprint()
 
         # Create and display summary panel
         summary_panel = self.create_summary_panel(view_mode, totals, period)
