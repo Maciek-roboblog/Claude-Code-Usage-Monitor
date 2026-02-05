@@ -310,9 +310,7 @@ class Settings(BaseSettings):
         if settings.debug:
             settings.log_level = "DEBUG"
 
-        if settings.theme == "auto" or (
-            "theme" not in cli_provided_fields and not clear_config
-        ):
+        if settings.theme == "auto":
             from claude_monitor.terminal.themes import (
                 BackgroundDetector,
                 BackgroundType,
