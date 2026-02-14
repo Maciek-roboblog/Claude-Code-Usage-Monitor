@@ -123,6 +123,18 @@ except ImportError:
         return None
 
 
+try:
+    from tzlocal import get_localzone_name
+
+    HAS_TZLOCAL = True
+except ImportError:
+    HAS_TZLOCAL = False
+
+    def get_localzone_name():
+        """Stub function when tzlocal is not available."""
+        return None
+
+
 logger: logging.Logger = logging.getLogger(__name__)
 
 
@@ -331,6 +343,14 @@ class SystemTimeDetector:
                 pass
 
         elif system == "Windows":
+            # Try tzlocal first for proper IANA timezone name
+            if HAS_TZLOCAL:
+                with contextlib.suppress(Exception):
+                    tz_name = get_localzone_name()
+                    if tz_name:
+                        return tz_name
+
+            # Fallback to tzutil if tzlocal is not available
             with contextlib.suppress(Exception):
                 tzutil_result: subprocess.CompletedProcess[str] = subprocess.run(
                     ["tzutil", "/g"], capture_output=True, text=True, check=True
