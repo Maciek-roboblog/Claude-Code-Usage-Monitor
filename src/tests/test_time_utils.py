@@ -359,11 +359,12 @@ class TestSystemTimeDetector:
         result = SystemTimeDetector.get_timezone()
         assert result == "Europe/London"
 
-    @patch("platform.system")
-    @patch("claude_monitor.utils.time_utils.HAS_TZLOCAL", True)
-    @patch("claude_monitor.utils.time_utils.get_localzone_name")
+    `@patch`("os.environ.get", return_value=None)
+    `@patch`("platform.system")
+    `@patch`("claude_monitor.utils.time_utils.HAS_TZLOCAL", True)
+    `@patch`("claude_monitor.utils.time_utils.get_localzone_name")
     def test_get_timezone_windows(
-        self, mock_get_localzone_name: Mock, mock_system: Mock
+        self, mock_get_localzone_name: Mock, mock_system: Mock, mock_env: Mock
     ) -> None:
         """Test Windows timezone detection with tzlocal."""
         mock_system.return_value = "Windows"
