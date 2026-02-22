@@ -531,6 +531,55 @@ Output from: claude-monitor --debug | head -20
 2. **Email**: [maciek@roboblog.eu](mailto:maciek@roboblog.eu)
 3. **Documentation**: [README.md](README.md)
 
+## 🖥️ macOS Desktop Shortcut Issues
+
+### Icon Not Showing
+
+**Issue**: The Claude Monitor.app shows a generic icon
+
+**Solutions**:
+```bash
+# Re-register the app with LaunchServices
+/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -f ~/Desktop/Claude\ Monitor.app
+
+# Touch the app to update timestamps
+touch ~/Desktop/Claude\ Monitor.app
+
+# Refresh Finder
+killall Finder
+```
+
+### App Won't Open
+
+**Issue**: "Claude Monitor.app is damaged" or won't launch
+
+**Solutions**:
+```bash
+# Remove quarantine attribute
+xattr -cr ~/Desktop/Claude\ Monitor.app
+
+# Verify launcher is executable
+chmod +x ~/Desktop/Claude\ Monitor.app/Contents/MacOS/launch.sh
+
+# Check that uv/claude-monitor is on PATH
+~/.local/bin/claude-monitor --version
+```
+
+### App Opens But Monitor Doesn't Start
+
+**Issue**: Terminal opens but no monitor appears
+
+**Solutions**:
+```bash
+# Verify claude-monitor is installed
+which claude-monitor || echo "Not found - install with: uv tool install claude-monitor"
+
+# Ensure ~/.local/bin is in PATH for Terminal
+# Add to ~/.zshrc or ~/.bashrc:
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
 ## 🔄 Complete Reset
 
 If all else fails:

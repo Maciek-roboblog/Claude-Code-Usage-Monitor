@@ -17,7 +17,8 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage with ad
 - [🚀 Installation](#-installation)
   - [⚡ Modern Installation with uv (Recommended)](#-modern-installation-with-uv-recommended)
   - [📦 Installation with pip](#-installation-with-pip)
-  - [🛠️ Other Package Managers](#️-other-package-managers)
+  - [🖥️ macOS Desktop Shortcut](#️-macos-desktop-shortcut)
+- [🛠️ Other Package Managers](#️-other-package-managers)
 - [📖 Usage](#-usage)
   - [Get Help](#get-help)
   - [Basic Usage](#basic-usage)
@@ -150,6 +151,58 @@ claude-monitor  # or cmonitor, ccmonitor for short
 > 3. **Use pipx** - pipx install claude-monitor
 >
 > See the Troubleshooting section for detailed solutions.
+
+### 🖥️ macOS Desktop Shortcut
+
+Create a desktop app to launch Claude Monitor with a double-click:
+
+```bash
+# Create the app bundle
+mkdir -p ~/Desktop/Claude\ Monitor.app/Contents/{MacOS,Resources}
+
+# Create the launcher script
+cat > ~/Desktop/Claude\ Monitor.app/Contents/MacOS/launch.sh << 'SCRIPT'
+#!/bin/bash
+export PATH="$HOME/.local/bin:$PATH"
+osascript -e 'tell application "Terminal"
+  activate
+  do script "claude-monitor"
+end tell'
+SCRIPT
+chmod +x ~/Desktop/Claude\ Monitor.app/Contents/MacOS/launch.sh
+
+# Create Info.plist
+cat > ~/Desktop/Claude\ Monitor.app/Contents/Info.plist << 'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>launch.sh</string>
+    <key>CFBundleName</key>
+    <string>Claude Monitor</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.babystuff.claude-monitor</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+</dict>
+</plist>
+PLIST
+```
+
+A custom pixelated icon (`doc/ClaudeMonitor.icns`) is included in this repository. To use it:
+
+```bash
+cp doc/ClaudeMonitor.icns ~/Desktop/Claude\ Monitor.app/Contents/Resources/AppIcon.icns
+```
+
+Double-click **Claude Monitor.app** on your desktop to launch the monitor in Terminal.
+
+> **Tip**: If the icon doesn't appear immediately, run `killall Finder` to refresh.
 
 ### 🛠️ Other Package Managers
 

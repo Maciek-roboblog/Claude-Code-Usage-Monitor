@@ -41,6 +41,11 @@ Current implementation status and planned features for Claude Code Usage Monitor
 - **Cross-platform support** (Windows, macOS, Linux)
 - **Professional CI/CD** with automated testing and releases
 
+#### 🖥️ **Desktop Integration (macOS)**
+- **macOS .app bundle** with custom pixelated icon (`doc/ClaudeMonitor.icns`)
+- **One-click launch** via Desktop shortcut that opens Terminal with `claude-monitor`
+- **Icon preview** available at `doc/icon_preview.png`
+
 **📋 Command Aliases**:
 - `claude-monitor` - Main command (full name)
 - `cmonitor` - Short alias for convenience
