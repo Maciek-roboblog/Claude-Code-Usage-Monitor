@@ -189,7 +189,7 @@ def get_token_limit(plan: str, blocks: Optional[List[Dict[str, Any]]] = None) ->
     """Get token limit for a plan, using P90 for custom plans.
 
     Args:
-        plan: Plan type ('pro', 'max5', 'max20', 'custom')
+        plan: Plan type ('pro', 'team', 'max5', 'max20', 'custom')
         blocks: Optional session blocks for custom P90 calculation
 
     Returns:
@@ -202,7 +202,7 @@ def get_cost_limit(plan: str) -> float:
     """Get standard cost limit for a plan.
 
     Args:
-        plan: Plan type ('pro', 'max5', 'max20', 'custom')
+        plan: Plan type ('pro', 'team', 'max5', 'max20', 'custom')
 
     Returns:
         Cost limit for the plan in USD

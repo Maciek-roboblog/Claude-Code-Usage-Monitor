@@ -185,7 +185,7 @@ class SessionDisplayComponent:
         header_manager = HeaderManager()
         screen_buffer.extend(header_manager.create_header(plan, timezone))
 
-        if plan in ["custom", "pro", "max5", "max20"]:
+        if plan in ["custom", "pro", "team", "max5", "max20"]:
             from claude_monitor.core.plans import DEFAULT_COST_LIMIT
 
             cost_limit_p90 = kwargs.get("cost_limit_p90", DEFAULT_COST_LIMIT)
