@@ -151,16 +151,20 @@ class TestDisplayController:
             mock_calc.assert_called_once_with(session_data, time_data, 5.0)
 
     def test_calculate_cost_predictions_invalid_plan(self, controller, sample_args):
-        """Test cost predictions for invalid plans."""
+        """Test cost predictions for invalid plans uses plan-aware default."""
         sample_args.plan = "invalid"
         session_data = {"session_cost": 0.45}
         time_data = {"elapsed_session_minutes": 90}
+
+        from claude_monitor.core.plans import Plans
+
+        expected_limit = Plans.get_cost_limit("invalid")
 
         with patch.object(
             controller.session_calculator, "calculate_cost_predictions"
         ) as mock_calc:
             mock_calc.return_value = {
-                "cost_limit": 100.0,
+                "cost_limit": expected_limit,
                 "predicted_end_time": datetime.now(timezone.utc),
             }
 
@@ -168,7 +172,9 @@ class TestDisplayController:
                 session_data, time_data, sample_args, None
             )
 
-            mock_calc.assert_called_once_with(session_data, time_data, 100.0)
+            mock_calc.assert_called_once_with(
+                session_data, time_data, expected_limit
+            )
 
     def test_check_notifications_switch_to_custom(self, controller):
         """Test notification checking for switch to custom."""
@@ -931,7 +937,9 @@ class TestSessionCalculator:
             assert "predicted_end_time" in result
 
     def test_calculate_cost_predictions_no_cost_limit(self, calculator):
-        """Test calculate_cost_predictions without cost limit."""
+        """Test calculate_cost_predictions without cost limit uses DEFAULT_COST_LIMIT."""
+        from claude_monitor.core.plans import DEFAULT_COST_LIMIT
+
         session_data = {"session_cost": 1.0}
         time_data = {
             "elapsed_session_minutes": 30,
@@ -947,8 +955,8 @@ class TestSessionCalculator:
                 session_data, time_data, None
             )
 
-            assert result["cost_limit"] == 100.0  # Default
-            assert result["cost_remaining"] == 99.0
+            assert result["cost_limit"] == DEFAULT_COST_LIMIT
+            assert result["cost_remaining"] == DEFAULT_COST_LIMIT - 1.0
             assert "predicted_end_time" in result
 
     def test_calculate_cost_predictions_zero_cost_rate(self, calculator):

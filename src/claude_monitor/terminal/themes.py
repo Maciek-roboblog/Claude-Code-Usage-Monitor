@@ -120,6 +120,7 @@ class AdaptiveColorScheme:
                 "model.unknown": "color(243)",  # Medium gray
                 # Plan styles
                 "plan.pro": "color(166)",  # Orange (premium)
+                "plan.team": "color(166)",  # Orange (same limits as pro)
                 "plan.max5": "color(19)",  # Dark blue
                 "plan.max20": "color(17)",  # Deep blue
                 "plan.custom": "color(22)",  # Dark green
@@ -177,6 +178,7 @@ class AdaptiveColorScheme:
                 "model.unknown": "color(245)",  # Medium light gray
                 # Plan styles
                 "plan.pro": "color(214)",  # Orange (premium)
+                "plan.team": "color(214)",  # Orange (same limits as pro)
                 "plan.max5": "color(111)",  # Light cyan
                 "plan.max20": "color(117)",  # Light blue
                 "plan.custom": "color(118)",  # Light green
@@ -233,6 +235,7 @@ class AdaptiveColorScheme:
                 "model.unknown": "bright_black",
                 # Plan styles
                 "plan.pro": "yellow",  # Yellow (premium)
+                "plan.team": "yellow",  # Yellow (same limits as pro)
                 "plan.max5": "cyan",  # Cyan
                 "plan.max20": "blue",  # Blue
                 "plan.custom": "green",  # Green

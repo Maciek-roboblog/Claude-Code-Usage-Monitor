@@ -89,7 +89,9 @@ class DisplayController:
         if Plans.is_valid_plan(args.plan) and cost_limit_p90 is not None:
             cost_limit = cost_limit_p90
         else:
-            cost_limit = 100.0  # Default
+            cost_limit = Plans.get_cost_limit(
+                getattr(args, "plan", "pro")
+            )
 
         return self.session_calculator.calculate_cost_predictions(
             session_data, time_data, cost_limit
@@ -639,7 +641,7 @@ class SessionCalculator:
         Args:
             session_data: Dictionary containing session cost information
             time_data: Time data from calculate_time_data
-            cost_limit: Optional cost limit (defaults to 100.0)
+            cost_limit: Optional cost limit (defaults to DEFAULT_COST_LIMIT)
 
         Returns:
             Dictionary with cost predictions
@@ -653,9 +655,11 @@ class SessionCalculator:
             session_cost / max(1, elapsed_minutes) if elapsed_minutes > 0 else 0
         )
 
-        # Use provided cost limit or default
+        # Use provided cost limit or default from plan configuration
         if cost_limit is None:
-            cost_limit = 100.0
+            from claude_monitor.core.plans import DEFAULT_COST_LIMIT
+
+            cost_limit = DEFAULT_COST_LIMIT
 
         cost_remaining = max(0, cost_limit - session_cost)
 
