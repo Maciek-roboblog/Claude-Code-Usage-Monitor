@@ -13,6 +13,7 @@ class PlanType(Enum):
     """Available Claude subscription plan types."""
 
     PRO = "pro"
+    TEAM = "team"
     MAX5 = "max5"
     MAX20 = "max20"
     CUSTOM = "custom"
@@ -50,6 +51,12 @@ PLAN_LIMITS: Dict[PlanType, Dict[str, Any]] = {
         "cost_limit": 18.0,
         "message_limit": 250,
         "display_name": "Pro",
+    },
+    PlanType.TEAM: {
+        "token_limit": 19_000,
+        "cost_limit": 18.0,
+        "message_limit": 250,
+        "display_name": "Team",
     },
     PlanType.MAX5: {
         "token_limit": 88_000,

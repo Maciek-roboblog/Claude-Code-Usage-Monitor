@@ -186,7 +186,7 @@ claude-monitor --help
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| --plan | string | custom | Plan type: pro, max5, max20, or custom |
+| --plan | string | custom | Plan type: pro, team, max5, max20, or custom |
 | --custom-limit-tokens | int | None | Token limit for custom plan (must be > 0) |
 | --view | string | realtime | View type: realtime, daily, or monthly |
 | --timezone | string | auto | Timezone (auto-detected). Examples: UTC, America/New_York, Europe/London |
@@ -206,6 +206,7 @@ claude-monitor --help
 | Plan | Token Limit | Cost Limit       | Description |
 |------|-------------|------------------|-------------|
 | pro | 19,000 | $18.00           | Claude Pro subscription |
+| team | 19,000 | $18.00           | Claude Team Plan (Premium Seats) |
 | max5 | 88,000 | $35.00           | Claude Max5 subscription |
 | max20 | 220,000 | $140.00          | Claude Max20 subscription |
 | custom | P90-based | (default) $50.00 | Auto-detection with ML analysis |

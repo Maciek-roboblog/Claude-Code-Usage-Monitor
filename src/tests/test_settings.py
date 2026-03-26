@@ -261,7 +261,7 @@ class TestSettings:
 
     def test_plan_validator_valid_values(self) -> None:
         """Test plan validator with valid values."""
-        valid_plans: List[str] = ["pro", "max5", "max20", "custom"]
+        valid_plans: List[str] = ["pro", "team", "max5", "max20", "custom"]
 
         for plan in valid_plans:
             settings = Settings(plan=plan, _cli_parse_args=[])
