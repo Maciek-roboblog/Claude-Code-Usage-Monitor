@@ -358,9 +358,18 @@ class BackgroundDetector:
                 text=True,
                 timeout=2,
             )
-            if result.returncode == 0 and "dark" in result.stdout.strip().lower():
-                return BackgroundType.DARK
-            return BackgroundType.LIGHT
+            stdout = (result.stdout or "").strip().lower()
+            stderr = (result.stderr or "").strip().lower()
+
+            if result.returncode == 0:
+                return BackgroundType.DARK if "dark" in stdout else BackgroundType.LIGHT
+
+            # Light mode: the AppleInterfaceStyle key is absent
+            if "does not exist" in stderr and "appleinterfacestyle" in stderr:
+                return BackgroundType.LIGHT
+
+            # Any other command failure should prefer the contrast-safe fallback
+            return BackgroundType.DARK
         except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
             # If detection fails, fall back to DARK as most modern macOS
             # users have dark mode enabled

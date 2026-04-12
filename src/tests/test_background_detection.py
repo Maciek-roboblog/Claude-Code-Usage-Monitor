@@ -21,9 +21,28 @@ class TestCheckMacosAppearance:
     @patch("subprocess.run")
     def test_light_mode_detected(self, mock_run: MagicMock) -> None:
         """Light mode (key absent, non-zero exit) returns LIGHT background type."""
-        mock_run.return_value = MagicMock(returncode=1, stdout="")
+        mock_run.return_value = MagicMock(
+            returncode=1,
+            stdout="",
+            stderr=(
+                "2026-04-12 16:00:00.000 defaults[1234:5678]\n"
+                "The domain/default pair of (kCFPreferencesAnyApplication, "
+                "AppleInterfaceStyle) does not exist"
+            ),
+        )
         result = BackgroundDetector._check_macos_appearance()
         assert result == BackgroundType.LIGHT
+
+    @patch("subprocess.run")
+    def test_unexpected_nonzero_exit_falls_back_to_dark(self, mock_run: MagicMock) -> None:
+        """Non-zero exit with unexpected stderr falls back to DARK for contrast safety."""
+        mock_run.return_value = MagicMock(
+            returncode=1,
+            stdout="",
+            stderr="some unexpected error",
+        )
+        result = BackgroundDetector._check_macos_appearance()
+        assert result == BackgroundType.DARK
 
     @patch("subprocess.run")
     def test_command_timeout_falls_back_to_dark(self, mock_run: MagicMock) -> None:
@@ -50,7 +69,7 @@ class TestCheckMacosAppearance:
 class TestAppleTerminalDetection:
     """Test that Apple Terminal uses macOS appearance detection."""
 
-    @patch.dict("os.environ", {"TERM_PROGRAM": "Apple_Terminal"}, clear=False)
+    @patch.dict("os.environ", {"TERM_PROGRAM": "Apple_Terminal"}, clear=True)
     @patch.object(BackgroundDetector, "_check_macos_appearance")
     def test_apple_terminal_delegates_to_macos_appearance(
         self, mock_appearance: MagicMock
@@ -61,7 +80,7 @@ class TestAppleTerminalDetection:
         assert result == BackgroundType.DARK
         mock_appearance.assert_called_once()
 
-    @patch.dict("os.environ", {"TERM_PROGRAM": "Apple_Terminal"}, clear=False)
+    @patch.dict("os.environ", {"TERM_PROGRAM": "Apple_Terminal"}, clear=True)
     @patch.object(BackgroundDetector, "_check_macos_appearance")
     def test_apple_terminal_light_mode(
         self, mock_appearance: MagicMock
