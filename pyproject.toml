@@ -43,6 +43,7 @@ dependencies = [
   "pydantic-settings>=2.0.0",
   "pyyaml>=6.0",
   "pytz>=2023.3",
+  "tzlocal>=5.0",
   "rich>=13.7.0",
   "tomli>=1.2.0; python_version < '3.11'",
   "tzdata; sys_platform == 'win32'"

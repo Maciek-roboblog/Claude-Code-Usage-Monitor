@@ -332,10 +332,11 @@ class SystemTimeDetector:
 
         elif system == "Windows":
             with contextlib.suppress(Exception):
-                tzutil_result: subprocess.CompletedProcess[str] = subprocess.run(
-                    ["tzutil", "/g"], capture_output=True, text=True, check=True
-                )
-                return tzutil_result.stdout.strip()
+                from tzlocal import get_localzone_name
+
+                tz_name: Optional[str] = get_localzone_name()
+                if tz_name:
+                    return tz_name
 
         return "UTC"
 
