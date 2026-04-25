@@ -95,7 +95,7 @@ The fastest and easiest way to install and use the monitor:
 uv tool install claude-monitor
 
 # Run from anywhere
-claude-monitor  # or cmonitor, ccmonitor for short
+claude-monitor  # or cmonitor, ccmonitor, cum for short
 ```
 
 
@@ -137,7 +137,7 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc  # or restart your terminal
 
 # Run from anywhere
-claude-monitor  # or cmonitor, ccmonitor for short
+claude-monitor  # or cmonitor, ccmonitor, cum for short
 ```
 
 
@@ -159,7 +159,7 @@ claude-monitor  # or cmonitor, ccmonitor for short
 pipx install claude-monitor
 
 # Run from anywhere
-claude-monitor  # or claude-code-monitor, cmonitor, ccmonitor, ccm for short
+claude-monitor  # or claude-code-monitor, cmonitor, ccmonitor, ccm, cum for short
 ```
 
 
@@ -169,7 +169,7 @@ claude-monitor  # or claude-code-monitor, cmonitor, ccmonitor, ccm for short
 pip install claude-monitor
 
 # Run from anywhere
-claude-monitor  # or cmonitor, ccmonitor for short
+claude-monitor  # or cmonitor, ccmonitor, cum for short
 ```
 
 
@@ -218,6 +218,7 @@ The tool can be invoked using any of these commands:
 - cmonitor (short)
 - ccmonitor (short alternative)
 - ccm (shortest)
+- cum (mnemonic: Claude Usage Monitor)
 
 #### Save Flags Feature
 
@@ -268,6 +269,7 @@ claude-code-monitor  # Full descriptive name
 cmonitor             # Short alias
 ccmonitor            # Short alternative
 ccm                  # Shortest alias
+cum                  # Mnemonic: Claude Usage Monitor
 
 # Exit the monitor
 # Press Ctrl+C to gracefully exit

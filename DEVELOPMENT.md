@@ -37,7 +37,7 @@ Current implementation status and planned features for Claude Code Usage Monitor
 
 #### 📦 **Package Distribution**
 - **PyPI-ready** with modern setuptools configuration
-- **Entry points**: `claude-monitor`, `cmonitor`, and `ccm` commands
+- **Entry points**: `claude-monitor`, `cmonitor`, `ccm`, and `cum` commands
 - **Cross-platform support** (Windows, macOS, Linux)
 - **Professional CI/CD** with automated testing and releases
 
@@ -45,6 +45,7 @@ Current implementation status and planned features for Claude Code Usage Monitor
 - `claude-monitor` - Main command (full name)
 - `cmonitor` - Short alias for convenience
 - `ccm` - Ultra-short alias for power users
+- `cum` - Mnemonic alias (Claude Usage Monitor)
 
 #### 🛠️ **Development Infrastructure**
 - **100+ test cases** with comprehensive coverage (80% requirement)

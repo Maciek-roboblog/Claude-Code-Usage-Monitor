@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### 🆕 New Features
+- **New command alias**: Added `cum` as a sixth invocation alias for the tool — a mnemonic for **C**laude **U**sage **M**onitor. All existing aliases (`claude-monitor`, `claude-code-monitor`, `cmonitor`, `ccmonitor`, `ccm`) continue to work unchanged.
+
 ## [3.1.0] - 2025-07-23
 
 ### 🆕 New Features

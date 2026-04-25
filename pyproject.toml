@@ -88,6 +88,7 @@ claude-code-monitor = "claude_monitor.__main__:main"
 cmonitor = "claude_monitor.__main__:main"
 ccmonitor = "claude_monitor.__main__:main"
 ccm = "claude_monitor.__main__:main"
+cum = "claude_monitor.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
