@@ -37,6 +37,7 @@ A beautiful real-time terminal monitoring tool for Claude AI token usage with ad
   - [Installation Issues](#installation-issues)
   - [Runtime Issues](#runtime-issues)
 - [📞 Contact](#-contact)
+- [🍎 macOS Status Bar App](#-macos-status-bar-app)
 - [📚 Additional Documentation](#-additional-documentation)
 - [📝 License](#-license)
 - [🤝 Contributors](#-contributors)
@@ -1150,6 +1151,20 @@ Have questions, suggestions, or want to collaborate? Feel free to reach out!
 
 Whether you need help with setup, have feature requests, found a bug, or want to discuss potential improvements, don't hesitate to get in touch. I'm always happy to help and hear from users of the Claude Code Usage Monitor!
 
+
+## 🍎 macOS Status Bar App
+
+A native macOS menu bar companion app is available in [`macos-stats-bar/`](macos-stats-bar/README.md). Built entirely in Swift with zero external dependencies, it sits in your menu bar and shows token rates and cost at a glance.
+
+**Highlights:**
+- Live double-row token rates in the menu bar; switches to accumulated cost when idle
+- Detail panel with total cost, top 5 projects, and recent records
+- Auto-refreshes every 5 seconds — no daemon, no network requests, reads local JSONL files directly
+- Universal binary (Intel + Apple Silicon), requires macOS 14.0+
+
+See the [macOS App README](macos-stats-bar/README.md) for installation and build instructions.
+
+---
 
 ## 📚 Additional Documentation
 

@@ -1,0 +1,17 @@
+# Xcode build artifacts
+DerivedData/
+build/
+*.xcarchive
+
+# Xcode user-specific files
+*.xcuserdata/
+xcuserdata/
+*.xcworkspace/xcuserdata/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+
+# macOS metadata
+.DS_Store
+.DS_Store?
