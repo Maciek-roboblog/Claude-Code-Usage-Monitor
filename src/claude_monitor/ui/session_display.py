@@ -94,6 +94,45 @@ class SessionDisplayComponent:
 
         return f"{color} [{filled_bar}]"
 
+    def _render_pace(
+        self,
+        burn_rate: float,
+        tokens_used: int,
+        token_limit: int,
+        time_remaining_minutes: float,
+    ) -> str:
+        """Render pace advice comparing current burn rate to the sustainable rate.
+
+        The sustainable rate is the steady tokens/min that would spend exactly
+        the remaining tokens by the time the session resets. Burning faster than
+        that means tokens run out early (slow down); slower means there's headroom.
+        """
+        label = "🏃 [value]Pace:[/]                   "
+
+        if token_limit <= 0 or time_remaining_minutes <= 0:
+            return f"{label}[dim]—[/]"
+
+        tokens_left = max(0, token_limit - tokens_used)
+        if tokens_left <= 0:
+            return f"{label}[error]🔴 Limit reached[/]"
+
+        sustainable_rate = tokens_left / time_remaining_minutes
+        detail = f"[dim]{burn_rate:.0f}/min vs {sustainable_rate:.0f}/min sustainable[/]"
+
+        # Within 10% either way counts as on pace.
+        if abs(burn_rate - sustainable_rate) <= 0.1 * sustainable_rate:
+            return f"{label}[success]✅ On pace[/] {detail}"
+
+        if burn_rate > sustainable_rate:
+            minutes_until_empty = tokens_left / burn_rate
+            minutes_early = max(0, time_remaining_minutes - minutes_until_empty)
+            return (
+                f"{label}[warning]🐢 Slow down[/] {detail} "
+                f"[dim](tokens run out ~{minutes_early:.0f}m before reset)[/]"
+            )
+
+        return f"{label}[info]🚀 Room to spare[/] {detail} [dim](you could go faster)[/]"
+
     def format_active_session_screen_v2(self, data: SessionDisplayData) -> list[str]:
         """Format complete active session screen using data class.
 
@@ -254,6 +293,11 @@ class SessionDisplayComponent:
             velocity_emoji = VelocityIndicator.get_velocity_emoji(burn_rate)
             screen_buffer.append(
                 f"🔥 [value]Burn Rate:[/]              [warning]{burn_rate:.1f}[/] [dim]tokens/min[/] {velocity_emoji}"
+            )
+            screen_buffer.append(
+                self._render_pace(
+                    burn_rate, tokens_used, token_limit, time_remaining
+                )
             )
 
             cost_per_min = (
