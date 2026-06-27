@@ -323,7 +323,9 @@ class BackgroundDetector:
         if "TERM_PROGRAM" in os.environ:
             term_program: str = os.environ["TERM_PROGRAM"]
             if term_program == "Apple_Terminal":
-                return BackgroundType.LIGHT
+                # Apple Terminal follows macOS system appearance since Mojave.
+                # Detect actual system dark/light mode instead of assuming light.
+                return BackgroundDetector._check_macos_appearance()
             if term_program == "iTerm.app":
                 return BackgroundType.DARK
 
@@ -335,6 +337,43 @@ class BackgroundDetector:
             return BackgroundType.DARK
 
         return BackgroundType.UNKNOWN
+
+    @staticmethod
+    def _check_macos_appearance() -> BackgroundType:
+        """Detect macOS system appearance (dark mode vs light mode).
+
+        Uses 'defaults read -g AppleInterfaceStyle' which returns 'Dark'
+        when dark mode is active. The command fails (non-zero exit) when
+        light mode is active, as the key is absent.
+
+        Returns:
+            DARK if macOS dark mode is enabled, LIGHT otherwise.
+        """
+        import subprocess
+
+        try:
+            result = subprocess.run(
+                ["defaults", "read", "-g", "AppleInterfaceStyle"],
+                capture_output=True,
+                text=True,
+                timeout=2,
+            )
+            stdout = (result.stdout or "").strip().lower()
+            stderr = (result.stderr or "").strip().lower()
+
+            if result.returncode == 0:
+                return BackgroundType.DARK if "dark" in stdout else BackgroundType.LIGHT
+
+            # Light mode: the AppleInterfaceStyle key is absent
+            if "does not exist" in stderr and "appleinterfacestyle" in stderr:
+                return BackgroundType.LIGHT
+
+            # Any other command failure should prefer the contrast-safe fallback
+            return BackgroundType.DARK
+        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+            # If detection fails, fall back to DARK as most modern macOS
+            # users have dark mode enabled
+            return BackgroundType.DARK
 
     @staticmethod
     def _query_background_color() -> BackgroundType:
