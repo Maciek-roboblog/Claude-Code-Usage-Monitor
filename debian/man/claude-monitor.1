@@ -1,0 +1,116 @@
+.TH CLAUDE\-MONITOR 1 "April 2026" "claude-monitor 3.1.0" "User Commands"
+.SH NAME
+claude\-monitor \- real-time terminal monitor for Claude Code token usage
+.SH SYNOPSIS
+.B claude\-monitor
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B claude\-monitor
+is a Rich-based terminal dashboard that reads the local Claude Code session
+data (from \fI~/.claude/projects\fR or \fI~/.config/claude/projects\fR) and
+displays live statistics: token consumption, cost estimates, session progress,
+and plan-limit tracking.
+.PP
+All five installed command names —
+.BR ccm ,
+.BR ccmonitor ,
+.BR claude\-code\-monitor ,
+.BR claude\-monitor ,
+and
+.BR cmonitor
+— invoke the same program.
+.SH OPTIONS
+.TP
+.BR \-\-plan \ \fIPLAN\fR
+Subscription plan to use for token-limit calculations.
+Valid values: \fBpro\fR, \fBmax5\fR, \fBmax20\fR, \fBcustom\fR (default: \fBcustom\fR).
+.TP
+.BR \-\-view \ \fIMODE\fR
+Display mode.
+Valid values: \fBrealtime\fR (default), \fBdaily\fR, \fBmonthly\fR, \fBsession\fR.
+.TP
+.BR \-\-theme \ \fITHEME\fR
+Colour theme.
+Valid values: \fBlight\fR, \fBdark\fR, \fBclassic\fR, \fBauto\fR (default: \fBauto\fR).
+.TP
+.BR \-\-timezone \ \fITZ\fR
+Timezone for display, e.g. \fBUTC\fR, \fBAmerica/New_York\fR, \fBEurope/London\fR.
+Use \fBauto\fR (default) to detect from the system.
+.TP
+.BR \-\-time\-format \ \fIFMT\fR
+Clock format: \fB12h\fR, \fB24h\fR, or \fBauto\fR (default: \fBauto\fR, detected from locale).
+.TP
+.BR \-\-refresh\-rate \ \fISECS\fR
+Data refresh interval in seconds (1–60, default: \fB10\fR).
+.TP
+.BR \-\-refresh\-per\-second \ \fIHz\fR
+Display refresh rate in Hz (0.1–20, default: \fB0.75\fR).
+Higher values use more CPU.
+.TP
+.BR \-\-reset\-hour \ \fIHOUR\fR
+Hour of day (0–23) at which the daily usage counter resets.
+.TP
+.BR \-\-custom\-limit\-tokens \ \fIN\fR
+Explicit token limit when \fB\-\-plan custom\fR is used.
+If omitted, the limit is derived automatically from P90 session statistics.
+.TP
+.BR \-\-log\-level \ \fILEVEL\fR
+Logging verbosity: \fBDEBUG\fR, \fBINFO\fR (default), \fBWARNING\fR, \fBERROR\fR, \fBCRITICAL\fR.
+.TP
+.BR \-\-log\-file \ \fIPATH\fR
+Write log output to \fIPATH\fR instead of stderr.
+.TP
+.BR \-\-debug
+Enable debug logging (equivalent to \fB\-\-log\-level DEBUG\fR).
+.TP
+.BR \-\-clear
+Clear saved configuration (last-used parameters) and continue with normal startup.
+.TP
+.BR \-v ", " \-\-version
+Print version information and exit.
+.SH FILES
+.TP
+.I ~/.claude/projects
+Primary location for Claude Code session data.
+.TP
+.I ~/.config/claude/projects
+Secondary location for Claude Code session data.
+.TP
+.I ~/.claude-monitor/last_used.json
+Persisted last-used settings (theme, timezone, refresh rate, etc.).
+.SH EXIT STATUS
+.TP
+.B 0
+Normal exit (including user-initiated Ctrl+C).
+.TP
+.B 1
+Fatal error during startup or monitoring.
+.SH EXAMPLES
+Start real-time monitoring with the Pro plan:
+.PP
+.RS
+.B claude\-monitor \-\-plan pro
+.RE
+.PP
+Show daily usage table in dark theme, European timezone:
+.PP
+.RS
+.B claude\-monitor \-\-view daily \-\-theme dark \-\-timezone Europe/Berlin
+.RE
+.PP
+Use a custom token limit of 500,000 tokens:
+.PP
+.RS
+.B claude\-monitor \-\-plan custom \-\-custom\-limit\-tokens 500000
+.RE
+.SH SEE ALSO
+.BR ccm (1),
+.BR ccmonitor (1),
+.BR claude\-code\-monitor (1),
+.BR cmonitor (1)
+.SH AUTHOR
+Maciek <maciek@roboblog.eu>
+.PP
+Debian packaging by Vítězslav Dvořák <info@vitexsoftware.cz>.
+.SH REPORTING BUGS
+Report bugs at \fIhttps://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues\fR.

@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+python3 -c 'import claude_monitor; print(claude_monitor.__version__)' >/dev/null
+claude-monitor --help >/dev/null

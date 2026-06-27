@@ -1,0 +1,38 @@
+Source: claude-code-usage-monitor
+Section: python
+Priority: optional
+Maintainer: Vítězslav Dvořák <info@vitexsoftware.cz>
+Build-Depends:
+ debhelper-compat (= 13),
+ dh-python,
+ pybuild-plugin-pyproject,
+ python3-all,
+ python3-setuptools,
+ python3-rich,
+ python3-numpy,
+ python3-pydantic,
+ python3-pydantic-settings,
+ python3-yaml,
+ python3-pytz,
+Standards-Version: 4.7.0
+Homepage: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor
+Rules-Requires-Root: no
+
+Package: claude-code-usage-monitor
+Architecture: all
+Multi-Arch: foreign
+Depends:
+ ${python3:Depends},
+ ${misc:Depends},
+ python3-numpy,
+ python3-pydantic,
+ python3-pydantic-settings,
+ python3-rich,
+ python3-yaml,
+ python3-pytz,
+Description: terminal monitor for Claude Code token usage and analytics
+ claude-code-usage-monitor provides a Rich-based terminal interface for
+ monitoring Claude Code token/session usage in real time.
+ .
+ It includes usage aggregation, pricing calculations, session analytics,
+ and trend views for developers who want direct visibility into AI usage.

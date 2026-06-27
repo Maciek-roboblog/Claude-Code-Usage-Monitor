@@ -1,0 +1,14 @@
+claude-code-usage-monitor for Debian
+====================================
+
+This package installs the `claude-monitor` CLI (plus aliases from upstream)
+for monitoring Claude Code usage in a terminal UI.
+
+Upstream project:
+    https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor
+
+Debian-specific notes:
+    - Configuration and runtime behavior follow upstream defaults.
+    - No Debian-specific patches are applied at this time.
+
+ -- Vítězslav Dvořák <info@vitexsoftware.cz>  Mon, 13 Apr 2026 17:15:00 +0200

@@ -1,0 +1,5 @@
+claude-code-usage-monitor (3.1.0-1) unstable; urgency=medium
+
+  * Initial Debian packaging.
+
+ -- Vítězslav Dvořák <info@vitexsoftware.cz>  Mon, 13 Apr 2026 17:15:00 +0200

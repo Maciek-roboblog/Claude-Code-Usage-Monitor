@@ -27,6 +27,22 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Debian packaging artifacts
+debian/claude-code-usage-monitor/
+debian/*.debhelper
+debian/debhelper-build-stamp
+debian/files
+debian/*.substvars
+debian/*.log
+debian/*.deb
+debian/*.build
+debian/*.buildinfo
+debian/*.changes
+debian/*.dsc
+debian/.pc/
+debian/tmp/
+.pybuild/
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="console-application">
+  <id>io.github.maciek-roboblog.claude-code-usage-monitor</id>
+
+  <name>Claude Code Usage Monitor</name>
+  <summary>Real-time terminal monitor for Claude Code token usage and analytics</summary>
+
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+
+  <description>
+    <p>
+      Claude Code Usage Monitor provides a Rich-based terminal dashboard for
+      monitoring Claude Code token and session usage in real time. It reads the
+      local Claude session data and displays live statistics including token
+      consumption, cost estimates, session progress, and plan-limit tracking.
+    </p>
+    <p>Features include:</p>
+    <ul>
+      <li>Live real-time token and cost tracking with auto-refresh</li>
+      <li>Support for Pro, Max5, Max20 and custom token plans</li>
+      <li>Daily and monthly aggregated usage table views</li>
+      <li>P90-based automatic token limit calculation for custom plans</li>
+      <li>Configurable timezone, time format (12h/24h), and display theme</li>
+      <li>Light, dark, and classic colour themes with auto-detection</li>
+      <li>Session-level analytics with block-level breakdown</li>
+    </ul>
+  </description>
+
+  <icon type="stock">claude-code-usage-monitor</icon>
+
+  <url type="homepage">https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor</url>
+  <url type="bugtracker">https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues</url>
+  <url type="vcs-browser">https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor</url>
+
+  <provides>
+    <binary>claude-monitor</binary>
+    <binary>claude-code-monitor</binary>
+    <binary>ccmonitor</binary>
+    <binary>ccm</binary>
+    <binary>cmonitor</binary>
+  </provides>
+
+  <categories>
+    <category>ConsoleOnly</category>
+    <category>System</category>
+    <category>Monitor</category>
+    <category>Utility</category>
+  </categories>
+
+  <keywords>
+    <keyword>claude</keyword>
+    <keyword>ai</keyword>
+    <keyword>token</keyword>
+    <keyword>usage</keyword>
+    <keyword>monitoring</keyword>
+    <keyword>analytics</keyword>
+    <keyword>terminal</keyword>
+    <keyword>dashboard</keyword>
+  </keywords>
+
+  <releases>
+    <release version="3.1.0" date="2026-04-13">
+      <description>
+        <p>Initial Debian packaging release.</p>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1"/>
+</component>

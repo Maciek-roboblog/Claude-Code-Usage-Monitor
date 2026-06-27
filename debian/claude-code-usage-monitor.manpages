@@ -1,0 +1,5 @@
+debian/man/claude-monitor.1
+debian/man/claude-code-monitor.1
+debian/man/ccmonitor.1
+debian/man/ccm.1
+debian/man/cmonitor.1

@@ -1,0 +1,9 @@
+claude-code-usage-monitor packaging
+===================================
+
+This source package uses the `3.0 (quilt)` format.
+
+No Debian patches are currently maintained. If patches are added later, manage
+them with `quilt` and keep `debian/patches/series` updated.
+
+ -- Vítězslav Dvořák <info@vitexsoftware.cz>  Mon, 13 Apr 2026 17:15:00 +0200
