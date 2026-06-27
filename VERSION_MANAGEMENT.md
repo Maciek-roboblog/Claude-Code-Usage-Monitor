@@ -10,7 +10,7 @@ The Claude Code Usage Monitor uses a centralized version management system that 
 
 ```toml
 [project]
-version = "3.0.0"
+version = "4.0.0"
 ```
 
 ## How It Works
@@ -74,7 +74,7 @@ Comprehensive test suite in `src/tests/test_version.py`:
 __version__ = "2.5.0"
 
 # pyproject.toml
-version = "3.0.0"  # Different version!
+version = "4.0.0"  # Different version!
 ```
 
 ### After (Solution)
@@ -83,7 +83,7 @@ version = "3.0.0"  # Different version!
 from claude_monitor._version import __version__  # Always in sync!
 
 # pyproject.toml
-version = "3.0.0"  # Single source of truth
+version = "4.0.0"  # Single source of truth
 ```
 
 ## Release Process

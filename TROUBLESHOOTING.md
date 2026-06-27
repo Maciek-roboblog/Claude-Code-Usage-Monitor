@@ -117,10 +117,11 @@ pip install pydantic-settings>=2.0.0 numpy>=1.21.0
 
 **Causes and Solutions**:
 
-1. **Default data path doesn't exist**:
+1. **Default data paths don't exist**:
    ```bash
-   # Check if directory exists
+   # Check if either standard directory exists
    ls ~/.claude/projects
+   ls ~/.config/claude/projects
 
    # Start Claude Code session first
    # Go to claude.ai/code and send messages
@@ -129,7 +130,7 @@ pip install pydantic-settings>=2.0.0 numpy>=1.21.0
 2. **Permission issues**:
    ```bash
    # Check permissions
-   ls -la ~/.claude/
+   ls -la ~/.claude/ ~/.config/claude/
 
    # Fix permissions if needed
    chmod 755 ~/.claude/projects
@@ -190,14 +191,15 @@ pip install pydantic-settings>=2.0.0 numpy>=1.21.0
 
 ### Invalid Plan Configuration
 
-**Error**: `Invalid plan: {value}. Must be one of: pro, max5, max20, custom`
+**Error**: `Invalid plan: {value}. Must be one of: pro, max5, max20, team, custom`
 
 **Valid options**:
 ```bash
 # Correct plan names (case-insensitive)
-claude-monitor --plan pro      # 44k tokens
+claude-monitor --plan pro      # 19k tokens
 claude-monitor --plan max5     # 88k tokens
 claude-monitor --plan max20    # 220k tokens
+claude-monitor --plan team     # unverified estimate label
 claude-monitor --plan custom   # P90 auto-detection
 ```
 
@@ -507,7 +509,7 @@ claude-monitor --debug | head -20
 - OS: [Ubuntu 24.04 / Windows 11 / macOS 14]
 - Python: [3.11.0]
 - Installation: [uv/pip/pipx/source]
-- Version: [3.0.0]
+- Version: [4.0.0]
 
 **Steps to Reproduce**:
 1. Command: `claude-monitor --plan custom`

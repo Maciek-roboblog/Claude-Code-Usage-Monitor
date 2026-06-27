@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.0.0] - Unreleased
+## [4.0.0] - 2026-06-27
 
 ### Bug Fixes
 - **Model distribution shows all families**: `ModelUsageBar` now renders every model family — Sonnet, Opus, Haiku, and an "Other" bucket for anything else — instead of only Sonnet/Opus. Haiku and other models no longer vanish from the usage bar or skew the displayed percentages. (#124, #164)
@@ -22,7 +22,7 @@
 ### Features
 - **`--hide-model-distribution`**: new flag to hide the model distribution bar in the live view. (#161)
 - **`--no-header` / `--no-emoji`**: hide the header banner, or render the live view without emoji (plain output). (#57)
-- **`--once --output {rich,json,text}`**: one-shot, machine-readable usage snapshot for hooks/CI/companions instead of parsing the live TUI. Emits a versioned schema (`schema_version`, `source`, `confidence`, `limits`, `local`, `local_history`, `forecast`) with every number labeled `local_estimate`, plus automation exit codes (0 ok, 10 near limit, 11 limit hit, 20 indeterminate, 30 no data). Official account/weekly limits are shaped in but deferred until the statusline reader lands. (#126)
+- **`--once --output {rich,json,text}`**: one-shot, machine-readable usage snapshot for hooks/CI/companions instead of parsing the live TUI. Emits a versioned schema (`schema_version`, `source`, `confidence`, `limits`, `local`, `local_history`, `forecast`) with every non-official number labeled `local_estimate`, plus automation exit codes (0 ok, 10 near limit, 11 limit hit, 20 indeterminate, 30 no data). Fresh statusline captures can now drive the official five-hour limit and reset fields. (#126)
 - **`--write-state`**: continuously write the same versioned snapshot to a state file (default `~/.claude-monitor/state/latest.json`, override with `--state-file`) that status bars, tray apps, and dashboards can poll. Writes are atomic (temp file + replace) so a reader never sees a partial file; reuses the one-shot builder. (#184)
 - **`--compact`**: single-line output for tmux/status bars — usage percent, tokens used/limit, burn rate, reset time, and session cost on one line. Works both live (updates in place) and one-shot with `--once`. Built from the same snapshot as `--once`, so the numbers never diverge from the full views. (#65, #17, #111)
 - **`--set-terminal-title`**: opt-in terminal title updates from the canonical snapshot, with a validated `--title-format` template (`pct`, `plan`, `used`, `limit`, `cost`, `reset`) so live mode and `--once` use the same values as state/export surfaces. (#142)

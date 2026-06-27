@@ -16,9 +16,9 @@ Releases are automatically triggered when changes are pushed to the `main` branc
 
 ### Prerequisites for Automated Release
 
-1. **PyPI API Token**: Must be configured as a GitHub secret named `PYPI_API_TOKEN`
-   - Generate at: https://pypi.org/manage/account/token/
-   - Add to repository secrets: Settings → Secrets and variables → Actions → New repository secret
+1. **PyPI Trusted Publishing**: The release workflow uses GitHub OIDC (`id-token: write`) through `pypa/gh-action-pypi-publish`.
+   - Configure the PyPI project to trust this GitHub repository/workflow.
+   - No PyPI API-token secret is required for the current workflow.
 
 2. **Publishing Permissions**: Ensure GitHub Actions has permissions to create releases
    - Settings → Actions → General → Workflow permissions → Read and write permissions
@@ -44,14 +44,14 @@ uv run ruff format --check .
 
 Edit `pyproject.toml` and update the version:
 ```toml
-version = "1.0.9"  # Update to your new version
+version = "4.0.1"  # Update to your new version
 ```
 
 ### 3. Update CHANGELOG.md
 
 Add a new section at the top of `CHANGELOG.md`:
 ```markdown
-## [1.0.9] - 2025-06-21
+## [4.0.1] - 2026-06-27
 
 ### Added
 - Description of new features
@@ -62,14 +62,14 @@ Add a new section at the top of `CHANGELOG.md`:
 ### Fixed
 - Description of fixes
 
-[1.0.9]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v1.0.9
+[4.0.1]: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/tag/v4.0.1
 ```
 
 ### 4. Commit Version Changes
 
 ```bash
 git add pyproject.toml CHANGELOG.md
-git commit -m "Bump version to 1.0.9"
+git commit -m "Bump version to 4.0.1"
 git push origin main
 ```
 
@@ -77,10 +77,10 @@ git push origin main
 
 ```bash
 # Create annotated tag
-git tag -a v1.0.9 -m "Release v1.0.9"
+git tag -a v4.0.1 -m "Release v4.0.1"
 
 # Push tag to GitHub
-git push origin v1.0.9
+git push origin v4.0.1
 ```
 
 ### 6. Build Package
@@ -95,15 +95,15 @@ uv build
 # Verify build artifacts
 ls -la dist/
 # Should show:
-# - claude_monitor-1.0.9-py3-none-any.whl
-# - claude_monitor-1.0.9.tar.gz
+# - claude_monitor-4.0.1-py3-none-any.whl
+# - claude_monitor-4.0.1.tar.gz
 ```
 
 ### 7. Create GitHub Release
 
 1. Go to: https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases/new
-2. Choose tag: `v1.0.9`
-3. Release title: `Release v1.0.9`
+2. Choose tag: `v4.0.1`
+3. Release title: `Release v4.0.1`
 4. Copy the relevant section from CHANGELOG.md to the description
 5. Attach the built artifacts from `dist/` (optional)
 6. Click "Publish release"
@@ -149,7 +149,7 @@ We follow semantic versioning (SemVer):
 
 1. Check Actions tab for error logs
 2. Common issues:
-   - Missing or invalid `PYPI_API_TOKEN`
+   - PyPI trusted publishing is not configured for this repository/workflow
    - Version already exists on PyPI
    - Malformed CHANGELOG.md
 
@@ -163,14 +163,14 @@ We follow semantic versioning (SemVer):
 
 ```bash
 # Delete local tag
-git tag -d v1.0.9
+git tag -d v4.0.1
 
 # Delete remote tag
-git push --delete origin v1.0.9
+git push --delete origin v4.0.1
 
 # Recreate tag
-git tag -a v1.0.9 -m "Release v1.0.9"
-git push origin v1.0.9
+git tag -a v4.0.1 -m "Release v4.0.1"
+git push origin v4.0.1
 ```
 
 ## Release Checklist

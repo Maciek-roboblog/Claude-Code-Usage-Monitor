@@ -192,6 +192,8 @@ claude-monitor --help
 | --state-file | path | None | State file path for --write-state |
 | --statusline | flag | False | Run as a Claude Code statusline hook and capture official rate_limits |
 | --api | flag | False | Enable the opt-in experimental Anthropic OAuth usage API |
+| --api-cache-file | path | None | Experimental API cache file path |
+| --api-ttl-seconds | int | 180 | Freshness TTL for the experimental API cache |
 | --data-paths | list | [] | Claude data directories to scan; repeat or comma-separate values |
 | --warehouse | flag | False | Persist usage entries to the opt-in local warehouse |
 | --warehouse-file | path | None | Usage warehouse file path |
@@ -293,7 +295,7 @@ ccm                  # Shortest alias
 ```
 
 #### Development mode
-If running from source, use python -m claude_monitor from the src/ directory.
+If running from source, install the package in editable mode and use `python -m claude_monitor` from the repository root.
 
 ### Machine-readable Usage Protocol
 
@@ -311,6 +313,17 @@ claude-monitor --write-state --state-file ~/.claude-monitor/state/latest.json
 
 # Install as a Claude Code statusline hook to capture official rate_limits
 claude-monitor --statusline
+```
+
+Claude Code statusline configuration:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "claude-monitor --statusline"
+  }
+}
 ```
 
 `--once` exits with automation-friendly codes: `0` ok, `10` near limit, `11` limit hit, `20` indeterminate/no active session, and `30` no data or config error. When official statusline data is fresh it wins; otherwise the snapshot falls back to a labeled local estimate.
@@ -339,7 +352,7 @@ claude-monitor --warehouse --view burn-rate --output csv
 # Custom plan with P90 auto-detection (Default)
 claude-monitor --plan custom
 
-# Pro plan (~44,000 tokens)
+# Pro plan (~19,000 tokens)
 claude-monitor --plan pro
 
 # Max5 plan (~88,000 tokens)
@@ -439,7 +452,7 @@ claude-monitor --log-level WARNING  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 - **P90 Analysis**: Custom plan uses 90th percentile calculations from your usage history
 - **Cost Tracking**: Model-specific pricing with cache token calculations
-- **Limit Detection**: Intelligent threshold detection with 95% confidence
+- **Limit Detection**: Explicit confidence/provenance labels for official and local data
 
 
 ## 🚀 What's New in v4.0.0
@@ -485,7 +498,7 @@ The new version features a complete rewrite with modular architecture following 
 | -------------------- | --------------------- |
 | **CLI Module**       | Pydantic-based        |
 | **Settings/Config**  | Type-safe             |
-| **Error Handling**   | Sentry-ready          |
+| **Error Handling**   | Structured logging    |
 | **Rich Terminal UI** | Adaptive Theme        |
 
 ---
@@ -507,7 +520,7 @@ The new version features a complete rewrite with modular architecture following 
 | Component           | Core Features                                           |
 | ------------------- | ------------------------------------------------------- |
 | **Core Models**     | Session Data · Config Schema · Type Safety             |
-| **Analysis Engine** | ML Algorithms · Statistical · Forecasting              |
+| **Analysis Engine** | P90 estimates · Burn rate · Forecasting                |
 | **Terminal Themes** | Auto-detection · WCAG Colors · Contrast Opt            |
 | **Claude API Data** | Token Tracking · Cost Calculator · Session Blocks      |
 
@@ -590,12 +603,12 @@ The monitor calculates burn rate using sophisticated analysis:
 | **Claude Max5** | 88,000         | $35.00           | 1,000 | Fixed limit |
 | **Claude Max20** | 220,000        | $140.00          | 2,000 | Fixed limit |
 | **Claude Team** | estimate      | unverified       | unknown | Label only; use statusline or custom |
-| **Custom** | P90-based      | (default) $50.00 | 250+ | Machine learning |
+| **Custom** | P90-based      | (default) $50.00 | 250+ | Local-history estimate |
 
 #### Advanced Limit Detection
 
 - **P90 Analysis**: Uses 90th percentile of your historical usage
-- **Confidence Threshold**: 95% accuracy in limit detection
+- **Confidence Labels**: Distinguishes official values, local estimates, experimental API data, and unknown values
 - **Cache Support**: Includes cache creation and read token costs
 - **Model-Specific**: Adapts to Claude 3.5, Claude 4, and future models
 
@@ -625,25 +638,19 @@ wcwidth>=0.2.13             # Terminal display-width calculation
 
 ### Smart Detection Features
 
-#### Automatic Plan Switching
+#### Official and Local Limit Sources
 
-When using the default Pro plan:
+When `--statusline` has captured fresh Claude Code `rate_limits`, the monitor treats the official five-hour percentage and reset time as the live source of truth. If the capture is missing, stale, expired, or malformed, the display and exports fall back to local JSONL estimates and label them as `local_estimate`.
 
-1. **Detection**: Monitor notices token usage exceeding 7,000
-2. **Analysis**: Scans previous sessions for actual limits
-3. **Switch**: Automatically changes to custom_max mode
-4. **Notification**: Displays clear message about the change
-5. **Continuation**: Keeps monitoring with new, higher limit
+#### Custom Limit Discovery
 
-#### Limit Discovery Process
+The default `custom` plan estimates a practical local limit from recent session history. You can also pin the limit explicitly:
 
-The auto-detection system:
+```bash
+claude-monitor --plan custom --custom-limit-tokens 100000
+```
 
-1. **Scans History**: Examines all available session blocks
-2. **Finds Peaks**: Identifies highest token usage achieved
-3. **Validates Data**: Ensures data quality and recency
-4. **Sets Limits**: Uses discovered maximum as new limit
-5. **Learns Patterns**: Adapts to your actual usage capabilities
+Use `--plan pro`, `--plan max5`, or `--plan max20` when you want fixed local plan estimates. Use `--plan team` only as an unverified label; for Team accounts, prefer official statusline data or an explicit custom limit.
 
 
 ## 🚀 Usage Examples
@@ -655,10 +662,10 @@ The auto-detection system:
 
 ```bash
 # Set custom reset time to 9 AM
-./claude_monitor.py --reset-hour 9
+claude-monitor --reset-hour 9
 
 # With your timezone
-./claude_monitor.py --reset-hour 9 --timezone US/Eastern
+claude-monitor --reset-hour 9 --timezone America/New_York
 ```
 
 
@@ -672,10 +679,10 @@ The auto-detection system:
 
 ```bash
 # Reset at midnight for clean daily boundaries
-./claude_monitor.py --reset-hour 0
+claude-monitor --reset-hour 0
 
 # Late evening reset (11 PM)
-./claude_monitor.py --reset-hour 23
+claude-monitor --reset-hour 23
 ```
 
 
@@ -688,11 +695,11 @@ The auto-detection system:
 **Scenario**: Your token limits seem to change, and you're not sure of your exact plan.
 
 ```bash
-# Auto-detect your highest previous usage
-claude-monitor --plan custom_max
+# Use the default custom plan to estimate from recent history
+claude-monitor --plan custom
 
-# Monitor with custom scheduling
-claude-monitor --plan custom_max --reset-hour 6
+# Or pin a known limit explicitly
+claude-monitor --plan custom --custom-limit-tokens 100000 --reset-hour 6
 ```
 
 
@@ -758,13 +765,13 @@ claude-monitor --view daily --timezone America/New_York
 
 **Start with Default (Recommended for New Users)**
 ```bash
-# Pro plan detection with auto-switching
+# Custom plan with local-history estimation
 claude-monitor
 ```
 
-- Monitor will detect if you exceed Pro limits
-- Automatically switches to custom_max if needed
-- Shows notification when switching occurs
+- Fresh official statusline captures are used when available
+- Otherwise the monitor uses labeled local estimates
+- You can pin a custom token limit if your subscription behaves differently
 
 **Known Subscription Users**
 ```bash
@@ -778,8 +785,11 @@ claude-monitor --plan max20
 
 **Unknown Limits**
 ```bash
-# Auto-detect from previous usage
-claude-monitor --plan custom_max
+# Estimate from recent local usage history
+claude-monitor --plan custom
+
+# Or use an explicit known token limit
+claude-monitor --plan custom --custom-limit-tokens 100000
 ```
 
 
@@ -794,7 +804,7 @@ claude-monitor --plan custom_max
    claude-monitor
 
    # Or development mode
-   ./claude_monitor.py
+   python -m claude_monitor
    ```
 
    - Gives accurate session tracking from the start
@@ -817,7 +827,7 @@ claude-monitor --plan custom_max
 
 ```bash
    # Add to ~/.bashrc or ~/.zshrc (only for development setup)
-   alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./claude_monitor.py'
+   alias claude-monitor-dev='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && python -m claude_monitor'
    ```
 
 
@@ -865,7 +875,7 @@ claude-monitor --plan custom_max
    tmux new-session -d -s claude-monitor 'claude-monitor'
 
    # Or development mode
-   tmux new-session -d -s claude-monitor './claude_monitor.py'
+   tmux new-session -d -s claude-monitor 'python -m claude_monitor'
 
    # Check status anytime
    tmux attach -t claude-monitor
@@ -918,8 +928,8 @@ For contributors and developers who want to work with the source code:
 git clone https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git
 cd Claude-Code-Usage-Monitor
 
-# Install in development mode
-pip install -e .
+# Install in development mode with test/development tools
+pip install -e ".[dev]"
 
 # Run from source
 python -m claude_monitor
@@ -938,14 +948,13 @@ The new version includes a comprehensive test suite:
 
 ```bash
 # Run tests
-cd src/
-python -m pytest
+uv run --extra test pytest
 
 # Run with coverage
-python -m pytest --cov=claude_monitor --cov-report=html
+uv run --extra test pytest --cov=claude_monitor --cov-report=html
 
 # Run specific test modules
-python -m pytest tests/test_analysis.py -v
+uv run --extra test pytest src/tests/test_analysis.py -v
 ```
 
 
@@ -1018,14 +1027,11 @@ source venv/bin/activate
 # On Windows:
 # venv\Scripts\activate
 
-# 4. Install Python dependencies
-pip install pytz
-pip install rich>=13.0.0
-# 5. Make script executable (Linux/Mac only)
-chmod +x claude_monitor.py
+# 4. Install project and development dependencies
+pip install -e ".[dev]"
 
-# 6. Run the monitor
-python claude_monitor.py
+# 5. Run the monitor
+python -m claude_monitor
 ```
 
 
@@ -1042,8 +1048,7 @@ source venv/bin/activate  # Linux/Mac
 # venv\Scripts\activate   # Windows
 
 # Run monitor
-./claude_monitor.py  # Linux/Mac
-# python claude_monitor.py  # Windows
+python -m claude_monitor
 
 # When done, deactivate
 deactivate
@@ -1055,10 +1060,10 @@ deactivate
 Create an alias for quick access:
 ```bash
 # Add to ~/.bashrc or ~/.zshrc
-alias claude-monitor='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && ./claude_monitor.py'
+alias claude-monitor-dev='cd ~/Claude-Code-Usage-Monitor && source venv/bin/activate && python -m claude_monitor'
 
 # Then just run:
-claude-monitor
+claude-monitor-dev
 ```
 
 
@@ -1192,10 +1197,10 @@ If you encounter the error No active session found, please follow these steps:
    Launch Claude Code and send at least two messages. In some cases, the session may not initialize correctly on the first attempt, but it resolves after a few interactions.
 
 2. **Configuration Path**:
-   If the issue persists, consider specifying a custom configuration path. By default, Claude Code uses ~/.config/claude. You may need to adjust this path depending on your environment.
+   If the issue persists, point the monitor at the Claude Code config directory that contains `projects/`. The monitor checks `CLAUDE_CONFIG_DIR`, `~/.claude/projects`, `~/.config/claude/projects`, and discovered WSL paths.
 
 ```bash
-CLAUDE_CONFIG_DIR=~/.config/claude ./claude_monitor.py
+CLAUDE_CONFIG_DIR=~/.config/claude claude-monitor
 ```
 
 
@@ -1255,7 +1260,7 @@ Whether you need help with setup, have feature requests, found a bug, or want to
 
 ## 📚 Additional Documentation
 
-- **[Development Roadmap](DEVELOPMENT.md)** - ML features, PyPI package, Docker plans
+- **[Development Notes](DEVELOPMENT.md)** - current architecture, test commands, and roadmap boundaries
 - **[Contributing Guide](CONTRIBUTING.md)** - How to contribute, development guidelines
 - **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
 

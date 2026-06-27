@@ -9,7 +9,7 @@ Current implementation status and planned features for Claude Code Usage Monitor
 #### 🔧 **Core Monitoring System**
 - **Real-time token monitoring** with configurable refresh rates (0.1-20 Hz)
 - **5-hour session tracking** with intelligent session block analysis
-- **Multi-plan support**: Pro (44k), Max5 (88k), Max20 (220k), Custom (P90-based)
+- **Multi-plan support**: Pro (19k), Max5 (88k), Max20 (220k), Team label, Custom (P90-based)
 - **Advanced analytics** with burn rate calculations and usage projections
 - **Cost tracking** with model-specific pricing (Opus, Sonnet, Haiku)
 - **Cache token support** for creation and read tokens
@@ -25,7 +25,7 @@ Current implementation status and planned features for Claude Code Usage Monitor
 - **Type-safe configuration** with Pydantic validation
 - **Thread-safe monitoring** with callback-driven updates
 - **Component-based design** following Single Responsibility Principle
-- **Comprehensive error handling** with optional Sentry integration
+- **Comprehensive error handling** with structured logging
 - **Atomic file operations** for configuration persistence
 
 #### 🧠 **Advanced Analytics**
@@ -37,17 +37,19 @@ Current implementation status and planned features for Claude Code Usage Monitor
 
 #### 📦 **Package Distribution**
 - **PyPI-ready** with modern setuptools configuration
-- **Entry points**: `claude-monitor`, `cmonitor`, and `ccm` commands
+- **Entry points**: `claude-monitor`, `claude-code-monitor`, `cmonitor`, `ccmonitor`, and `ccm` commands
 - **Cross-platform support** (Windows, macOS, Linux)
 - **Professional CI/CD** with automated testing and releases
 
 **📋 Command Aliases**:
 - `claude-monitor` - Main command (full name)
+- `claude-code-monitor` - Full descriptive alias
 - `cmonitor` - Short alias for convenience
+- `ccmonitor` - Short alternative alias
 - `ccm` - Ultra-short alias for power users
 
 #### 🛠️ **Development Infrastructure**
-- **100+ test cases** with comprehensive coverage (80% requirement)
+- **700+ collected tests** across the v4 trust layer, state protocol, warehouse, UI, timezone, and CLI paths
 - **Modern toolchain**: Ruff, MyPy, UV package manager
 - **Automated workflows**: GitHub Actions with matrix testing
 - **Code quality**: Pre-commit hooks, security scanning
@@ -68,18 +70,14 @@ Container-based deployment with optional web dashboard for team environments.
 # Lightweight monitoring
 docker run -e PLAN=max5 maciek/claude-monitor
 
-# With web dashboard
-docker run -p 8080:8080 maciek/claude-monitor --web-mode
-
 # Persistent data
-docker run -v ~/.claude_monitor:/data maciek/claude-monitor
+docker run -v ~/.claude-monitor:/data maciek/claude-monitor
 ```
 
 **📊 Web Dashboard**:
-- React-based real-time interface
-- Historical usage visualization
-- REST API for integrations
-- Mobile-responsive design
+- Separate companion applications should consume `--write-state` or `--once --output json`
+- Historical usage should come from the opt-in local warehouse
+- Built-in web/API surfaces are future work, not part of v4.0.0
 
 #### Development Tasks
 - [ ] **Multi-stage Dockerfile** - Optimized build process
@@ -131,11 +129,11 @@ Cross-platform monitoring with mobile apps and web interfaces for enterprise env
 - **Rich framework** for beautiful terminal interfaces
 
 #### **Professional Testing Suite**
-- **100+ test cases** across 15 test files with comprehensive fixtures
-- **80% coverage requirement** with HTML/XML reporting
+- **731 collected tests** across 35 test files
+- **70% coverage gate** with HTML/XML reporting
 - **Matrix testing**: Python 3.9-3.13 across multiple platforms
 - **Benchmark testing** with pytest-benchmark integration
-- **Security scanning** with Bandit integration
+- **Security scanning** is planned; the current workflow keeps the Bandit job disabled
 
 #### **CI/CD Excellence**
 - **GitHub Actions workflows** with automated testing and releases
@@ -147,7 +145,7 @@ Cross-platform monitoring with mobile apps and web interfaces for enterprise env
 #### **Production-Ready Features**
 - **Thread-safe architecture** with proper synchronization
 - **Component isolation** preventing cascade failures
-- **Comprehensive error handling** with optional Sentry integration
+- **Comprehensive error handling** with structured logging
 - **Performance optimization** with caching and efficient data structures
 - **Memory management** with proper resource cleanup
 
@@ -155,11 +153,11 @@ Cross-platform monitoring with mobile apps and web interfaces for enterprise env
 
 | Metric | Current Status | Target |
 |--------|---------------|---------|
-| Test Coverage | 80%+ | 80% minimum |
-| Type Annotations | 100% | 100% |
+| Test Coverage | 70%+ gate | Maintain or raise over time |
+| Type Annotations | Broad coverage | Improve module by module |
 | Linting Rules | 50+ Ruff rules | All applicable |
-| Security Scan | Bandit clean | Zero issues |
-| Performance | <100ms startup | <50ms target |
+| Security Scan | Planned | Enable without blocking routine PRs |
+| Performance | Monitor startup and live-loop cost | Keep interactive use responsive |
 
 ### 🔧 **Development Toolchain**
 
@@ -204,7 +202,7 @@ uv run ruff format .
 1. **Feature Planning**: Create GitHub issue with detailed requirements
 2. **Branch Creation**: Fork repository and create feature branch
 3. **Development**: Code with automatic formatting and linting via pre-commit
-4. **Testing**: Write tests and ensure 80% coverage requirement
+4. **Testing**: Write tests and keep the coverage gate passing
 5. **Quality Checks**: All tools run automatically on commit
 6. **Pull Request**: Submit with clear description and documentation updates
 
@@ -287,20 +285,19 @@ uv run ruff format .
 ## 📊 **Project Metrics & Goals**
 
 ### 🎯 **Current Performance Metrics**
-- **Test Coverage**: 80%+ maintained across all modules
-- **Startup Time**: <100ms for typical monitoring sessions
-- **Memory Usage**: <50MB peak for standard workloads
-- **CPU Usage**: <5% average during monitoring
-- **Type Safety**: 100% type annotation coverage
+- **Test Suite**: 731 collected tests on the current v4 tree
+- **Coverage Gate**: 70% project threshold in `pyproject.toml`
+- **Runtime Focus**: keep startup and live refresh responsive on normal terminals
+- **Type Safety**: type annotations are broad but not treated as a completed 100% metric
 
 ### 🚀 **Version Roadmap**
 
 | Version | Focus | Timeline | Key Features |
 |---------|-------|----------|-------------|
-| **v3.1** | Performance & UX | Q2 2025 | ML auto-detection, UI improvements |
-| **v3.5** | Platform Expansion | Q3 2025 | Docker support, web dashboard |
-| **v4.0** | Intelligence | Q4 2025 | Advanced ML, enterprise features |
-| **v4.5** | Ecosystem | Q1 2026 | Mobile apps, plugin system |
+| **v4.0** | Usage Ops companion | Released 2026-06-27 | Official limits, state protocol, warehouse |
+| **v4.x** | Packaging and docs | Next | Debian packaging, install polish, docs cleanup |
+| **v4.x** | Companion ecosystem | Next | External tools consuming the state/export protocol |
+| **Future** | Broader interfaces | Later | Web, mobile, and provider adapters outside the core package |
 
 ### 📈 **Success Metrics**
 - **User Adoption**: Growing community with active contributors
@@ -327,9 +324,9 @@ uv run ruff format .
 
 ### 📚 **Documentation**
 - **User Guide**: README.md with comprehensive usage examples
-- **API Documentation**: Auto-generated from type hints
+- **Reference**: `README.md`, `TROUBLESHOOTING.md`, and inline `--help`
 - **Contributing Guide**: CONTRIBUTING.md with detailed workflows
-- **Code Examples**: /docs/examples/ directory with practical demonstrations
+- **Companion Examples**: state/export examples in `README.md`
 
 ---
 

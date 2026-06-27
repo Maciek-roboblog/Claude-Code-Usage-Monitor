@@ -43,8 +43,8 @@ source venv/bin/activate  # Linux/Mac
 # Install project and development dependencies
 pip install -e .[dev]
 
-# Make script executable (Linux/Mac)
-chmod +x claude_monitor.py
+# Run from source
+python -m claude_monitor --help
 ```
 
 ### 3. Create a Feature Branch
@@ -117,26 +117,18 @@ def predict_token_depletion(current_usage, burn_rate):
 
 ```python
 # Test file naming: test_*.py
-# tests/test_core.py
+# src/tests/test_settings.py
 
-import pytest
-from claude_monitor.core import TokenMonitor
+from claude_monitor.core.plans import Plans
 
-def test_token_calculation():
-    """Test token usage calculation."""
-    monitor = TokenMonitor()
-    result = monitor.calculate_usage(1000, 500)
-    assert result == 50.0  # 50% usage
+def test_pro_plan_limit():
+    """Test the documented Pro plan token limit."""
+    plan = Plans.get_plan_by_name("pro")
+    assert plan.token_limit == 19_000
 
-def test_burn_rate_calculation():
-    """Test burn rate calculation with edge cases."""
-    monitor = TokenMonitor()
-
-    # Normal case
-    assert monitor.calculate_burn_rate(100, 10) == 10.0
-
-    # Edge case: zero time
-    assert monitor.calculate_burn_rate(100, 0) == 0
+def test_invalid_plan_name():
+    """Test invalid plan validation."""
+    assert Plans.get_plan_by_name("invalid") is None
 ```
 
 ### 📝 Commit Message Format
@@ -147,7 +139,7 @@ Use clear, descriptive commit messages:
 # Good commit messages
 git commit -m "Add: ML-powered token prediction algorithm"
 git commit -m "Fix: Handle edge case when no sessions are active"
-git commit -m "Update: Improve error handling in ccusage integration"
+git commit -m "Update: Improve error handling in data discovery"
 git commit -m "Docs: Add examples for timezone configuration"
 
 # Prefixes to use:
@@ -183,25 +175,25 @@ git commit -m "Docs: Add examples for timezone configuration"
 3. Test installation in virtual environments
 4. Implement configuration file handling
 
-### 🐳 Docker & Web Features
+### 📦 Packaging & Companion Integrations
 
 **Current Needs**:
-- Create efficient Dockerfile
-- Build web dashboard interface
-- Implement REST API
-- Design responsive UI
+- Improve packaging and installation paths
+- Keep external companion tools on the `--write-state` / `--once --output json` protocol
+- Document status bar, tray, and dashboard integrations without bundling them into the core package
+- Test cross-platform data discovery and terminal behavior
 
 **Skills Helpful**:
 - Docker containerization
-- React/TypeScript for frontend
-- Python web frameworks (Flask/FastAPI)
-- Responsive web design
+- Python packaging
+- Cross-platform CLI testing
+- Status bar, menu bar, and dashboard integrations
 
 **Getting Started**:
-1. Create basic Dockerfile for current script
-2. Design web interface mockups
-3. Implement simple REST API
-4. Build responsive dashboard components
+1. Read the state protocol examples in `README.md`
+2. Verify the feature against current `claude-monitor --help`
+3. Keep companion UI code separate from the core Python package unless discussed first
+4. Include docs and tests for any new public option
 
 ### 🔧 Core Features & Bug Fixes
 
@@ -312,26 +304,21 @@ We evaluate features based on:
 
 ```bash
 # Run all tests
-pytest
+uv run --extra test pytest
 
 # Run specific test file
-pytest tests/test_core.py
+uv run --extra test pytest src/tests/test_settings.py
 
 # Run with coverage
-pytest --cov=claude_monitor
+uv run --extra test pytest --cov=claude_monitor
 
-# Run tests on multiple Python versions (if using tox)
-tox
+# Collect tests without enforcing coverage
+uv run --extra test pytest --collect-only -q --no-cov
 ```
 
 ### 📊 Test Coverage
 
-We aim for high test coverage:
-
-- **Core functionality**: 95%+ coverage
-- **ML components**: 90%+ coverage
-- **UI components**: 80%+ coverage
-- **Utility functions**: 95%+ coverage
+The default pytest configuration enforces a project coverage gate. For focused local work, run the relevant test file first, then run the full suite before opening a PR.
 
 ### 🌍 Platform Testing
 
@@ -370,9 +357,10 @@ Help us test on different platforms:
 
 We're collecting **anonymized data** about token limits to improve auto-detection:
 
-**What to share in [Issue #1](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues/1)**:
+**What to share in a GitHub issue**:
 - Your subscription type (Pro, Teams, Enterprise)
-- Maximum tokens reached (custom_max value)
+- Whether the number came from official statusline data or local estimates
+- Any explicit custom token limit you configured
 - When the limit was exceeded
 - Usage patterns you've noticed
 
