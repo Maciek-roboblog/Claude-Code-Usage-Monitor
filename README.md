@@ -1282,6 +1282,16 @@ A special thanks to our supporters who help keep this project going:
 **Ed** - *Buy Me Coffee Supporter*
 > "I appreciate sharing your work with the world. It helps keep me on track with my day. Quality readme, and really good stuff all around!"
 
+## 🛠️ Companion Apps
+
+Community-built tools that extend claude-code-usage-monitor via the v4 state protocol:
+
+| App | Platform | Description |
+|-----|----------|-------------|
+| [Claude Token Monitor](https://github.com/HAOGRE/ClaudeTokenMonitorBar-macOS) | macOS menu bar | Native Swift/SwiftUI app — live token rates, cost tracking, and official 5-hour rate limit display via v4 state protocol. Zero dependencies, Universal binary. |
+
+> Built a companion tool? Open a PR to add it here.
+
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=Maciek-roboblog/Claude-Code-Usage-Monitor&type=Date)](https://www.star-history.com/#Maciek-roboblog/Claude-Code-Usage-Monitor&Date)
