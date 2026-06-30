@@ -4,12 +4,13 @@ This module provides functionality to aggregate Claude usage data
 by day and month, similar to ccusage's functionality.
 """
 
+import calendar
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Sequence, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from claude_monitor.core.models import SessionBlock, UsageEntry, normalize_model_name
 from claude_monitor.utils.time_utils import TimezoneHandler
@@ -100,6 +101,8 @@ class UsageAggregator:
         timezone: str = "UTC",
         reset_hour: Optional[int] = None,
         filter_models: str = "all",
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
     ):
         """Initialize the aggregator.
 
@@ -111,12 +114,20 @@ class UsageAggregator:
                 a day runs ``reset_hour`` -> ``reset_hour`` instead of midnight to
                 midnight, so e.g. 02:00 with ``reset_hour=4`` counts toward the
                 previous day. Only affects daily aggregation, not the 5h window.
+            filter_models: Model filter expression passed to the reader.
+            date_from: Inclusive start of the range to aggregate. ``YYYY-MM-DD``
+                for daily mode, ``YYYY-MM`` for monthly mode. ``None`` means no
+                lower bound.
+            date_to: Inclusive end of the range to aggregate, same formats as
+                ``date_from``. ``None`` means no upper bound.
         """
         self.data_path = data_path
         self.aggregation_mode = aggregation_mode
         self.timezone = timezone
         self.reset_hour = reset_hour
         self.filter_models = filter_models
+        self.date_from = date_from
+        self.date_to = date_to
         self.timezone_handler = TimezoneHandler()
 
     def _aggregate_by_period(
@@ -320,9 +331,63 @@ class UsageAggregator:
                 entry.timestamp = self.timezone_handler.ensure_timezone(entry.timestamp)
 
         # Aggregate based on mode
+        start_date, end_date = self._range_bounds()
         if self.aggregation_mode == "daily":
-            return self.aggregate_daily(entries)
+            return self.aggregate_daily(entries, start_date, end_date)
         elif self.aggregation_mode == "monthly":
-            return self.aggregate_monthly(entries)
+            return self.aggregate_monthly(entries, start_date, end_date)
         else:
             raise ValueError(f"Invalid aggregation mode: {self.aggregation_mode}")
+
+    def _range_bounds(self) -> Tuple[Optional[datetime], Optional[datetime]]:
+        """Convert ``date_from``/``date_to`` into timezone-aware boundaries.
+
+        The boundaries are built in the display timezone (``self.timezone``) so a
+        date like ``2026-06-05`` means the user's local June 5th. They are
+        timezone-aware to match ``entry.timestamp`` (made aware in ``aggregate``);
+        comparing aware against naive datetimes would raise. Both bounds are
+        inclusive: the start snaps to the first instant of its day/month and the
+        end to the last microsecond of its day/month.
+
+        Returns:
+            A ``(start, end)`` tuple. Either element is ``None`` when the
+            corresponding flag is unset (one-sided ranges).
+        """
+        if self.date_from is None and self.date_to is None:
+            return None, None
+
+        tz_handler = TimezoneHandler(self.timezone)
+
+        def make_aware(naive: datetime) -> datetime:
+            return tz_handler.ensure_timezone(naive)
+
+        start: Optional[datetime] = None
+        end: Optional[datetime] = None
+
+        if self.aggregation_mode == "daily":
+            if self.date_from is not None:
+                day = datetime.strptime(self.date_from, "%Y-%m-%d")
+                start = make_aware(day)
+            if self.date_to is not None:
+                day = datetime.strptime(self.date_to, "%Y-%m-%d")
+                end = make_aware(
+                    day.replace(hour=23, minute=59, second=59, microsecond=999999)
+                )
+        else:  # monthly
+            if self.date_from is not None:
+                month = datetime.strptime(self.date_from, "%Y-%m")
+                start = make_aware(month)
+            if self.date_to is not None:
+                month = datetime.strptime(self.date_to, "%Y-%m")
+                last_day = calendar.monthrange(month.year, month.month)[1]
+                end = make_aware(
+                    month.replace(
+                        day=last_day,
+                        hour=23,
+                        minute=59,
+                        second=59,
+                        microsecond=999999,
+                    )
+                )
+
+        return start, end

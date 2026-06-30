@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import pytz
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from claude_monitor import __version__
@@ -101,6 +101,7 @@ class Settings(BaseSettings):
         cli_prog_name="claude-monitor",
         cli_kebab_case=True,
         cli_implicit_flags=True,
+        populate_by_name=True,
     )
 
     plan: Literal["pro", "max5", "max20", "team", "custom"] = Field(
@@ -271,6 +272,22 @@ class Settings(BaseSettings):
     date_format: Optional[str] = Field(
         default=None,
         description="Date format for daily/monthly table periods, e.g. %d.%m.%Y",
+    )
+
+    date_from: Optional[str] = Field(
+        default=None,
+        alias="from",
+        description=(
+            "Start of date range, inclusive. daily: YYYY-MM-DD, monthly: YYYY-MM"
+        ),
+    )
+
+    date_to: Optional[str] = Field(
+        default=None,
+        alias="to",
+        description=(
+            "End of date range, inclusive. daily: YYYY-MM-DD, monthly: YYYY-MM"
+        ),
     )
 
     abbreviate_tokens: bool = Field(
@@ -451,6 +468,53 @@ class Settings(BaseSettings):
             raise ValueError(f"Invalid log level: {v}")
         return v_upper
 
+    @model_validator(mode="after")
+    def validate_date_range(self) -> "Settings":
+        """Validate ``--from``/``--to`` against the active view.
+
+        The accepted format depends on ``view``: ``daily`` expects
+        ``YYYY-MM-DD`` and ``monthly`` expects ``YYYY-MM``. Both boundaries are
+        optional (one-sided ranges are allowed), but when both are present the
+        start must not be after the end. The flags only apply to the ``daily``
+        and ``monthly`` table views.
+
+        Returns:
+            The validated settings instance.
+
+        Raises:
+            ValueError: If a date is malformed for the active view, if the
+                flags are used with an unsupported view, or if ``date_from`` is
+                after ``date_to``.
+        """
+        if self.date_from is None and self.date_to is None:
+            return self
+
+        if self.view not in ("daily", "monthly"):
+            raise ValueError("--from/--to only apply to --view daily or --view monthly")
+
+        date_pattern = "%Y-%m-%d" if self.view == "daily" else "%Y-%m"
+        expected = "YYYY-MM-DD" if self.view == "daily" else "YYYY-MM"
+        for label, value in (("--from", self.date_from), ("--to", self.date_to)):
+            if value is not None:
+                try:
+                    datetime.strptime(value, date_pattern)
+                except ValueError:
+                    raise ValueError(
+                        f"{label} value {value!r} is invalid for --view "
+                        f"{self.view}; expected {expected}"
+                    )
+
+        if (
+            self.date_from is not None
+            and self.date_to is not None
+            and self.date_from > self.date_to
+        ):
+            raise ValueError(
+                f"--from ({self.date_from}) is after --to ({self.date_to})"
+            )
+
+        return self
+
     @classmethod
     def settings_customise_sources(
         cls,
@@ -582,6 +646,8 @@ class Settings(BaseSettings):
         args.warehouse_file = self.warehouse_file
         args.warehouse_retention_days = self.warehouse_retention_days
         args.date_format = self.date_format
+        args.date_from = self.date_from
+        args.date_to = self.date_to
         args.abbreviate_tokens = self.abbreviate_tokens
         args.sparklines = self.sparklines
         args.filter_models = self.filter_models
