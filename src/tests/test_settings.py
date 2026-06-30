@@ -969,6 +969,36 @@ class TestDateRangeFlags:
         with pytest.raises(ValidationError):
             Settings(view="daily", date_from="2026-13-01", _cli_parse_args=[])
 
+    def test_daily_rejects_non_canonical_date(self) -> None:
+        """Daily view rejects non-zero-padded input that strptime would accept."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            Settings(view="daily", date_from="2026-6-1", _cli_parse_args=[])
+
+    def test_monthly_rejects_non_canonical_month(self) -> None:
+        """Monthly view rejects non-zero-padded months like ``2026-6``."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            Settings(view="monthly", date_from="2026-6", _cli_parse_args=[])
+
+    def test_monthly_from_after_to_uses_parsed_order(self) -> None:
+        """``2026-10`` > ``2026-6`` must be caught via parsed comparison.
+
+        A raw string comparison would order ``"2026-10" < "2026-6"`` and miss
+        this inverted range; comparing parsed datetimes rejects it correctly.
+        """
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            Settings(
+                view="monthly",
+                date_from="2026-10",
+                date_to="2026-06",
+                _cli_parse_args=[],
+            )
+
     def test_monthly_accepts_month_format(self) -> None:
         """Monthly view accepts ``YYYY-MM`` boundaries."""
         settings = Settings(

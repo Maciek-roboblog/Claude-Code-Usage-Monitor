@@ -494,20 +494,29 @@ class Settings(BaseSettings):
 
         date_pattern = "%Y-%m-%d" if self.view == "daily" else "%Y-%m"
         expected = "YYYY-MM-DD" if self.view == "daily" else "YYYY-MM"
+        parsed: Dict[str, datetime] = {}
         for label, value in (("--from", self.date_from), ("--to", self.date_to)):
-            if value is not None:
-                try:
-                    datetime.strptime(value, date_pattern)
-                except ValueError:
-                    raise ValueError(
-                        f"{label} value {value!r} is invalid for --view "
-                        f"{self.view}; expected {expected}"
-                    )
+            if value is None:
+                continue
+            try:
+                dt = datetime.strptime(value, date_pattern)
+            except ValueError:
+                dt = None
+            # strptime accepts non-canonical input like "2026-6-1"; require the
+            # value to round-trip so only zero-padded YYYY-MM-DD / YYYY-MM pass.
+            if dt is None or dt.strftime(date_pattern) != value:
+                raise ValueError(
+                    f"{label} value {value!r} is invalid for --view "
+                    f"{self.view}; expected {expected}"
+                )
+            parsed[label] = dt
 
+        # Compare parsed datetimes, not raw strings: "2026-6" > "2026-10" is a
+        # lexical false positive that the parsed comparison avoids.
         if (
-            self.date_from is not None
-            and self.date_to is not None
-            and self.date_from > self.date_to
+            "--from" in parsed
+            and "--to" in parsed
+            and parsed["--from"] > parsed["--to"]
         ):
             raise ValueError(
                 f"--from ({self.date_from}) is after --to ({self.date_to})"
@@ -555,11 +564,20 @@ class Settings(BaseSettings):
             settings = cls(_cli_parse_args=argv)
 
             cli_provided_fields = set()
+            # Map aliases (e.g. --from -> date_from) back to field names so an
+            # aliased flag is recognized as CLI-provided and not overwritten by
+            # a saved last-used value.
+            alias_to_field = {
+                field.alias: name
+                for name, field in cls.model_fields.items()
+                if field.alias is not None
+            }
             if argv:
                 for _i, arg in enumerate(argv):
                     if arg.startswith("--"):
                         # Handle both "--plan pro" and "--plan=pro" forms.
                         field_name = arg[2:].split("=", 1)[0].replace("-", "_")
+                        field_name = alias_to_field.get(field_name, field_name)
                         if field_name in cls.model_fields:
                             cli_provided_fields.add(field_name)
 

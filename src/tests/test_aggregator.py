@@ -515,6 +515,49 @@ class TestUsageAggregator:
         )
         assert aggregator._range_bounds() == (None, None)
 
+    def test_range_bounds_use_utc_calendar_for_non_utc_timezone(self) -> None:
+        """Bounds follow the UTC period keys, not the display timezone.
+
+        The default daily key formats the raw UTC timestamp, so a range is
+        interpreted on the UTC calendar even when the display timezone differs.
+        An entry at 02:00 UTC on Jan 2 belongs to UTC Jan 2 (the key is
+        ``2024-01-02``) and must be kept; an entry at 23:00 UTC on Jan 1 belongs
+        to UTC Jan 1 and must be dropped by ``date_from="2024-01-02"`` -- even
+        though both fall on Jan 1 in America/New_York local time.
+        """
+
+        def _entry(ts: datetime, suffix: str) -> UsageEntry:
+            return UsageEntry(
+                timestamp=ts,
+                input_tokens=100,
+                output_tokens=50,
+                cache_creation_tokens=10,
+                cache_read_tokens=5,
+                cost_usd=0.001,
+                model="claude-3-haiku",
+                message_id=f"msg_{suffix}",
+                request_id=f"req_{suffix}",
+            )
+
+        entries = [
+            _entry(datetime(2024, 1, 1, 23, 0, tzinfo=timezone.utc), "before"),
+            _entry(datetime(2024, 1, 2, 2, 0, tzinfo=timezone.utc), "after"),
+        ]
+
+        aggregator = UsageAggregator(
+            data_path=".",
+            aggregation_mode="daily",
+            timezone="America/New_York",
+            date_from="2024-01-02",
+            date_to="2024-01-02",
+        )
+        start_date, end_date = aggregator._range_bounds()
+        result = aggregator.aggregate_daily(entries, start_date, end_date)
+
+        # Only the UTC-Jan-2 entry survives; the bound matches the UTC key.
+        assert [row["date"] for row in result] == ["2024-01-02"]
+        assert result[0]["entries_count"] == 1
+
     def test_aggregate_from_blocks_daily(
         self, aggregator: UsageAggregator, sample_entries: List[UsageEntry]
     ) -> None:
