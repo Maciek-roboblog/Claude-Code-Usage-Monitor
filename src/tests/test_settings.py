@@ -617,6 +617,51 @@ class TestSettings:
 
     @patch("claude_monitor.core.settings.Settings._get_system_timezone")
     @patch("claude_monitor.core.settings.Settings._get_system_time_format")
+    def test_load_with_last_used_range_uses_saved_view(
+        self, mock_time_format: Mock, mock_timezone: Mock
+    ) -> None:
+        """--from/--to validate against the saved view, not the default realtime."""
+        mock_timezone.return_value = "UTC"
+        mock_time_format.return_value = "24h"
+
+        with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+            mock_instance = Mock()
+            mock_instance.load.return_value = {"view": "daily"}
+            MockLastUsed.return_value = mock_instance
+
+            # No --view on the CLI; the saved daily view must apply before the
+            # date-range validator runs, so this does not raise.
+            settings = Settings.load_with_last_used(
+                ["--from", "2026-06-01", "--to", "2026-06-30"]
+            )
+
+            assert settings.view == "daily"
+            assert settings.date_from == "2026-06-01"
+            assert settings.date_to == "2026-06-30"
+
+    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
+    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
+    def test_load_with_last_used_cli_view_overrides_saved_for_range(
+        self, mock_time_format: Mock, mock_timezone: Mock
+    ) -> None:
+        """An explicit --view still wins over the saved view during replay."""
+        mock_timezone.return_value = "UTC"
+        mock_time_format.return_value = "24h"
+
+        with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+            mock_instance = Mock()
+            mock_instance.load.return_value = {"view": "daily"}
+            MockLastUsed.return_value = mock_instance
+
+            settings = Settings.load_with_last_used(
+                ["--view", "monthly", "--from", "2026-06"]
+            )
+
+            assert settings.view == "monthly"
+            assert settings.date_from == "2026-06"
+
+    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
+    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_cli_plan_overrides_saved(
         self, mock_time_format: Mock, mock_timezone: Mock
     ) -> None:

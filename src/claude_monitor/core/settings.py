@@ -561,7 +561,15 @@ class Settings(BaseSettings):
             last_used = LastUsedParams()
             last_params = last_used.load()
 
-            settings = cls(_cli_parse_args=argv)
+            effective_argv = list(argv) if argv else []
+            cli_has_view = any(
+                arg == "--view" or arg.startswith("--view=") for arg in effective_argv
+            )
+            saved_view = last_params.get("view")
+            if not cli_has_view and saved_view in ("daily", "monthly"):
+                effective_argv = ["--view", saved_view, *effective_argv]
+
+            settings = cls(_cli_parse_args=effective_argv)
 
             cli_provided_fields = set()
             # Map aliases (e.g. --from -> date_from) back to field names so an
