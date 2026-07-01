@@ -710,6 +710,8 @@ def _run_table_view(
             timezone=args.timezone,
             reset_hour=getattr(args, "reset_hour", None),
             filter_models=getattr(args, "filter_models", "all"),
+            date_from=getattr(args, "date_from", None),
+            date_to=getattr(args, "date_to", None),
         )
 
         # Create table controller

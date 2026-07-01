@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import pytz
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from claude_monitor import __version__
@@ -101,6 +101,7 @@ class Settings(BaseSettings):
         cli_prog_name="claude-monitor",
         cli_kebab_case=True,
         cli_implicit_flags=True,
+        populate_by_name=True,
     )
 
     plan: Literal["pro", "max5", "max20", "team", "custom"] = Field(
@@ -271,6 +272,22 @@ class Settings(BaseSettings):
     date_format: Optional[str] = Field(
         default=None,
         description="Date format for daily/monthly table periods, e.g. %d.%m.%Y",
+    )
+
+    date_from: Optional[str] = Field(
+        default=None,
+        alias="from",
+        description=(
+            "Start of date range, inclusive. daily: YYYY-MM-DD, monthly: YYYY-MM"
+        ),
+    )
+
+    date_to: Optional[str] = Field(
+        default=None,
+        alias="to",
+        description=(
+            "End of date range, inclusive. daily: YYYY-MM-DD, monthly: YYYY-MM"
+        ),
     )
 
     abbreviate_tokens: bool = Field(
@@ -451,6 +468,62 @@ class Settings(BaseSettings):
             raise ValueError(f"Invalid log level: {v}")
         return v_upper
 
+    @model_validator(mode="after")
+    def validate_date_range(self) -> "Settings":
+        """Validate ``--from``/``--to`` against the active view.
+
+        The accepted format depends on ``view``: ``daily`` expects
+        ``YYYY-MM-DD`` and ``monthly`` expects ``YYYY-MM``. Both boundaries are
+        optional (one-sided ranges are allowed), but when both are present the
+        start must not be after the end. The flags only apply to the ``daily``
+        and ``monthly`` table views.
+
+        Returns:
+            The validated settings instance.
+
+        Raises:
+            ValueError: If a date is malformed for the active view, if the
+                flags are used with an unsupported view, or if ``date_from`` is
+                after ``date_to``.
+        """
+        if self.date_from is None and self.date_to is None:
+            return self
+
+        if self.view not in ("daily", "monthly"):
+            raise ValueError("--from/--to only apply to --view daily or --view monthly")
+
+        date_pattern = "%Y-%m-%d" if self.view == "daily" else "%Y-%m"
+        expected = "YYYY-MM-DD" if self.view == "daily" else "YYYY-MM"
+        parsed: Dict[str, datetime] = {}
+        for label, value in (("--from", self.date_from), ("--to", self.date_to)):
+            if value is None:
+                continue
+            try:
+                dt = datetime.strptime(value, date_pattern)
+            except ValueError:
+                dt = None
+            # strptime accepts non-canonical input like "2026-6-1"; require the
+            # value to round-trip so only zero-padded YYYY-MM-DD / YYYY-MM pass.
+            if dt is None or dt.strftime(date_pattern) != value:
+                raise ValueError(
+                    f"{label} value {value!r} is invalid for --view "
+                    f"{self.view}; expected {expected}"
+                )
+            parsed[label] = dt
+
+        # Compare parsed datetimes, not raw strings: "2026-6" > "2026-10" is a
+        # lexical false positive that the parsed comparison avoids.
+        if (
+            "--from" in parsed
+            and "--to" in parsed
+            and parsed["--from"] > parsed["--to"]
+        ):
+            raise ValueError(
+                f"--from ({self.date_from}) is after --to ({self.date_to})"
+            )
+
+        return self
+
     @classmethod
     def settings_customise_sources(
         cls,
@@ -488,14 +561,31 @@ class Settings(BaseSettings):
             last_used = LastUsedParams()
             last_params = last_used.load()
 
-            settings = cls(_cli_parse_args=argv)
+            effective_argv = list(argv) if argv else []
+            cli_has_view = any(
+                arg == "--view" or arg.startswith("--view=") for arg in effective_argv
+            )
+            saved_view = last_params.get("view")
+            if not cli_has_view and saved_view in ("daily", "monthly"):
+                effective_argv = ["--view", saved_view, *effective_argv]
+
+            settings = cls(_cli_parse_args=effective_argv)
 
             cli_provided_fields = set()
+            # Map aliases (e.g. --from -> date_from) back to field names so an
+            # aliased flag is recognized as CLI-provided and not overwritten by
+            # a saved last-used value.
+            alias_to_field = {
+                field.alias: name
+                for name, field in cls.model_fields.items()
+                if field.alias is not None
+            }
             if argv:
                 for _i, arg in enumerate(argv):
                     if arg.startswith("--"):
                         # Handle both "--plan pro" and "--plan=pro" forms.
                         field_name = arg[2:].split("=", 1)[0].replace("-", "_")
+                        field_name = alias_to_field.get(field_name, field_name)
                         if field_name in cls.model_fields:
                             cli_provided_fields.add(field_name)
 
@@ -582,6 +672,8 @@ class Settings(BaseSettings):
         args.warehouse_file = self.warehouse_file
         args.warehouse_retention_days = self.warehouse_retention_days
         args.date_format = self.date_format
+        args.date_from = self.date_from
+        args.date_to = self.date_to
         args.abbreviate_tokens = self.abbreviate_tokens
         args.sparklines = self.sparklines
         args.filter_models = self.filter_models

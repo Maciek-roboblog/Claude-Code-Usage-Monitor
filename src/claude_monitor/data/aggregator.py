@@ -4,12 +4,13 @@ This module provides functionality to aggregate Claude usage data
 by day and month, similar to ccusage's functionality.
 """
 
+import calendar
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Sequence, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from claude_monitor.core.models import SessionBlock, UsageEntry, normalize_model_name
 from claude_monitor.utils.time_utils import TimezoneHandler
@@ -100,6 +101,8 @@ class UsageAggregator:
         timezone: str = "UTC",
         reset_hour: Optional[int] = None,
         filter_models: str = "all",
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
     ):
         """Initialize the aggregator.
 
@@ -111,12 +114,20 @@ class UsageAggregator:
                 a day runs ``reset_hour`` -> ``reset_hour`` instead of midnight to
                 midnight, so e.g. 02:00 with ``reset_hour=4`` counts toward the
                 previous day. Only affects daily aggregation, not the 5h window.
+            filter_models: Model filter expression passed to the reader.
+            date_from: Inclusive start of the range to aggregate. ``YYYY-MM-DD``
+                for daily mode, ``YYYY-MM`` for monthly mode. ``None`` means no
+                lower bound.
+            date_to: Inclusive end of the range to aggregate, same formats as
+                ``date_from``. ``None`` means no upper bound.
         """
         self.data_path = data_path
         self.aggregation_mode = aggregation_mode
         self.timezone = timezone
         self.reset_hour = reset_hour
         self.filter_models = filter_models
+        self.date_from = date_from
+        self.date_to = date_to
         self.timezone_handler = TimezoneHandler()
 
     def _aggregate_by_period(
@@ -320,9 +331,89 @@ class UsageAggregator:
                 entry.timestamp = self.timezone_handler.ensure_timezone(entry.timestamp)
 
         # Aggregate based on mode
+        start_date, end_date = self._range_bounds()
         if self.aggregation_mode == "daily":
-            return self.aggregate_daily(entries)
+            return self.aggregate_daily(entries, start_date, end_date)
         elif self.aggregation_mode == "monthly":
-            return self.aggregate_monthly(entries)
+            return self.aggregate_monthly(entries, start_date, end_date)
         else:
             raise ValueError(f"Invalid aggregation mode: {self.aggregation_mode}")
+
+    def _range_bounds(self) -> Tuple[Optional[datetime], Optional[datetime]]:
+        """Convert ``date_from``/``date_to`` into timezone-aware boundaries.
+
+        The bounds are built to match the calendar the period **keys** use, so
+        the filter never includes or drops a boundary entry that the keying would
+        bucket into a different period:
+
+        * Default daily and all monthly keys ``strftime`` the raw UTC-aware
+          ``entry.timestamp`` (made aware as UTC in ``aggregate``). The bounds are
+          therefore built on the **UTC** calendar — ``2026-06-05`` means UTC
+          June 5th, the same day the key would assign.
+        * Daily with ``reset_hour`` and an explicit timezone keys against the
+          display timezone shifted by ``reset_hour`` (see ``_day_key``). The
+          bounds follow that same conversion and shift.
+
+        Both bounds are inclusive: the start snaps to the first instant of its
+        day/month and the end to the last microsecond.
+
+        Returns:
+            A ``(start, end)`` tuple. Either element is ``None`` when the
+            corresponding flag is unset (one-sided ranges).
+        """
+        if self.date_from is None and self.date_to is None:
+            return None, None
+
+        # Match how entry.timestamp is made aware in aggregate() (UTC), and how
+        # the period keys read it, so bounds and keys share one calendar.
+        utc_handler = TimezoneHandler("UTC")
+
+        daily_reset = (
+            self.aggregation_mode == "daily"
+            and self.reset_hour is not None
+            and self.timezone not in (None, "", "auto")
+        )
+
+        if daily_reset:
+            # Keys bucket in the display tz, shifted back by reset_hour. Build the
+            # bounds in the display tz with the same shift so they line up.
+            tz_handler = TimezoneHandler(self.timezone)
+            shift = timedelta(hours=self.reset_hour or 0)
+
+            def to_bound(naive: datetime) -> datetime:
+                return tz_handler.ensure_timezone(naive + shift)
+        else:
+
+            def to_bound(naive: datetime) -> datetime:
+                return utc_handler.ensure_timezone(naive)
+
+        start: Optional[datetime] = None
+        end: Optional[datetime] = None
+
+        if self.aggregation_mode == "daily":
+            if self.date_from is not None:
+                day = datetime.strptime(self.date_from, "%Y-%m-%d")
+                start = to_bound(day)
+            if self.date_to is not None:
+                day = datetime.strptime(self.date_to, "%Y-%m-%d")
+                end = to_bound(
+                    day.replace(hour=23, minute=59, second=59, microsecond=999999)
+                )
+        else:  # monthly
+            if self.date_from is not None:
+                month = datetime.strptime(self.date_from, "%Y-%m")
+                start = to_bound(month)
+            if self.date_to is not None:
+                month = datetime.strptime(self.date_to, "%Y-%m")
+                last_day = calendar.monthrange(month.year, month.month)[1]
+                end = to_bound(
+                    month.replace(
+                        day=last_day,
+                        hour=23,
+                        minute=59,
+                        second=59,
+                        microsecond=999999,
+                    )
+                )
+
+        return start, end

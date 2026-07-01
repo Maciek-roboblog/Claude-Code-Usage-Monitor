@@ -617,6 +617,51 @@ class TestSettings:
 
     @patch("claude_monitor.core.settings.Settings._get_system_timezone")
     @patch("claude_monitor.core.settings.Settings._get_system_time_format")
+    def test_load_with_last_used_range_uses_saved_view(
+        self, mock_time_format: Mock, mock_timezone: Mock
+    ) -> None:
+        """--from/--to validate against the saved view, not the default realtime."""
+        mock_timezone.return_value = "UTC"
+        mock_time_format.return_value = "24h"
+
+        with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+            mock_instance = Mock()
+            mock_instance.load.return_value = {"view": "daily"}
+            MockLastUsed.return_value = mock_instance
+
+            # No --view on the CLI; the saved daily view must apply before the
+            # date-range validator runs, so this does not raise.
+            settings = Settings.load_with_last_used(
+                ["--from", "2026-06-01", "--to", "2026-06-30"]
+            )
+
+            assert settings.view == "daily"
+            assert settings.date_from == "2026-06-01"
+            assert settings.date_to == "2026-06-30"
+
+    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
+    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
+    def test_load_with_last_used_cli_view_overrides_saved_for_range(
+        self, mock_time_format: Mock, mock_timezone: Mock
+    ) -> None:
+        """An explicit --view still wins over the saved view during replay."""
+        mock_timezone.return_value = "UTC"
+        mock_time_format.return_value = "24h"
+
+        with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+            mock_instance = Mock()
+            mock_instance.load.return_value = {"view": "daily"}
+            MockLastUsed.return_value = mock_instance
+
+            settings = Settings.load_with_last_used(
+                ["--view", "monthly", "--from", "2026-06"]
+            )
+
+            assert settings.view == "monthly"
+            assert settings.date_from == "2026-06"
+
+    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
+    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_cli_plan_overrides_saved(
         self, mock_time_format: Mock, mock_timezone: Mock
     ) -> None:
@@ -939,6 +984,145 @@ class TestSettings:
 
         with pytest.raises(ValidationError):
             Settings(data_paths=["/a", "  "], _cli_parse_args=[])
+
+
+class TestDateRangeFlags:
+    """Tests for the ``--from``/``--to`` date-range flags."""
+
+    def test_daily_accepts_iso_date(self) -> None:
+        """Daily view accepts ``YYYY-MM-DD`` boundaries."""
+        settings = Settings(
+            view="daily",
+            date_from="2026-06-01",
+            date_to="2026-06-05",
+            _cli_parse_args=[],
+        )
+        assert settings.date_from == "2026-06-01"
+        assert settings.date_to == "2026-06-05"
+
+    def test_daily_rejects_month_format(self) -> None:
+        """Daily view rejects the ``YYYY-MM`` month format."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            Settings(view="daily", date_from="2026-06", _cli_parse_args=[])
+
+    def test_daily_rejects_invalid_calendar_date(self) -> None:
+        """Daily view rejects impossible dates such as month 13."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            Settings(view="daily", date_from="2026-13-01", _cli_parse_args=[])
+
+    def test_daily_rejects_non_canonical_date(self) -> None:
+        """Daily view rejects non-zero-padded input that strptime would accept."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            Settings(view="daily", date_from="2026-6-1", _cli_parse_args=[])
+
+    def test_monthly_rejects_non_canonical_month(self) -> None:
+        """Monthly view rejects non-zero-padded months like ``2026-6``."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            Settings(view="monthly", date_from="2026-6", _cli_parse_args=[])
+
+    def test_monthly_from_after_to_uses_parsed_order(self) -> None:
+        """``2026-10`` > ``2026-6`` must be caught via parsed comparison.
+
+        A raw string comparison would order ``"2026-10" < "2026-6"`` and miss
+        this inverted range; comparing parsed datetimes rejects it correctly.
+        """
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            Settings(
+                view="monthly",
+                date_from="2026-10",
+                date_to="2026-06",
+                _cli_parse_args=[],
+            )
+
+    def test_monthly_accepts_month_format(self) -> None:
+        """Monthly view accepts ``YYYY-MM`` boundaries."""
+        settings = Settings(
+            view="monthly",
+            date_from="2026-06",
+            date_to="2026-07",
+            _cli_parse_args=[],
+        )
+        assert settings.date_from == "2026-06"
+        assert settings.date_to == "2026-07"
+
+    def test_monthly_rejects_day_format(self) -> None:
+        """Monthly view rejects the ``YYYY-MM-DD`` day format."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            Settings(view="monthly", date_from="2026-06-01", _cli_parse_args=[])
+
+    def test_range_rejected_for_non_table_view(self) -> None:
+        """The flags only apply to the daily and monthly views."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            Settings(view="realtime", date_from="2026-06-01", _cli_parse_args=[])
+
+    def test_from_after_to_rejected(self) -> None:
+        """``--from`` must not be later than ``--to``."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            Settings(
+                view="daily",
+                date_from="2026-06-05",
+                date_to="2026-06-01",
+                _cli_parse_args=[],
+            )
+
+    def test_one_sided_ranges_allowed(self) -> None:
+        """Either boundary may be omitted."""
+        only_from = Settings(view="daily", date_from="2026-06-05", _cli_parse_args=[])
+        assert only_from.date_from == "2026-06-05"
+        assert only_from.date_to is None
+
+        only_to = Settings(view="monthly", date_to="2026-06", _cli_parse_args=[])
+        assert only_to.date_from is None
+        assert only_to.date_to == "2026-06"
+
+    def test_no_range_is_default(self) -> None:
+        """Without the flags both boundaries default to ``None``."""
+        settings = Settings(view="realtime", _cli_parse_args=[])
+        assert settings.date_from is None
+        assert settings.date_to is None
+
+    def test_cli_from_to_aliases_parse(self) -> None:
+        """The ``--from``/``--to`` CLI tokens map onto the fields."""
+        settings = Settings(
+            _cli_parse_args=[
+                "--view",
+                "daily",
+                "--from",
+                "2026-06-01",
+                "--to",
+                "2026-06-05",
+            ]
+        )
+        assert settings.date_from == "2026-06-01"
+        assert settings.date_to == "2026-06-05"
+
+    def test_to_namespace_carries_date_range(self) -> None:
+        """The range values are plumbed into the argparse namespace."""
+        settings = Settings(
+            view="daily",
+            date_from="2026-06-01",
+            date_to="2026-06-05",
+            _cli_parse_args=[],
+        )
+        namespace = settings.to_namespace()
+        assert namespace.date_from == "2026-06-01"
+        assert namespace.date_to == "2026-06-05"
 
 
 class TestSettingsIntegration:

@@ -203,6 +203,8 @@ claude-monitor --help
 | --refresh-per-second | float | 0.75 | Display refresh rate in Hz (0.1-20.0) |
 | --reset-hour | int | None | Daily reset hour (0-23) |
 | --date-format | string | None | Date format for daily/monthly table periods |
+| --from | string | None | Start of date range, inclusive. daily: `YYYY-MM-DD`, monthly: `YYYY-MM`. May be used alone |
+| --to | string | None | End of date range, inclusive. daily: `YYYY-MM-DD`, monthly: `YYYY-MM`. May be used alone |
 | --abbreviate-tokens | flag | False | Abbreviate token counts in table views |
 | --sparklines | flag | False | Show opt-in sparklines in table views |
 | --filter-models | string | all | Use all models, or anthropic to exclude routed non-Claude models |
@@ -216,6 +218,27 @@ claude-monitor --help
 | --debug | flag | False | Enable debug logging |
 | --version, -v | flag | False | Show version information |
 | --clear | flag | False | Clear saved configuration |
+
+#### Filtering daily/monthly views by date range
+
+`--from` / `--to` restrict the `--view daily` and `--view monthly` tables to an
+inclusive date range. The accepted format depends on the view: `daily` expects
+`YYYY-MM-DD`, `monthly` expects `YYYY-MM`. Either bound may be given on its own.
+
+```bash
+claude-monitor --view daily   --from 2026-06-01 --to 2026-06-15
+claude-monitor --view monthly --from 2026-01    --to 2026-06
+claude-monitor --view daily   --from 2026-06-10                  # everything since that day
+```
+
+> **Note — local log retention limits how far back you can go.** These views read
+> Claude Code's local session logs in `~/.claude/projects/`. Claude Code keeps
+> those logs for `cleanupPeriodDays` days (**default 30**) and deletes older ones
+> at startup, so a `--from`/`--to` range that reaches past that window simply
+> returns no rows (it is a filter, not an error). For usable long-range monthly
+> views, raise `cleanupPeriodDays` in `~/.claude/settings.json` (e.g. `365`). Do
+> **not** set it to `0` — that disables transcript persistence entirely. See the
+> [Claude Code settings docs](https://code.claude.com/docs/en/settings).
 
 #### Plan Options
 

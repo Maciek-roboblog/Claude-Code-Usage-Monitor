@@ -400,6 +400,164 @@ class TestUsageAggregator:
         assert len(result) == 1
         assert result[0]["month"] == "2024-02"
 
+    def test_aggregate_with_date_from_to_daily(
+        self, sample_entries: List[UsageEntry]
+    ) -> None:
+        """``date_from``/``date_to`` restrict the daily view to that range."""
+        aggregator = UsageAggregator(
+            data_path=".",
+            aggregation_mode="daily",
+            timezone="UTC",
+            date_from="2024-01-15",
+            date_to="2024-01-31",
+        )
+        start_date, end_date = aggregator._range_bounds()
+        result = aggregator.aggregate_daily(sample_entries, start_date, end_date)
+
+        # Only Jan 15 and Jan 31 fall in the inclusive window.
+        assert [row["date"] for row in result] == ["2024-01-15", "2024-01-31"]
+
+    def test_aggregate_date_range_boundaries_inclusive_daily(
+        self, sample_entries: List[UsageEntry]
+    ) -> None:
+        """Both range boundaries are inclusive for the daily view."""
+        aggregator = UsageAggregator(
+            data_path=".",
+            aggregation_mode="daily",
+            timezone="UTC",
+            date_from="2024-01-31",
+            date_to="2024-01-31",
+        )
+        start_date, end_date = aggregator._range_bounds()
+        result = aggregator.aggregate_daily(sample_entries, start_date, end_date)
+
+        # The boundary day itself is included (entries exist at 10:00 and 14:00).
+        assert [row["date"] for row in result] == ["2024-01-31"]
+
+    def test_aggregate_with_date_from_only_daily(
+        self, sample_entries: List[UsageEntry]
+    ) -> None:
+        """A one-sided ``date_from`` keeps everything on/after that day."""
+        aggregator = UsageAggregator(
+            data_path=".",
+            aggregation_mode="daily",
+            timezone="UTC",
+            date_from="2024-02-01",
+        )
+        start_date, end_date = aggregator._range_bounds()
+        assert end_date is None
+        result = aggregator.aggregate_daily(sample_entries, start_date, end_date)
+
+        assert [row["date"] for row in result] == [
+            "2024-02-01",
+            "2024-02-15",
+            "2024-02-29",
+        ]
+
+    def test_aggregate_with_date_to_only_daily(
+        self, sample_entries: List[UsageEntry]
+    ) -> None:
+        """A one-sided ``date_to`` keeps everything on/before that day."""
+        aggregator = UsageAggregator(
+            data_path=".",
+            aggregation_mode="daily",
+            timezone="UTC",
+            date_to="2024-01-02",
+        )
+        start_date, end_date = aggregator._range_bounds()
+        assert start_date is None
+        result = aggregator.aggregate_daily(sample_entries, start_date, end_date)
+
+        assert [row["date"] for row in result] == ["2024-01-01", "2024-01-02"]
+
+    def test_aggregate_with_date_from_to_monthly(
+        self, sample_entries: List[UsageEntry]
+    ) -> None:
+        """``date_from``/``date_to`` restrict the monthly view to that range."""
+        aggregator = UsageAggregator(
+            data_path=".",
+            aggregation_mode="monthly",
+            timezone="UTC",
+            date_from="2024-02",
+            date_to="2024-02",
+        )
+        start_date, end_date = aggregator._range_bounds()
+        result = aggregator.aggregate_monthly(sample_entries, start_date, end_date)
+
+        # February's last day (29th, leap year) must be inside the upper bound.
+        assert [row["month"] for row in result] == ["2024-02"]
+        assert result[0]["entries_count"] == 3
+
+    def test_aggregate_monthly_upper_bound_includes_month_end(
+        self, sample_entries: List[UsageEntry]
+    ) -> None:
+        """The monthly upper bound spans to the final day of the month."""
+        aggregator = UsageAggregator(
+            data_path=".",
+            aggregation_mode="monthly",
+            timezone="UTC",
+            date_from="2024-01",
+            date_to="2024-01",
+        )
+        _, end_date = aggregator._range_bounds()
+        assert end_date is not None
+        # January ends on the 31st at the last microsecond.
+        assert end_date.year == 2024
+        assert end_date.month == 1
+        assert end_date.day == 31
+
+    def test_range_bounds_none_when_unset(
+        self, sample_entries: List[UsageEntry]
+    ) -> None:
+        """No range flags yields no bounds and the full result set."""
+        aggregator = UsageAggregator(
+            data_path=".", aggregation_mode="daily", timezone="UTC"
+        )
+        assert aggregator._range_bounds() == (None, None)
+
+    def test_range_bounds_use_utc_calendar_for_non_utc_timezone(self) -> None:
+        """Bounds follow the UTC period keys, not the display timezone.
+
+        The default daily key formats the raw UTC timestamp, so a range is
+        interpreted on the UTC calendar even when the display timezone differs.
+        An entry at 02:00 UTC on Jan 2 belongs to UTC Jan 2 (the key is
+        ``2024-01-02``) and must be kept; an entry at 23:00 UTC on Jan 1 belongs
+        to UTC Jan 1 and must be dropped by ``date_from="2024-01-02"`` -- even
+        though both fall on Jan 1 in America/New_York local time.
+        """
+
+        def _entry(ts: datetime, suffix: str) -> UsageEntry:
+            return UsageEntry(
+                timestamp=ts,
+                input_tokens=100,
+                output_tokens=50,
+                cache_creation_tokens=10,
+                cache_read_tokens=5,
+                cost_usd=0.001,
+                model="claude-3-haiku",
+                message_id=f"msg_{suffix}",
+                request_id=f"req_{suffix}",
+            )
+
+        entries = [
+            _entry(datetime(2024, 1, 1, 23, 0, tzinfo=timezone.utc), "before"),
+            _entry(datetime(2024, 1, 2, 2, 0, tzinfo=timezone.utc), "after"),
+        ]
+
+        aggregator = UsageAggregator(
+            data_path=".",
+            aggregation_mode="daily",
+            timezone="America/New_York",
+            date_from="2024-01-02",
+            date_to="2024-01-02",
+        )
+        start_date, end_date = aggregator._range_bounds()
+        result = aggregator.aggregate_daily(entries, start_date, end_date)
+
+        # Only the UTC-Jan-2 entry survives; the bound matches the UTC key.
+        assert [row["date"] for row in result] == ["2024-01-02"]
+        assert result[0]["entries_count"] == 1
+
     def test_aggregate_from_blocks_daily(
         self, aggregator: UsageAggregator, sample_entries: List[UsageEntry]
     ) -> None:
