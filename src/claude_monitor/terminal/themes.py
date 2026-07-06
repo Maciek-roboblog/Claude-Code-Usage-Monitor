@@ -131,7 +131,7 @@ class AdaptiveColorScheme:
         """Font colors optimized for dark terminal backgrounds (WCAG AA+ contrast)."""
         return Theme(
             {
-                "header": "color(117)",  # Light blue (#87d7ff) - 14:1 contrast
+                "header": "bold bright_white",  # Bold bright white for maximum visibility on dark backgrounds
                 "info": "color(111)",  # Light cyan (#87afff) - 12:1 contrast
                 "warning": "color(214)",  # Orange (#ffaf00) - 11:1 contrast
                 "error": "color(203)",  # Light red (#ff5f5f) - 9:1 contrast
