@@ -167,6 +167,8 @@ def normalize_model_name(model: str) -> str:
         if "3.5" in model_lower or "3-5" in model_lower:
             return "claude-3-5-haiku"
         return "claude-3-haiku"
+    if "fable" in model_lower:
+        return model_lower
 
     return model
 
