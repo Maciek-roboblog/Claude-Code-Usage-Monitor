@@ -441,6 +441,10 @@ class TestModelUtils:
         assert normalize_model_name("Claude 3.5 Sonnet") == "claude-3-5-sonnet"
         assert normalize_model_name("claude-3-5-haiku") == "claude-3-5-haiku"
 
+        # Test Claude 5 models
+        assert normalize_model_name("claude-fable-5") == "claude-fable-5"
+        assert normalize_model_name("Claude-Fable-5") == "claude-fable-5"
+
         # Test empty/None inputs
         assert normalize_model_name("") == ""
         assert normalize_model_name(None) == ""

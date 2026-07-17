@@ -268,6 +268,7 @@ class ModelUsageBar(BaseProgressBar):
     _FAMILY_STYLES: Final[dict[str, str]] = {
         "Sonnet": "info",
         "Opus": "warning",
+        "Fable": "highlight",
         "Haiku": "success",
         "Other": "dim",
     }
@@ -279,6 +280,8 @@ class ModelUsageBar(BaseProgressBar):
             return "Sonnet"
         if "opus" in name:
             return "Opus"
+        if "fable" in name:
+            return "Fable"
         if "haiku" in name:
             return "Haiku"
         return "Other"
