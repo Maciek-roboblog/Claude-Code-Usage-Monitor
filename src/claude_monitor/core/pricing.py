@@ -170,10 +170,12 @@ class PricingCalculator:
             cache_creation_tokens = tokens.cache_creation_tokens
             cache_read_tokens = tokens.cache_read_tokens
 
-        # Create cache key
+        # Create cache key (strict is included: a strict=False lookup for an
+        # unknown model must not shadow a later strict=True lookup for the
+        # same tokens, or the KeyError would be silently skipped).
         cache_key = (
             f"{model}:{input_tokens}:{output_tokens}:"
-            f"{cache_creation_tokens}:{cache_read_tokens}"
+            f"{cache_creation_tokens}:{cache_read_tokens}:{strict}"
         )
 
         # Check cache
@@ -200,6 +202,24 @@ class PricingCalculator:
         self._cost_cache[cache_key] = cost
         return cost
 
+    def _ensure_cache_pricing(self, key: str) -> Dict[str, float]:
+        """Return self.pricing[key] guaranteed to have cache fields.
+
+        Several keys (e.g. the claude-opus-4-5..4-8 aliases) point at the
+        *same* FALLBACK_PRICING dict object. Filling in missing cache fields
+        in place would mutate that shared object for every alias (and, for
+        FALLBACK_PRICING itself, globally). Copy-on-write instead: only
+        allocate a new dict when a field is actually missing.
+        """
+        pricing = self.pricing[key]
+        if "cache_creation" in pricing and "cache_read" in pricing:
+            return pricing
+        pricing = dict(pricing)
+        pricing.setdefault("cache_creation", pricing["input"] * 1.25)
+        pricing.setdefault("cache_read", pricing["input"] * 0.1)
+        self.pricing[key] = pricing
+        return pricing
+
     def _get_pricing_for_model(
         self, model: str, strict: bool = False
     ) -> Dict[str, float]:
@@ -220,21 +240,12 @@ class PricingCalculator:
 
         # Check configured pricing
         if normalized in self.pricing:
-            pricing = self.pricing[normalized]
-            # Ensure cache pricing exists
-            if "cache_creation" not in pricing:
-                pricing["cache_creation"] = pricing["input"] * 1.25
-            if "cache_read" not in pricing:
-                pricing["cache_read"] = pricing["input"] * 0.1
+            pricing = self._ensure_cache_pricing(normalized)
             return pricing
 
         # Check original model name
         if model in self.pricing:
-            pricing = self.pricing[model]
-            if "cache_creation" not in pricing:
-                pricing["cache_creation"] = pricing["input"] * 1.25
-            if "cache_read" not in pricing:
-                pricing["cache_read"] = pricing["input"] * 0.1
+            pricing = self._ensure_cache_pricing(model)
             return pricing
 
         # If strict mode, raise KeyError for unknown models

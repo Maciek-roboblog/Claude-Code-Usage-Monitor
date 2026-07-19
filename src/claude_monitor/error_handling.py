@@ -47,10 +47,17 @@ def report_error(
             exc_info=True,
             extra=extra_data,
         )
-    except Exception:
-        # If logging itself fails, we can't do much more than silently continue
-        # to avoid cascading failures
-        pass
+    except Exception as logging_error:
+        # If logging itself fails, we can't do much more than continue to
+        # avoid cascading failures, but write a last-resort line to stderr
+        # so a misconfigured logger isn't completely invisible.
+        try:
+            sys.stderr.write(
+                f"[{component}] failed to log error ({logging_error}): "
+                f"{exception}\n"
+            )
+        except Exception:
+            pass
 
 
 def report_file_error(
