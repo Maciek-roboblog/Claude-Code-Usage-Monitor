@@ -34,7 +34,7 @@ classifiers = [
   "Operating System :: OS Independent",
   "Operating System :: POSIX :: Linux",
   "Operating System :: MacOS",
-#  "Operating System :: Microsoft :: Windows",
+  "Operating System :: Microsoft :: Windows",
   "Typing :: Typed"
 ]
 dependencies = [

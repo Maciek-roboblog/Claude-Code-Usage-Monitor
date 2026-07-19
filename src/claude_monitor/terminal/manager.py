@@ -4,7 +4,7 @@ Raw mode setup, input handling, and terminal control.
 
 import logging
 import sys
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 from claude_monitor.error_handling import report_error
 from claude_monitor.terminal.themes import print_themed
@@ -90,13 +90,13 @@ def handle_cleanup_and_exit(
 
 
 def handle_error_and_exit(
-    old_terminal_settings: Optional[List[Any]], error: Union[Exception, str]
+    old_terminal_settings: Optional[List[Any]], error: Exception
 ) -> None:
     """Handle error cleanup and exit.
 
     Args:
         old_terminal_settings: Terminal settings to restore before exit.
-        error: Exception or error message that caused the exit.
+        error: Exception that caused the exit.
 
     Raises:
         The original error after cleanup and reporting.
