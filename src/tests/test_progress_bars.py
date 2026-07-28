@@ -34,6 +34,42 @@ def test_render_lists_every_present_family() -> None:
         assert family in out
 
 
+def test_render_claude_5_families_recognized_not_other() -> None:
+    """Fable, Sonnet 5, and Mythos usage show under their model families."""
+    bar = ModelUsageBar(width=50)
+    out = bar.render(
+        {
+            "claude-fable-5": _tokens(40),
+            "claude-sonnet-5": _tokens(35),
+            "claude-mythos-5": _tokens(25),
+        }
+    )
+    assert "Fable" in out and "40.0%" in out
+    assert "Sonnet" in out and "35.0%" in out
+    assert "Mythos" in out and "25.0%" in out
+    assert "Other" not in out
+    assert ModelUsageBar._family_for("claude-fable-5") == "Fable"
+    assert ModelUsageBar._family_for("claude-sonnet-5") == "Sonnet"
+    assert ModelUsageBar._family_for("claude-mythos-5") == "Mythos"
+
+
+def test_foreign_family_lookalikes_render_as_other() -> None:
+    """Foreign model names cannot impersonate Claude display families."""
+    foreign_models = [
+        "gpt-sonnet-5",
+        "gpt-mythos-adapter",
+        "openrouter/fable-compatible",
+    ]
+    for model in foreign_models:
+        assert ModelUsageBar._family_for(model) == "Other"
+
+    out = ModelUsageBar(width=50).render(
+        {model: _tokens(10) for model in foreign_models}
+    )
+    assert "Other" in out and "100.0%" in out
+    assert all(family not in out for family in ("Sonnet", "Fable", "Mythos"))
+
+
 def test_render_unknown_family_shown_as_other_not_dropped() -> None:
     """An unmapped family still appears (as 'Other'); its share is not silently lost."""
     bar = ModelUsageBar(width=50)

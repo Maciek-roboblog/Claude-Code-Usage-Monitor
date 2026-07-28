@@ -36,7 +36,12 @@ def get_model_display_name(model: str) -> str:
     Returns:
         Display-friendly model name
     """
+    from claude_monitor.core.models import get_claude_5_family, is_anthropic_model
+
     normalized: str = normalize_model_name(model)
+    claude_5_family = get_claude_5_family(model)
+    if claude_5_family is not None and is_anthropic_model(model):
+        return f"Claude 5 {claude_5_family.title()}"
 
     display_names: Dict[str, str] = {
         "claude-3-opus": "Claude 3 Opus",
@@ -58,8 +63,9 @@ def is_claude_model(model: str) -> bool:
     Returns:
         True if it's a Claude model, False otherwise
     """
-    normalized: str = normalize_model_name(model)
-    return normalized.startswith("claude-")
+    from claude_monitor.core.models import is_anthropic_model
+
+    return model != "<synthetic>" and is_anthropic_model(model)
 
 
 def get_model_generation(model: str) -> str:
@@ -73,6 +79,11 @@ def get_model_generation(model: str) -> str:
     """
     if not model:
         return "unknown"
+
+    from claude_monitor.core.models import get_claude_5_family, is_anthropic_model
+
+    if get_claude_5_family(model) is not None and is_anthropic_model(model):
+        return "5"
 
     model_lower: str = model.lower()
 

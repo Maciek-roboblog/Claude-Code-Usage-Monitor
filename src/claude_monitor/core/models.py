@@ -2,6 +2,7 @@
 Core data structures for usage tracking, session management, and token calculations.
 """
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -120,6 +121,26 @@ class SessionBlock:
         return max(duration, 1.0)
 
 
+def get_claude_5_family(model: str) -> Optional[str]:
+    """Return the Claude 5 family named by an ID or friendly model name."""
+    if not model:
+        return None
+
+    tokens = [token for token in re.split(r"[-_.\s:/@]+", model.lower()) if token]
+    for family in ("fable", "sonnet", "mythos"):
+        for index, token in enumerate(tokens):
+            if token == family and index + 1 < len(tokens) and tokens[index + 1] == "5":
+                return family
+            if (
+                token == "5"
+                and index + 1 < len(tokens)
+                and tokens[index + 1] == family
+                and (index == 0 or not tokens[index - 1].isdigit())
+            ):
+                return family
+    return None
+
+
 def normalize_model_name(model: str) -> str:
     """Normalize model name for consistent usage across the application.
 
@@ -142,6 +163,20 @@ def normalize_model_name(model: str) -> str:
         return ""
 
     model_lower = model.lower()
+    claude_5_family = get_claude_5_family(model_lower)
+    if claude_5_family is not None:
+        recognizable = (
+            "claude" in model_lower
+            or "anthropic" in model_lower
+            or model_lower.startswith(claude_5_family)
+        )
+        if not recognizable:
+            return model_lower
+
+        slug = "-".join(model_lower.replace("_", " ").split())
+        if slug != model_lower or f"5-{claude_5_family}" in slug:
+            return f"claude-{claude_5_family}-5"
+        return model_lower
 
     if (
         "claude-opus-4-" in model_lower
@@ -158,7 +193,7 @@ def normalize_model_name(model: str) -> str:
             return model_lower
         return "claude-3-opus"
     if "sonnet" in model_lower:
-        if "4-" in model_lower:
+        if "4-" in model_lower or "sonnet-5" in model_lower:
             return model_lower
         if "3.5" in model_lower or "3-5" in model_lower:
             return "claude-3-5-sonnet"
@@ -167,6 +202,8 @@ def normalize_model_name(model: str) -> str:
         if "3.5" in model_lower or "3-5" in model_lower:
             return "claude-3-5-haiku"
         return "claude-3-haiku"
+    if "fable" in model_lower or "mythos" in model_lower:
+        return model_lower
 
     return model
 

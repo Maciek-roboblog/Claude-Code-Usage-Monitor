@@ -1,5 +1,6 @@
 """Comprehensive tests for PricingCalculator class."""
 
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Union
 
 import pytest
@@ -64,6 +65,9 @@ class TestPricingCalculator:
         assert "claude-3-sonnet" in calculator.pricing
         assert "claude-3-haiku" in calculator.pricing
         assert "claude-3-5-sonnet" in calculator.pricing
+        assert "claude-fable-5" in calculator.pricing
+        assert "claude-sonnet-5" in calculator.pricing
+        assert "claude-mythos-5" in calculator.pricing
         assert calculator._cost_cache == {}
 
     def test_init_custom_pricing(
@@ -79,7 +83,7 @@ class TestPricingCalculator:
         """Test that fallback pricing has correct structure."""
         fallback = PricingCalculator.FALLBACK_PRICING
 
-        for model_type in ["opus", "sonnet", "haiku"]:
+        for model_type in ["opus", "sonnet", "haiku", "fable", "mythos"]:
             assert model_type in fallback
             pricing = fallback[model_type]
             assert "input" in pricing
@@ -105,6 +109,7 @@ class TestPricingCalculator:
             ("claude-haiku-4-5", 1.0, 5.0),
             ("claude-haiku-4-5-20251001", 1.0, 5.0),
             ("claude-fable-5", 10.0, 50.0),
+            ("claude-mythos-5", 10.0, 50.0),
             ("claude-sonnet-4-20250514", 3.0, 15.0),
             # Legacy versions priced differently from the current family rate
             ("claude-opus-4-20250514", 15.0, 75.0),  # Opus 4.0
@@ -129,6 +134,163 @@ class TestPricingCalculator:
             model="claude-opus-4-8", input_tokens=1_000_000, output_tokens=1_000_000
         )
         assert cost == 30.0  # 5.0 + 25.0
+
+    def test_fable_and_mythos_5_costs(self, calculator: PricingCalculator) -> None:
+        """Fable 5 and Mythos 5 both use the published $10/$50 rates."""
+        for model in ("claude-fable-5", "anthropic.claude-mythos-5"):
+            cost = calculator.calculate_cost(
+                model=model,
+                input_tokens=1_000_000,
+                output_tokens=1_000_000,
+            )
+            assert cost == 60.0
+
+    def test_sonnet_5_pricing_changes_at_promotion_boundary(
+        self, calculator: PricingCalculator
+    ) -> None:
+        """Historical Sonnet 5 entries use the rate active at their usage time."""
+        before_standard_rate = datetime(2026, 8, 31, 23, 59, 59, tzinfo=timezone.utc)
+        standard_rate_start = datetime(2026, 9, 1, tzinfo=timezone.utc)
+
+        promotional_cost = calculator.calculate_cost(
+            model="us.anthropic.claude-sonnet-5",
+            input_tokens=1_000_000,
+            output_tokens=1_000_000,
+            strict=True,
+            usage_timestamp=before_standard_rate,
+        )
+        standard_cost = calculator.calculate_cost(
+            model="us.anthropic.claude-sonnet-5",
+            input_tokens=1_000_000,
+            output_tokens=1_000_000,
+            strict=True,
+            usage_timestamp=standard_rate_start,
+        )
+
+        assert promotional_cost == 12.0
+        assert standard_cost == 18.0
+        assert len(calculator._cost_cache) == 2
+
+    def test_sonnet_5_pricing_normalizes_timestamp_timezones(
+        self, calculator: PricingCalculator
+    ) -> None:
+        """Naive timestamps are UTC; aware timestamps are compared in UTC."""
+        pacific = timezone(timedelta(hours=-7))
+        timestamps_and_costs = [
+            (datetime(2026, 8, 31, 23, 59, 59), 12.0),
+            (datetime(2026, 8, 31, 16, 59, 59, tzinfo=pacific), 12.0),
+            (datetime(2026, 8, 31, 17, 0, tzinfo=pacific), 18.0),
+        ]
+
+        for usage_timestamp, expected in timestamps_and_costs:
+            assert (
+                calculator.calculate_cost(
+                    model="claude-sonnet-5",
+                    input_tokens=1_000_000,
+                    output_tokens=1_000_000,
+                    usage_timestamp=usage_timestamp,
+                )
+                == expected
+            )
+
+    @pytest.mark.parametrize(
+        ("model", "expected"),
+        [
+            ("Claude Sonnet 5", 12.0),
+            ("Claude 5 Sonnet", 12.0),
+            ("Claude Mythos 5", 60.0),
+            ("Claude 5 Fable", 60.0),
+            ("Claude 3.5 Sonnet", 18.0),
+        ],
+    )
+    def test_friendly_claude_names_use_the_correct_family(
+        self, calculator: PricingCalculator, model: str, expected: float
+    ) -> None:
+        """Friendly Claude 5 names resolve without changing Claude 3.5."""
+        assert (
+            calculator.calculate_cost(
+                model=model,
+                input_tokens=1_000_000,
+                output_tokens=1_000_000,
+                usage_timestamp=datetime(2026, 7, 1, tzinfo=timezone.utc),
+            )
+            == expected
+        )
+
+    def test_unrelated_custom_pricing_does_not_disable_sonnet_5_promotion(
+        self,
+    ) -> None:
+        """A custom entry for another model leaves Sonnet 5 defaults intact."""
+        calculator = PricingCalculator({"test-model": {"input": 1.0, "output": 2.0}})
+
+        assert (
+            calculator.calculate_cost(
+                model="claude-sonnet-5",
+                input_tokens=1_000_000,
+                output_tokens=1_000_000,
+                usage_timestamp=datetime(2026, 7, 1, tzinfo=timezone.utc),
+            )
+            == 12.0
+        )
+
+    def test_custom_claude_5_pricing_applies_to_provider_and_dated_aliases(
+        self,
+    ) -> None:
+        """Canonical custom rates override promo rates without mutating input."""
+        custom_pricing = {
+            "claude-sonnet-5": {
+                "input": 7.0,
+                "output": 70.0,
+            }
+        }
+        calculator = PricingCalculator(custom_pricing)
+        aliases = [
+            "claude-sonnet-5",
+            "us.anthropic.claude-sonnet-5",
+            "global.anthropic.claude-sonnet-5-20260701-v1:0",
+            "claude-sonnet-5@20260701",
+        ]
+
+        for model in aliases:
+            assert (
+                calculator.calculate_cost(
+                    model=model,
+                    input_tokens=1_000_000,
+                    output_tokens=1_000_000,
+                    usage_timestamp=datetime(2026, 7, 1, tzinfo=timezone.utc),
+                )
+                == 77.0
+            )
+
+        assert custom_pricing == {
+            "claude-sonnet-5": {
+                "input": 7.0,
+                "output": 70.0,
+            }
+        }
+
+    def test_sonnet_5_promotional_cache_rates(
+        self, calculator: PricingCalculator
+    ) -> None:
+        """The introductory Sonnet 5 rate includes its published cache prices."""
+        promotional = calculator._get_pricing_for_model(
+            "claude-sonnet-5",
+            usage_timestamp=datetime(2026, 7, 1, tzinfo=timezone.utc),
+        )
+        assert promotional == {
+            "input": 2.0,
+            "output": 10.0,
+            "cache_creation": 2.5,
+            "cache_read": 0.2,
+        }
+
+    def test_mythos_preview_does_not_use_mythos_5_pricing(
+        self, calculator: PricingCalculator
+    ) -> None:
+        """The retired Mythos Preview ID is distinct from Mythos 5."""
+        pricing = calculator._get_pricing_for_model("claude-mythos-preview")
+        assert pricing["input"] == 3.0
+        assert pricing["output"] == 15.0
 
     def test_calculate_cost_claude_3_haiku_basic(
         self, calculator: PricingCalculator
@@ -230,6 +392,12 @@ class TestPricingCalculator:
 
     def test_calculate_cost_unknown_model(self, calculator: PricingCalculator) -> None:
         """Test cost calculation for unknown model (should raise KeyError in strict mode)."""
+        assert (
+            calculator.calculate_cost(
+                model="unknown-model", input_tokens=1000, output_tokens=500
+            )
+            == 0.0
+        )
         with pytest.raises(KeyError):
             calculator.calculate_cost(
                 model="unknown-model", input_tokens=1000, output_tokens=500, strict=True
@@ -240,19 +408,20 @@ class TestPricingCalculator:
     ) -> None:
         """A non-Claude model (e.g. routed via Claude Code Router) must not be billed
         at a fabricated Claude rate (#217, #199)."""
-        # 1M input tokens at the Sonnet rate would be $3.00; it must be $0 (unpriced).
-        assert (
-            calculator.calculate_cost(
-                model="gpt-4o", input_tokens=1_000_000, output_tokens=0
+        foreign_models = [
+            "gpt-4o",
+            "deepseek-chat",
+            "gpt-sonnet-5",
+            "gpt-4-opus",
+            "openrouter/sonnet-compatible",
+        ]
+        for model in foreign_models:
+            assert (
+                calculator.calculate_cost(
+                    model=model, input_tokens=1_000_000, output_tokens=1_000_000
+                )
+                == 0.0
             )
-            == 0.0
-        )
-        assert (
-            calculator.calculate_cost(
-                model="deepseek-chat", input_tokens=1_000_000, output_tokens=0
-            )
-            == 0.0
-        )
 
     def test_unrecognized_claude_model_still_uses_family_fallback(
         self, calculator: PricingCalculator
@@ -398,6 +567,9 @@ class TestPricingCalculator:
             "claude-3-5-haiku",
             "claude-sonnet-4-20250514",
             "claude-opus-4-20250514",
+            "claude-fable-5",
+            "claude-sonnet-5",
+            "claude-mythos-5",
         ]
 
         for model in supported_models:
