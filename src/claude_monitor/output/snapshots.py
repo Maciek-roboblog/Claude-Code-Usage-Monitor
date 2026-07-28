@@ -16,6 +16,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from claude_monitor._version import __version__
+from claude_monitor.core.models import is_anthropic_model
 from claude_monitor.core.plans import Plans
 
 SNAPSHOT_SCHEMA_VERSION = "1.0"
@@ -71,11 +72,18 @@ def _api_block(window: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _family_of(model: str) -> str:
+    if not is_anthropic_model(model):
+        return "other"
+
     name = model.lower()
     if "sonnet" in name:
         return "sonnet"
     if "opus" in name:
         return "opus"
+    if "fable" in name:
+        return "fable"
+    if "mythos" in name:
+        return "mythos"
     if "haiku" in name:
         return "haiku"
     return "other"

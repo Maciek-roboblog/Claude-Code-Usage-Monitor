@@ -444,6 +444,19 @@ class TestModelUtils:
         # Test Claude 5 models
         assert normalize_model_name("claude-fable-5") == "claude-fable-5"
         assert normalize_model_name("Claude-Fable-5") == "claude-fable-5"
+        assert normalize_model_name("claude-sonnet-5") == "claude-sonnet-5"
+        assert normalize_model_name("Claude-Sonnet-5") == "claude-sonnet-5"
+        assert normalize_model_name("claude-mythos-5") == "claude-mythos-5"
+        assert normalize_model_name("Claude-Mythos-5") == "claude-mythos-5"
+        assert normalize_model_name("Claude Fable 5") == "claude-fable-5"
+        assert normalize_model_name("Claude Sonnet 5") == "claude-sonnet-5"
+        assert normalize_model_name("Claude 5 Sonnet") == "claude-sonnet-5"
+        assert normalize_model_name("Claude Mythos 5") == "claude-mythos-5"
+        assert (
+            normalize_model_name("us.anthropic.claude-sonnet-5")
+            == "us.anthropic.claude-sonnet-5"
+        )
+        assert normalize_model_name("gpt-sonnet-5") == "gpt-sonnet-5"
 
         # Test empty/None inputs
         assert normalize_model_name("") == ""
@@ -460,6 +473,11 @@ class TestModelUtils:
         assert get_model_display_name("claude-3-haiku") == "Claude 3 Haiku"
         assert get_model_display_name("claude-3-5-sonnet") == "Claude 3.5 Sonnet"
         assert get_model_display_name("claude-3-5-haiku") == "Claude 3.5 Haiku"
+        assert get_model_display_name("claude-fable-5") == "Claude 5 Fable"
+        assert get_model_display_name("Claude Sonnet 5") == "Claude 5 Sonnet"
+        assert (
+            get_model_display_name("us.anthropic.claude-mythos-5") == "Claude 5 Mythos"
+        )
 
         # Test unknown models (should title case)
         assert get_model_display_name("unknown-model") == "Unknown-Model"
@@ -472,14 +490,21 @@ class TestModelUtils:
         assert is_claude_model("claude-3-sonnet") is True
         assert is_claude_model("claude-3-5-sonnet") is True
         assert is_claude_model("Claude 3 Opus") is True
+        assert is_claude_model("us.anthropic.claude-sonnet-5") is True
 
         # Test non-Claude models
         assert is_claude_model("gpt-4") is False
+        assert is_claude_model("gpt-sonnet-5") is False
         assert is_claude_model("gemini-pro") is False
         assert is_claude_model("") is False
 
     def test_get_model_generation(self) -> None:
         """Test model generation extraction."""
+        # Test Claude 5 models
+        assert get_model_generation("claude-fable-5") == "5"
+        assert get_model_generation("Claude Sonnet 5") == "5"
+        assert get_model_generation("us.anthropic.claude-mythos-5") == "5"
+
         # Test Claude 3.5 models
         assert get_model_generation("claude-3-5-sonnet") == "3.5"
         assert get_model_generation("claude-3.5-sonnet") == "3.5"

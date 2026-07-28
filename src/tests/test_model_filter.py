@@ -54,6 +54,8 @@ def test_claude_models_are_anthropic() -> None:
         "claude-3-opus-20240229",
         "Claude 3.5 Sonnet",
         "claude-fable-5",
+        "claude-sonnet-5",
+        "claude-mythos-5",
     ]:
         assert is_anthropic_model(m), m
 

@@ -8,6 +8,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Final, Protocol, TypedDict
 
+from claude_monitor.core.models import is_anthropic_model
 from claude_monitor.utils.display_width import ascii_fallback_enabled
 from claude_monitor.utils.time_utils import percentage
 
@@ -269,12 +270,16 @@ class ModelUsageBar(BaseProgressBar):
         "Sonnet": "info",
         "Opus": "warning",
         "Fable": "highlight",
+        "Mythos": "value",
         "Haiku": "success",
         "Other": "dim",
     }
 
     @staticmethod
     def _family_for(model_name: str) -> str:
+        if not is_anthropic_model(model_name):
+            return "Other"
+
         name = model_name.lower()
         if "sonnet" in name:
             return "Sonnet"
@@ -282,6 +287,8 @@ class ModelUsageBar(BaseProgressBar):
             return "Opus"
         if "fable" in name:
             return "Fable"
+        if "mythos" in name:
+            return "Mythos"
         if "haiku" in name:
             return "Haiku"
         return "Other"

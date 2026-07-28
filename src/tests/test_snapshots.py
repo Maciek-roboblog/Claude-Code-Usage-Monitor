@@ -4,7 +4,11 @@ import argparse
 from datetime import datetime, timezone
 from typing import Any
 
-from claude_monitor.output.snapshots import SNAPSHOT_SCHEMA_VERSION, build_snapshot
+from claude_monitor.output.snapshots import (
+    SNAPSHOT_SCHEMA_VERSION,
+    _family_of,
+    build_snapshot,
+)
 
 
 def _args(plan: str = "pro") -> argparse.Namespace:
@@ -212,10 +216,33 @@ def test_limit_messages_force_limit_hit() -> None:
 
 
 def test_model_distribution_includes_all_families() -> None:
-    snap = build_snapshot(_data(), _args(), token_limit=19000)
+    per_model_stats = {
+        model: {"input_tokens": 10, "output_tokens": 10, "cost_usd": 0.01}
+        for model in (
+            "claude-opus-4-8",
+            "claude-sonnet-5",
+            "claude-haiku-4-5",
+            "claude-fable-5",
+            "claude-mythos-5",
+            "some-future-model",
+        )
+    }
+    snap = build_snapshot(
+        _data(perModelStats=per_model_stats), _args(), token_limit=19000
+    )
     dist = snap["local"]["model_distribution"]
     families = {m["family"] for m in dist}
-    assert {"opus", "sonnet"} <= families
+    assert families == {"opus", "sonnet", "haiku", "fable", "mythos", "other"}
     # Percentages are model-relative (input+output), so they sum to ~100 — not
     # diluted by cache-read tokens.
     assert round(sum(m["percentage"] for m in dist)) == 100
+
+
+def test_model_distribution_rejects_foreign_family_lookalikes() -> None:
+    """Foreign model names remain in Other even when they contain family words."""
+    for model in (
+        "gpt-sonnet-5",
+        "gpt-mythos-adapter",
+        "openrouter/fable-compatible",
+    ):
+        assert _family_of(model) == "other"

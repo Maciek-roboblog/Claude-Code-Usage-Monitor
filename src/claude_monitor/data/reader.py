@@ -324,7 +324,9 @@ def _map_to_usage_entry(
             "cache_read_tokens": token_data.get("cache_read_tokens", 0),
             FIELD_COST_USD: data.get("cost") or data.get(FIELD_COST_USD),
         }
-        cost_usd = pricing_calculator.calculate_cost_for_entry(entry_data, mode)
+        cost_usd = pricing_calculator.calculate_cost_for_entry(
+            entry_data, mode, usage_timestamp=timestamp
+        )
 
         message = data.get("message", {})
         message_id = data.get("message_id") or message.get("id") or ""

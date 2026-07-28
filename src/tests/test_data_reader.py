@@ -747,6 +747,40 @@ class TestMapToUsageEntry:
         assert result.message_id == "msg_123"
         assert result.request_id == "req_456"
         assert result.project == "/workspace/app"
+        assert pricing_calculator.calculate_cost_for_entry.call_args.kwargs == {
+            "usage_timestamp": datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
+        }
+
+    def test_map_to_usage_entry_uses_historical_sonnet_5_rate(self) -> None:
+        """The reader prices a historical entry using its parsed event time."""
+        timezone_handler = Mock(spec=TimezoneHandler)
+        pricing_calculator = PricingCalculator()
+        data = {
+            "timestamp": "2026-07-01T00:00:00Z",
+            "message": {
+                "id": "msg_sonnet_5",
+                "usage": {
+                    "input_tokens": 1_000_000,
+                    "output_tokens": 1_000_000,
+                },
+            },
+            "model": "claude-sonnet-5",
+            "request_id": "req_sonnet_5",
+        }
+        event_time = datetime(2026, 7, 1, tzinfo=timezone.utc)
+
+        with patch(
+            "claude_monitor.data.reader.TimestampProcessor"
+        ) as mock_ts_processor:
+            mock_ts_processor.return_value.parse_timestamp.return_value = event_time
+            result = _map_to_usage_entry(
+                data, CostMode.AUTO, timezone_handler, pricing_calculator
+            )
+
+        assert result is not None
+        assert result.timestamp == event_time
+        assert result.model == "claude-sonnet-5"
+        assert result.cost_usd == 12.0
 
     def test_map_to_usage_entry_no_timestamp(
         self, mock_components: Tuple[Mock, Mock]
