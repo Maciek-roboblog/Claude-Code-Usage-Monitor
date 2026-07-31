@@ -100,14 +100,14 @@ def load_usage_entries(
 
     all_entries: List[UsageEntry] = []
     raw_entries: Optional[List[Dict[str, Any]]] = [] if include_raw else None
-    processed_hashes: Set[str] = set()
+    deduped: Dict[str, UsageEntry] = {}
 
     for file_path, source in files_by_source:
         entries, raw_data = _process_single_file(
             file_path,
             mode,
             cutoff_time,
-            processed_hashes,
+            deduped,
             include_raw,
             timezone_handler,
             pricing_calculator,
@@ -116,6 +116,8 @@ def load_usage_entries(
         all_entries.extend(entries)
         if include_raw and raw_data:
             raw_entries.extend(raw_data)
+
+    all_entries.extend(deduped.values())
 
     if filter_models == "anthropic":
         before = len(all_entries)
@@ -174,13 +176,19 @@ def _process_single_file(
     file_path: Path,
     mode: CostMode,
     cutoff_time: Optional[datetime],
-    processed_hashes: Set[str],
+    deduped: Dict[str, UsageEntry],
     include_raw: bool,
     timezone_handler: TimezoneHandler,
     pricing_calculator: PricingCalculator,
     source: Optional[Dict[str, Any]] = None,
 ) -> Tuple[List[UsageEntry], Optional[List[Dict[str, Any]]]]:
-    """Process a single JSONL file."""
+    """Process a single JSONL file.
+
+    ``deduped`` is shared across every file of the scan and holds the winning
+    record for each dedup key, so a key restated in a later file is resolved
+    against the earlier one instead of being dropped. Records without a key are
+    returned directly, since they were never deduplicated.
+    """
     entries: List[UsageEntry] = []
     raw_data: Optional[List[Dict[str, Any]]] = [] if include_raw else None
 
@@ -199,21 +207,30 @@ def _process_single_file(
                     data = json.loads(line)
                     entries_read += 1
 
-                    if not _should_process_entry(
-                        data, cutoff_time, processed_hashes, timezone_handler
-                    ):
+                    if not _should_process_entry(data, cutoff_time, timezone_handler):
                         entries_filtered += 1
                         continue
 
                     entry = _map_to_usage_entry(
                         data, mode, timezone_handler, pricing_calculator, source
                     )
-                    if entry:
-                        entries_mapped += 1
-                        entries.append(entry)
-                        _update_processed_hashes(data, processed_hashes)
 
-                    if include_raw:
+                    unique_hash = _create_unique_hash(data)
+                    first_sighting = unique_hash is None or unique_hash not in deduped
+
+                    if entry:
+                        if unique_hash is None:
+                            entries_mapped += 1
+                            entries.append(entry)
+                        elif first_sighting:
+                            entries_mapped += 1
+                            deduped[unique_hash] = entry
+                        else:
+                            entries_filtered += 1
+                            if _replaces_existing(entry, deduped[unique_hash]):
+                                deduped[unique_hash] = entry
+
+                    if include_raw and first_sighting:
                         raw_entry = dict(data)
                         if source is not None:
                             raw_entry["source"] = source
@@ -244,10 +261,16 @@ def _process_single_file(
 def _should_process_entry(
     data: Dict[str, Any],
     cutoff_time: Optional[datetime],
-    processed_hashes: Set[str],
     timezone_handler: TimezoneHandler,
 ) -> bool:
-    """Check if entry should be processed based on time and uniqueness."""
+    """Check whether an entry falls inside the requested time window.
+
+    Records sharing a dedup key are no longer rejected here. A streaming
+    message is written as several records under one key and the earlier ones
+    carry a partial usage snapshot, so skipping everything after the first
+    would keep the partial record. Selection among records that share a key
+    happens in :func:`_replaces_existing`, after both have been mapped.
+    """
     if cutoff_time:
         timestamp_str = data.get("timestamp")
         if timestamp_str:
@@ -256,8 +279,7 @@ def _should_process_entry(
             if timestamp and timestamp < cutoff_time:
                 return False
 
-    unique_hash = _create_unique_hash(data)
-    return not (unique_hash and unique_hash in processed_hashes)
+    return True
 
 
 def _create_unique_hash(data: Dict[str, Any]) -> Optional[str]:
@@ -272,11 +294,33 @@ def _create_unique_hash(data: Dict[str, Any]) -> Optional[str]:
     return f"{message_id}:{request_id}" if message_id and request_id else None
 
 
-def _update_processed_hashes(data: Dict[str, Any], processed_hashes: Set[str]) -> None:
-    """Update the processed hashes set with current entry's hash."""
-    unique_hash = _create_unique_hash(data)
-    if unique_hash:
-        processed_hashes.add(unique_hash)
+def _replaces_existing(candidate: UsageEntry, incumbent: UsageEntry) -> bool:
+    """Decide which of two records sharing a dedup key is the complete one.
+
+    Streaming writes several records per message under one key, each carrying
+    the usage observed so far, so the counters are monotone within a key and
+    the largest record is the finished one. Selecting on the maximum rather
+    than on the last record read matters because files are discovered through
+    an unordered traversal: a key restated across two files after a session
+    resume would otherwise resolve to whichever file the filesystem happened
+    to hand over first.
+
+    The winning record is kept whole. Taking a per-field maximum could
+    assemble a record that was never written, and ``cost_usd`` is derived from
+    those fields, so the resulting cost would correspond to no observation.
+    """
+    if candidate.output_tokens != incumbent.output_tokens:
+        return candidate.output_tokens > incumbent.output_tokens
+
+    def _total(entry: UsageEntry) -> int:
+        return (
+            entry.input_tokens
+            + entry.output_tokens
+            + entry.cache_creation_tokens
+            + entry.cache_read_tokens
+        )
+
+    return _total(candidate) > _total(incumbent)
 
 
 def _extract_project(data: Dict[str, Any]) -> str:
