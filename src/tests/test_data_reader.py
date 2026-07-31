@@ -9,7 +9,7 @@ import json
 import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple
 from unittest.mock import Mock, mock_open, patch
 
 import pytest
@@ -21,8 +21,8 @@ from claude_monitor.data.reader import (
     _find_jsonl_files,
     _map_to_usage_entry,
     _process_single_file,
+    _replaces_existing,
     _should_process_entry,
-    _update_processed_hashes,
     load_all_raw_entries,
     load_usage_entries,
 )
@@ -135,7 +135,7 @@ class TestLoadUsageEntries:
     def test_load_usage_entries_accepts_multiple_paths_dedups_and_tags_source(
         self, tmp_path: Path
     ) -> None:
-        """Multiple roots share one processed_hashes set and tag each entry source."""
+        """Multiple roots share one winners map and tag each entry source."""
         first = tmp_path / "home" / "projects"
         second = tmp_path / "work" / "projects"
         duplicate = {
@@ -194,6 +194,73 @@ class TestLoadUsageEntries:
             call_args = mock_find.call_args[0]
             path_str = str(call_args[0])
             assert ".claude/projects" in path_str
+
+
+class TestStreamingRecordSelection:
+    """The two transcript shapes written under a single dedup key.
+
+    Main transcripts repeat the final usage on every record, so any selection
+    rule agrees. Subagent transcripts write true streaming snapshots where only
+    the last record is complete, so keeping the first loses most of the output.
+    The two are pinned as separate fixtures rather than averaged, because a
+    blended figure hides the second shape behind the first.
+    """
+
+    @staticmethod
+    def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join(json.dumps(row) for row in rows) + "\n")
+
+    @staticmethod
+    def _record(output_tokens: int, *, input_tokens: int = 40) -> dict[str, Any]:
+        return {
+            "timestamp": "2024-01-01T12:00:00Z",
+            "message_id": "msg-stream",
+            "requestId": "req-stream",
+            "model": "claude-3-haiku",
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+        }
+
+    def test_main_shape_counts_the_message_once(self, tmp_path: Path) -> None:
+        """Usage identical on every record: one entry carrying that usage."""
+        self._write_jsonl(
+            tmp_path / "projects" / "main.jsonl",
+            [self._record(2400), self._record(2400), self._record(2400)],
+        )
+
+        entries, _ = load_usage_entries(data_path=str(tmp_path / "projects"))
+
+        assert len(entries) == 1
+        assert entries[0].output_tokens == 2400
+
+    def test_subagent_shape_keeps_the_complete_record(self, tmp_path: Path) -> None:
+        """Partial snapshots first, complete last: the complete one survives."""
+        self._write_jsonl(
+            tmp_path / "projects" / "subagent.jsonl",
+            [self._record(3), self._record(870), self._record(2400)],
+        )
+
+        entries, _ = load_usage_entries(data_path=str(tmp_path / "projects"))
+
+        assert len(entries) == 1
+        assert entries[0].output_tokens == 2400
+
+    def test_selection_does_not_depend_on_traversal_order(self, tmp_path: Path) -> None:
+        """A key restated across files must resolve the same either way.
+
+        File discovery is an unordered traversal, so a resume that restates a
+        key in a second file would otherwise resolve to whichever file the
+        filesystem happened to hand over first.
+        """
+        root = tmp_path / "projects"
+        self._write_jsonl(root / "a.jsonl", [self._record(2400)])
+        self._write_jsonl(root / "b.jsonl", [self._record(3)])
+
+        entries, _ = load_usage_entries(data_path=str(root))
+
+        assert len(entries) == 1
+        assert entries[0].output_tokens == 2400
 
 
 class TestLoadAllRawEntries:
@@ -345,20 +412,22 @@ class TestProcessSingleFile:
                 "claude_monitor.data.reader._map_to_usage_entry",
                 return_value=sample_entry,
             ),
-            patch("claude_monitor.data.reader._update_processed_hashes"),
         ):
+            deduped: Dict[str, UsageEntry] = {}
             entries, raw_data = _process_single_file(
                 test_file,
                 CostMode.AUTO,
                 None,  # cutoff_time
-                set(),  # processed_hashes
+                deduped,
                 True,  # include_raw
                 timezone_handler,
                 pricing_calculator,
             )
 
-        assert len(entries) == 1
-        assert entries[0] == sample_entry
+        # A record carrying a dedup key lands in the shared winners map, not in
+        # the returned list, so a later file can still replace it.
+        assert entries == []
+        assert list(deduped.values()) == [sample_entry]
         assert len(raw_data) == 1
         assert raw_data[0] == sample_data[0]
 
@@ -387,13 +456,12 @@ class TestProcessSingleFile:
                 "claude_monitor.data.reader._map_to_usage_entry",
                 return_value=sample_entry,
             ),
-            patch("claude_monitor.data.reader._update_processed_hashes"),
         ):
             entries, raw_data = _process_single_file(
                 test_file,
                 CostMode.AUTO,
                 None,
-                set(),
+                {},
                 False,
                 timezone_handler,
                 pricing_calculator,
@@ -419,7 +487,7 @@ class TestProcessSingleFile:
                 test_file,
                 CostMode.AUTO,
                 None,
-                set(),
+                {},
                 True,
                 timezone_handler,
                 pricing_calculator,
@@ -445,7 +513,7 @@ class TestProcessSingleFile:
                 test_file,
                 CostMode.AUTO,
                 None,
-                set(),
+                {},
                 True,
                 timezone_handler,
                 pricing_calculator,
@@ -464,7 +532,7 @@ class TestProcessSingleFile:
                     test_file,
                     CostMode.AUTO,
                     None,
-                    set(),
+                    {},
                     True,
                     timezone_handler,
                     pricing_calculator,
@@ -492,7 +560,7 @@ class TestProcessSingleFile:
                 test_file,
                 CostMode.AUTO,
                 None,
-                set(),
+                {},
                 True,
                 timezone_handler,
                 pricing_calculator,
@@ -517,7 +585,7 @@ class TestShouldProcessEntry:
         with patch(
             "claude_monitor.data.reader._create_unique_hash", return_value="hash_1"
         ):
-            result = _should_process_entry(data, None, set(), timezone_handler)
+            result = _should_process_entry(data, None, timezone_handler)
 
         assert result is True
 
@@ -539,9 +607,7 @@ class TestShouldProcessEntry:
             with patch(
                 "claude_monitor.data.reader._create_unique_hash", return_value="hash_1"
             ):
-                result = _should_process_entry(
-                    data, cutoff_time, set(), timezone_handler
-                )
+                result = _should_process_entry(data, cutoff_time, timezone_handler)
 
         assert result is True
 
@@ -558,22 +624,25 @@ class TestShouldProcessEntry:
             )
             mock_processor_class.return_value = mock_processor
 
-            result = _should_process_entry(data, cutoff_time, set(), timezone_handler)
+            result = _should_process_entry(data, cutoff_time, timezone_handler)
 
         assert result is False
 
-    def test_should_process_entry_with_duplicate_hash(self, timezone_handler):
+    def test_should_process_entry_keeps_repeated_keys(self, timezone_handler):
+        """A repeated key must reach the mapper.
+
+        Streaming writes several records under one key and the later ones hold
+        the complete usage, so filtering repeats out here would keep the
+        partial record. Selection now happens in _replaces_existing.
+        """
         data = {"message_id": "msg_1", "request_id": "req_1"}
-        processed_hashes = {"msg_1:req_1"}
 
         with patch(
             "claude_monitor.data.reader._create_unique_hash", return_value="msg_1:req_1"
         ):
-            result = _should_process_entry(
-                data, None, processed_hashes, timezone_handler
-            )
+            result = _should_process_entry(data, None, timezone_handler)
 
-        assert result is False
+        assert result is True
 
     def test_should_process_entry_no_timestamp(self, timezone_handler):
         data = {"message_id": "msg_1"}
@@ -582,7 +651,7 @@ class TestShouldProcessEntry:
         with patch(
             "claude_monitor.data.reader._create_unique_hash", return_value="hash_1"
         ):
-            result = _should_process_entry(data, cutoff_time, set(), timezone_handler)
+            result = _should_process_entry(data, cutoff_time, timezone_handler)
 
         assert result is True
 
@@ -600,9 +669,7 @@ class TestShouldProcessEntry:
             with patch(
                 "claude_monitor.data.reader._create_unique_hash", return_value="hash_1"
             ):
-                result = _should_process_entry(
-                    data, cutoff_time, set(), timezone_handler
-                )
+                result = _should_process_entry(data, cutoff_time, timezone_handler)
 
         assert result is True
 
@@ -647,29 +714,39 @@ class TestCreateUniqueHash:
         assert result is None
 
 
-class TestUpdateProcessedHashes:
-    """Test the _update_processed_hashes function."""
+class TestReplacesExisting:
+    """Test the rule that picks a winner between records sharing a key."""
 
-    def test_update_processed_hashes_valid_hash(self) -> None:
-        data = {"message_id": "msg_123", "request_id": "req_456"}
-        processed_hashes = set()
+    @staticmethod
+    def _entry(output: int, *, input_tokens: int = 10) -> UsageEntry:
+        return UsageEntry(
+            timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
+            input_tokens=input_tokens,
+            output_tokens=output,
+            message_id="msg_1",
+            request_id="req_1",
+        )
 
-        with patch(
-            "claude_monitor.data.reader._create_unique_hash",
-            return_value="msg_123:req_456",
-        ):
-            _update_processed_hashes(data, processed_hashes)
+    def test_complete_record_replaces_partial(self) -> None:
+        """The finished record carries the larger output count."""
+        assert _replaces_existing(self._entry(3000), self._entry(5)) is True
 
-        assert "msg_123:req_456" in processed_hashes
+    def test_partial_record_does_not_replace_complete(self) -> None:
+        """Order of arrival must not decide the winner."""
+        assert _replaces_existing(self._entry(5), self._entry(3000)) is False
 
-    def test_update_processed_hashes_no_hash(self) -> None:
-        data = {"some": "data"}
-        processed_hashes = set()
+    def test_equal_output_falls_back_to_total(self) -> None:
+        """Main transcripts repeat identical output on every line."""
+        assert (
+            _replaces_existing(
+                self._entry(100, input_tokens=50), self._entry(100, input_tokens=10)
+            )
+            is True
+        )
 
-        with patch("claude_monitor.data.reader._create_unique_hash", return_value=None):
-            _update_processed_hashes(data, processed_hashes)
-
-        assert len(processed_hashes) == 0
+    def test_identical_records_do_not_replace(self) -> None:
+        """No churn when a record is simply restated unchanged."""
+        assert _replaces_existing(self._entry(100), self._entry(100)) is False
 
 
 class TestMapToUsageEntry:
@@ -1315,7 +1392,7 @@ class TestAdditionalEdgeCases:
         # Test with None cutoff_time and no hash
         data = {"some": "data"}
         with patch("claude_monitor.data.reader._create_unique_hash", return_value=None):
-            result = _should_process_entry(data, None, set(), timezone_handler)
+            result = _should_process_entry(data, None, timezone_handler)
         assert result is True
 
         # Test with empty processed_hashes set
@@ -1323,7 +1400,7 @@ class TestAdditionalEdgeCases:
         with patch(
             "claude_monitor.data.reader._create_unique_hash", return_value="msg_1:req_1"
         ):
-            result = _should_process_entry(data, None, set(), timezone_handler)
+            result = _should_process_entry(data, None, timezone_handler)
         assert result is True
 
     def test_map_to_usage_entry_error_scenarios(self):
@@ -1470,7 +1547,7 @@ class TestAdditionalEdgeCases:
                 empty_file,
                 CostMode.AUTO,
                 None,
-                set(),
+                {},
                 True,
                 timezone_handler,
                 pricing_calculator,
