@@ -447,6 +447,10 @@ class TestModelFamily:
         assert model_family("") == "other"
         assert model_family("gpt-4-turbo") == "other"
         assert model_family("<synthetic>") == "other"
+        # Foreign models with a Claude family word in the name must not be
+        # bucketed into a Claude family (and billed at its rate).
+        assert model_family("gpt-4-opus") == "other"
+        assert model_family("deepseek-sonnet-mix") == "other"
 
 
 class TestModelUtils:
@@ -518,6 +522,22 @@ class TestModelUtils:
 
         # Provider-prefixed ids (Bedrock) render the same as bare ids
         assert get_model_display_name("anthropic.claude-opus-5") == "Claude Opus 5"
+
+        # Full Bedrock envelope: provider prefix, date snapshot, and -vN:M suffix
+        assert (
+            get_model_display_name("anthropic.claude-opus-4-20250514-v1:0")
+            == "Claude Opus 4"
+        )
+
+        # Geo-routed Bedrock ids ("us.", "global.") also render like bare ids
+        assert (
+            get_model_display_name("us.anthropic.claude-sonnet-5-v1:0")
+            == "Claude Sonnet 5"
+        )
+        assert (
+            get_model_display_name("global.anthropic.claude-haiku-4-5-v2")
+            == "Claude Haiku 4.5"
+        )
 
     def test_is_claude_model(self) -> None:
         """Test Claude model detection."""

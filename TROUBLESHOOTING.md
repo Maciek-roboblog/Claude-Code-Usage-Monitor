@@ -195,7 +195,7 @@ pip install pydantic-settings>=2.0.0 numpy>=1.21.0
 **Valid options**:
 ```bash
 # Correct plan names (case-insensitive)
-claude-monitor --plan pro      # 44k tokens
+claude-monitor --plan pro      # 19k tokens
 claude-monitor --plan max5     # 88k tokens
 claude-monitor --plan max20    # 220k tokens
 claude-monitor --plan custom   # P90 auto-detection

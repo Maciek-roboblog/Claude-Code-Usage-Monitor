@@ -69,7 +69,7 @@ The **Custom plan** is now the default option, specifically designed for 5-hour 
 
 The Custom plan automatically adapts to your usage patterns by analyzing all your sessions from the last 192 hours (8 days) and calculating personalized limits based on your actual usage. This ensures accurate predictions and warnings tailored to your specific workflow.
 
-> ⚠️ **The custom plan limit is an automatic estimate, not Anthropic's official limit.** It's computed as the P90 (90th percentile) of your own past session peaks, so it **adapts over time** — if you exceed the current estimate, later runs recompute a higher P90 and the limit rises to match. For your account's real, Anthropic-reported limits, use `--statusline` to capture the official `rate_limits` (labeled `confidence: official`) instead of relying on this local estimate.
+> ⚠️ **The custom plan limit is an automatic estimate, not Anthropic's official limit.** It's computed as the P90 (90th percentile) of your own past session peaks, so it **adapts over time** — later runs recompute the P90 from updated history, so the estimate can change. For your account's real, Anthropic-reported limits, use `--statusline` to capture the official `rate_limits` (labeled `confidence: official`) instead of relying on this local estimate.
 
 
 ## 🚀 Installation

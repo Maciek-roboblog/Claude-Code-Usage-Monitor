@@ -129,12 +129,19 @@ def model_family(model: str) -> str:
     change. ``"fable"`` also covers Claude Mythos, which shares Fable's tier
     and pricing.
 
+    Non-Anthropic models are always ``"other"``, even when their name contains
+    a Claude family word (e.g. ``gpt-4-opus`` routed through Claude Code
+    Router), so they never pick up a Claude family rate in the pricing
+    fallback (#217, #199).
+
     Returns:
         One of ``"opus"``, ``"sonnet"``, ``"haiku"``, ``"fable"``, ``"other"``.
     """
     if not model:
         return "other"
     name = model.lower()
+    if not is_anthropic_model(name):
+        return "other"
     if "fable" in name or "mythos" in name:
         return "fable"
     if "opus" in name:
@@ -168,11 +175,21 @@ def normalize_model_name(model: str) -> str:
         'claude-3-5-sonnet'
         >>> normalize_model_name("claude-opus-5")
         'claude-opus-5'
+        >>> normalize_model_name("anthropic.claude-opus-4-20250514-v1:0")
+        'claude-opus-4-20250514'
     """
     if not model:
         return ""
 
     model_lower = model.lower()
+
+    # Bedrock wraps ids in an envelope: an optional geo/profile route ("us.",
+    # "eu.", "global.", "us-gov."), the provider prefix ("anthropic."), and a
+    # trailing model-version suffix ("-v1:0", "-v2"). Strip it so dated ids
+    # match their legacy pricing keys and render like their bare forms.
+    bedrock = re.match(r"(?:[a-z0-9-]{1,16}\.)?anthropic\.(.+)$", model_lower)
+    if bedrock:
+        model_lower = re.sub(r"-v\d+(?::\d+)?$", "", bedrock.group(1))
 
     is_3_5 = "3.5" in model_lower or "3-5" in model_lower
     is_3_era = is_3_5 or bool(re.search(r"claude[ -]3", model_lower))
