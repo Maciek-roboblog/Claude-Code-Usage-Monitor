@@ -426,6 +426,29 @@ class TestFormattingPerformance:
         assert all(isinstance(r, str) for r in results)
 
 
+class TestModelFamily:
+    """Test cases for the centralized model family bucketing."""
+
+    def test_model_family_current_models(self) -> None:
+        from claude_monitor.core.models import model_family
+
+        assert model_family("claude-opus-5") == "opus"
+        assert model_family("claude-opus-4-8") == "opus"
+        assert model_family("claude-sonnet-5") == "sonnet"
+        assert model_family("claude-sonnet-4-6") == "sonnet"
+        assert model_family("claude-haiku-4-5-20251001") == "haiku"
+        assert model_family("claude-fable-5") == "fable"
+        # Mythos shares Fable's tier and pricing
+        assert model_family("claude-mythos-5") == "fable"
+
+    def test_model_family_unknown(self) -> None:
+        from claude_monitor.core.models import model_family
+
+        assert model_family("") == "other"
+        assert model_family("gpt-4-turbo") == "other"
+        assert model_family("<synthetic>") == "other"
+
+
 class TestModelUtils:
     """Test cases for model utilities."""
 
@@ -440,6 +463,21 @@ class TestModelUtils:
         assert normalize_model_name("claude-3-5-sonnet-20241022") == "claude-3-5-sonnet"
         assert normalize_model_name("Claude 3.5 Sonnet") == "claude-3-5-sonnet"
         assert normalize_model_name("claude-3-5-haiku") == "claude-3-5-haiku"
+
+        # Human-readable 3-era names still collapse to legacy keys
+        assert normalize_model_name("Claude 3 Opus") == "claude-3-opus"
+
+        # Claude 4.x-era ids pass through lowercased
+        assert normalize_model_name("claude-sonnet-4-6") == "claude-sonnet-4-6"
+        assert (
+            normalize_model_name("claude-opus-4-5-20251101")
+            == "claude-opus-4-5-20251101"
+        )
+
+        # Claude 5-era ids must NOT collapse to 3-era keys (pricing regression)
+        assert normalize_model_name("claude-opus-5") == "claude-opus-5"
+        assert normalize_model_name("claude-sonnet-5") == "claude-sonnet-5"
+        assert normalize_model_name("claude-fable-5") == "claude-fable-5"
 
         # Test empty/None inputs
         assert normalize_model_name("") == ""
@@ -460,6 +498,26 @@ class TestModelUtils:
         # Test unknown models (should title case)
         assert get_model_display_name("unknown-model") == "Unknown-Model"
         assert get_model_display_name("gpt-4") == "Gpt-4"
+
+        # Modern 4.x-era ids: family + major.minor
+        assert get_model_display_name("claude-opus-4-5") == "Claude Opus 4.5"
+        assert get_model_display_name("claude-sonnet-4-6") == "Claude Sonnet 4.6"
+        assert get_model_display_name("claude-haiku-4-5") == "Claude Haiku 4.5"
+
+        # 5-era ids: family + bare major version
+        assert get_model_display_name("claude-opus-5") == "Claude Opus 5"
+        assert get_model_display_name("claude-sonnet-5") == "Claude Sonnet 5"
+        assert get_model_display_name("claude-fable-5") == "Claude Fable 5"
+        assert get_model_display_name("claude-mythos-5") == "Claude Mythos 5"
+
+        # Dated snapshot ids drop the trailing date
+        assert get_model_display_name("claude-opus-4-5-20251101") == "Claude Opus 4.5"
+
+        # A two-segment dated id: the date must not be read as a minor version
+        assert get_model_display_name("claude-opus-4-20250514") == "Claude Opus 4"
+
+        # Provider-prefixed ids (Bedrock) render the same as bare ids
+        assert get_model_display_name("anthropic.claude-opus-5") == "Claude Opus 5"
 
     def test_is_claude_model(self) -> None:
         """Test Claude model detection."""
@@ -500,3 +558,23 @@ class TestModelUtils:
         assert (
             get_model_generation("claude-10") == "unknown"
         )  # Don't match "1" from "10"
+
+        # Modern 4.x-era ids: major.minor derived via regex
+        assert get_model_generation("claude-opus-4-5") == "4.5"
+        assert get_model_generation("claude-sonnet-4-6") == "4.6"
+        assert get_model_generation("claude-haiku-4-5") == "4.5"
+
+        # 5-era ids: bare major version, including Fable/Mythos
+        assert get_model_generation("claude-opus-5") == "5"
+        assert get_model_generation("claude-sonnet-5") == "5"
+        assert get_model_generation("claude-fable-5") == "5"
+        assert get_model_generation("claude-mythos-5") == "5"
+
+        # Dated snapshot ids still resolve major.minor
+        assert get_model_generation("claude-opus-4-5-20251101") == "4.5"
+
+        # A two-segment dated id: the date must not be read as a minor version
+        assert get_model_generation("claude-opus-4-20250514") == "4"
+
+        # Provider-prefixed ids (Bedrock) still resolve
+        assert get_model_generation("anthropic.claude-opus-5") == "5"
