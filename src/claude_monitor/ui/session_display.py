@@ -136,6 +136,22 @@ class SessionDisplayComponent:
         return f" [dim]({label})[/]"
 
     @staticmethod
+    def _p90_limit_suffix(
+        plan: str, limit_is_p90: bool = True, confidence: Optional[str] = None
+    ) -> str:
+        """Mark a custom-plan limit as an auto-estimate from local usage history.
+
+        The custom limit is the P90 of the user's own past sessions, so it moves
+        as usage grows. Fixed plans and official/experimental limits are never
+        annotated.
+        """
+        if plan != "custom" or not limit_is_p90:
+            return ""
+        if confidence in {"official", "experimental"}:
+            return ""
+        return " [dim](auto P90)[/]"
+
+    @staticmethod
     def _token_detail_suffix(label: Optional[str]) -> str:
         if not label:
             return ""
@@ -275,6 +291,14 @@ class SessionDisplayComponent:
         token_detail_suffix = self._token_detail_suffix(
             kwargs.get("limit_tokens_label")
         )
+        p90_suffix = self._p90_limit_suffix(
+            plan,
+            kwargs.get("limit_is_p90", True),
+            kwargs.get("limit_confidence"),
+        )
+        # Cost and message limits for the custom plan are always P90-derived
+        # (no explicit-override flag and no official source for them).
+        p90_estimate_suffix = self._p90_limit_suffix(plan)
 
         if not kwargs.get("no_header", False):
             header_manager = HeaderManager()
@@ -290,7 +314,7 @@ class SessionDisplayComponent:
             if plan == "custom":
                 screen_buffer.append("[bold]📊 Session-Based Dynamic Limits[/bold]")
                 screen_buffer.append(
-                    "[dim]Based on your historical usage patterns when hitting limits (P90)[/dim]"
+                    "[dim]Auto-estimated from your own usage history (P90) - it adapts as you use more[/dim]"
                 )
                 screen_buffer.append(self._separator_line())
             else:
@@ -307,13 +331,13 @@ class SessionDisplayComponent:
             )
             cost_bar = self._render_wide_progress_bar(cost_percentage)
             screen_buffer.append(
-                f"{self._metric_prefix('💰', 'Cost Usage')}{cost_bar} {cost_percentage:4.1f}%    [value]${session_cost:.2f}[/] / [dim]${cost_limit_p90:.2f}[/]"
+                f"{self._metric_prefix('💰', 'Cost Usage')}{cost_bar} {cost_percentage:4.1f}%    [value]${session_cost:.2f}[/] / [dim]${cost_limit_p90:.2f}[/]{p90_estimate_suffix}"
             )
             screen_buffer.append("")
 
             token_bar = self._render_wide_progress_bar(usage_percentage)
             screen_buffer.append(
-                f"{self._metric_prefix('📊', 'Token Usage')}{token_bar} {usage_percentage:4.1f}%{limit_suffix}    [value]{tokens_used:,}[/] / [dim]{token_limit:,}[/]{token_detail_suffix}"
+                f"{self._metric_prefix('📊', 'Token Usage')}{token_bar} {usage_percentage:4.1f}%{limit_suffix}    [value]{tokens_used:,}[/] / [dim]{token_limit:,}[/]{p90_suffix}{token_detail_suffix}"
             )
             screen_buffer.append("")
 
@@ -324,7 +348,7 @@ class SessionDisplayComponent:
             )
             messages_bar = self._render_wide_progress_bar(messages_percentage)
             screen_buffer.append(
-                f"{self._metric_prefix('📨', 'Messages Usage')}{messages_bar} {messages_percentage:4.1f}%    [value]{sent_messages}[/] / [dim]{messages_limit_p90:,}[/]"
+                f"{self._metric_prefix('📨', 'Messages Usage')}{messages_bar} {messages_percentage:4.1f}%    [value]{sent_messages}[/] / [dim]{messages_limit_p90:,}[/]{p90_estimate_suffix}"
             )
             screen_buffer.append(self._separator_line())
 
@@ -338,7 +362,7 @@ class SessionDisplayComponent:
             time_left_hours = int(time_remaining // 60)
             time_left_mins = int(time_remaining % 60)
             screen_buffer.append(
-                f"{self._metric_prefix('⏱️', 'Time to Reset')}{time_bar} {time_left_hours}h {time_left_mins}m"
+                f"{self._metric_prefix('⏳', 'Time to Reset')}{time_bar} {time_left_hours}h {time_left_mins}m"
             )
             screen_buffer.append("")
 
@@ -403,7 +427,7 @@ class SessionDisplayComponent:
             time_bar = self.time_progress.render(
                 elapsed_session_minutes, total_session_minutes
             )
-            screen_buffer.append(f"⏱️  [value]Time to Reset:[/]  {time_bar}")
+            screen_buffer.append(f"⏳ [value]Time to Reset:[/]  {time_bar}")
             screen_buffer.append("")
 
         screen_buffer.append("")
@@ -520,6 +544,11 @@ class SessionDisplayComponent:
         token_detail_suffix = self._token_detail_suffix(
             overlay.get("limit_tokens_label")
         )
+        p90_suffix = self._p90_limit_suffix(
+            plan,
+            not getattr(args, "custom_limit_tokens", None),
+            overlay.get("limit_confidence"),
+        )
 
         empty_token_bar = self.token_progress.render(usage_percentage)
         screen_buffer.append(f"📊 [value]Token Usage:[/]    {empty_token_bar}")
@@ -530,7 +559,7 @@ class SessionDisplayComponent:
         tokens_used_text = f"{tokens_used:,}" if tokens_used is not None else "--"
         tokens_left_text = f"{tokens_left:,}" if tokens_left is not None else "--"
         screen_buffer.append(
-            f"🎯 [value]Tokens:[/]         [value]{tokens_used_text}[/] / [dim]~{display_token_limit:,}[/] ([info]{tokens_left_text} left[/]){token_detail_suffix}"
+            f"🎯 [value]Tokens:[/]         [value]{tokens_used_text}[/] / [dim]~{display_token_limit:,}[/]{p90_suffix} ([info]{tokens_left_text} left[/]){token_detail_suffix}"
         )
         screen_buffer.append(
             "🔥 [value]Burn Rate:[/]      [warning]0.0[/] [dim]tokens/min[/]"

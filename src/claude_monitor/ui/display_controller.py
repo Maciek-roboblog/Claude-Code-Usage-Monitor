@@ -87,6 +87,13 @@ class DisplayController:
             return args.custom_limit_tokens, args.custom_limit_tokens
         return token_limit, token_limit
 
+    @staticmethod
+    def _limit_is_p90_estimate(args: Any) -> bool:
+        """True when the shown limit is the P90 estimate of local usage history."""
+        return getattr(args, "plan", None) == "custom" and not getattr(
+            args, "custom_limit_tokens", None
+        )
+
     def _calculate_time_data(
         self, session_data: Dict[str, Any], current_time: datetime
     ) -> Dict[str, Any]:
@@ -412,6 +419,7 @@ class DisplayController:
             "timezone": args.timezone,
             "tokens_used": tokens_used,
             "token_limit": token_limit,
+            "limit_is_p90": self._limit_is_p90_estimate(args),
             "usage_percentage": usage_percentage,
             "tokens_left": tokens_left,
             "elapsed_session_minutes": time_data["elapsed_session_minutes"],
