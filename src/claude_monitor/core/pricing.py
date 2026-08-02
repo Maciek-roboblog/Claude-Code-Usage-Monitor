@@ -8,7 +8,12 @@ with caching.
 
 from typing import Any, Dict, Optional
 
-from claude_monitor.core.models import CostMode, TokenCounts, normalize_model_name
+from claude_monitor.core.models import (
+    CostMode,
+    TokenCounts,
+    model_family,
+    normalize_model_name,
+)
 
 
 class PricingCalculator:
@@ -27,6 +32,8 @@ class PricingCalculator:
     """
 
     # Current per-family rates (Opus 4.5+, Sonnet 3.5+, Haiku 4.5, Fable 5).
+    # Sonnet 5 uses the sticker rate; its time-boxed introductory discount
+    # ($2/$10 through 2026-08-31) is not modeled.
     # Cache create = input * 1.25 (5-min TTL); cache read = input * 0.1.
     FALLBACK_PRICING: Dict[str, Dict[str, float]] = {
         "opus": {
@@ -131,8 +138,12 @@ class PricingCalculator:
             "claude-opus-4-6": self.FALLBACK_PRICING["opus"],
             "claude-opus-4-7": self.FALLBACK_PRICING["opus"],
             "claude-opus-4-8": self.FALLBACK_PRICING["opus"],
+            "claude-opus-5": self.FALLBACK_PRICING["opus"],
+            "claude-sonnet-5": self.FALLBACK_PRICING["sonnet"],
             "claude-haiku-4-5": self.FALLBACK_PRICING["haiku"],
             "claude-fable-5": self.FALLBACK_PRICING["fable"],
+            # Mythos shares Fable's tier and pricing (Project Glasswing).
+            "claude-mythos-5": self.FALLBACK_PRICING["fable"],
         }
         self._cost_cache: Dict[str, float] = {}
 
@@ -241,17 +252,15 @@ class PricingCalculator:
         if strict:
             raise KeyError(f"Unknown model: {model}")
 
-        # Fallback to the current family rate by name.
-        # ponytail: *-fast premium variants and unknown models get the base
-        # family rate (underestimates fast mode); add verified keys above if needed.
-        model_lower = model.lower()
-        if "fable" in model_lower:
-            return self.FALLBACK_PRICING["fable"]
-        if "opus" in model_lower:
-            return self.FALLBACK_PRICING["opus"]
-        if "haiku" in model_lower:
-            return self.FALLBACK_PRICING["haiku"]
-        if "claude" in model_lower or "sonnet" in model_lower:
+        # Fallback to the current family rate by name (single source of truth:
+        # core.models.model_family). Future/unversioned family names land here
+        # and get the *current* rate; legacy rates apply only to the explicit
+        # keys above. ponytail: *-fast premium variants get the base family
+        # rate (underestimates fast mode); add verified keys above if needed.
+        family = model_family(model)
+        if family != "other":
+            return self.FALLBACK_PRICING[family]
+        if "claude" in model.lower():
             return self.FALLBACK_PRICING["sonnet"]
         # Not a recognizable Anthropic model: don't fabricate a Claude rate.
         return self.UNKNOWN_PRICING
