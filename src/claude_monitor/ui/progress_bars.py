@@ -269,19 +269,15 @@ class ModelUsageBar(BaseProgressBar):
         "Sonnet": "info",
         "Opus": "warning",
         "Haiku": "success",
+        "Fable": "highlight",
         "Other": "dim",
     }
 
     @staticmethod
     def _family_for(model_name: str) -> str:
-        name = model_name.lower()
-        if "sonnet" in name:
-            return "Sonnet"
-        if "opus" in name:
-            return "Opus"
-        if "haiku" in name:
-            return "Haiku"
-        return "Other"
+        from claude_monitor.core.models import model_family
+
+        return model_family(model_name).capitalize()
 
     def render(self, per_model_stats: dict[str, Any]) -> str:
         """Render model usage progress bar.

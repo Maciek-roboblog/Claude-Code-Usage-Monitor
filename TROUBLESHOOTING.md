@@ -195,7 +195,7 @@ pip install pydantic-settings>=2.0.0 numpy>=1.21.0
 **Valid options**:
 ```bash
 # Correct plan names (case-insensitive)
-claude-monitor --plan pro      # 44k tokens
+claude-monitor --plan pro      # 19k tokens
 claude-monitor --plan max5     # 88k tokens
 claude-monitor --plan max20    # 220k tokens
 claude-monitor --plan custom   # P90 auto-detection
@@ -466,6 +466,39 @@ for case in test_cases:
         print(f'{case}: {e}')
 "
 ```
+
+## ❓ Frequently Asked Questions
+
+### "My token limit keeps changing between runs"
+
+**Cause**: On the default `custom` plan, the token limit isn't fixed — it's an automatic estimate computed as the P90 (90th percentile) of your own past session peaks:
+
+- **It adapts over time.** If you exceed the current estimate, later runs recompute the P90 against that new peak, so the limit rises to match.
+- **It's cached for up to an hour.** The P90 result is cached, so the limit can also change on the hour even without a new peak.
+- **It isn't Anthropic's official limit.** It's a local, historical estimate (`local_estimate`), not the real limit reported by your account.
+- **The cost and message limits work the same way.** On the custom plan they are also P90 estimates of your own history, so warnings like "cost limit will be exceeded before reset" mean "this session is on pace to be heavier than ~90% of your past sessions" — for subscription users the dollar figure is what the tokens *would* cost at API rates, not a bill.
+
+**Solutions**:
+```bash
+# Use a fixed reference plan instead of the auto-estimating custom plan
+claude-monitor --plan pro      # 19,000 tokens (fixed)
+claude-monitor --plan max5     # 88,000 tokens (fixed)
+claude-monitor --plan max20    # 220,000 tokens (fixed)
+```
+
+Or capture Anthropic's real, account-reported limits by registering the
+statusline hook in Claude Code's settings (Pro/Max, Claude Code 2.1.80+) —
+the monitor then shows the official percentage labeled `confidence: official`:
+
+```json
+{ "statusLine": { "type": "command", "command": "claude-monitor --statusline" } }
+```
+
+### "New Claude models show as 'Other'"
+
+**Fixed in this version** — Claude 5 models (`claude-opus-5`, `claude-sonnet-5`, `claude-fable-5`, `claude-mythos-5`) are now recognized and bucketed into their proper family (Opus, Sonnet, Fable) in the model distribution bar and snapshots, instead of the dim "Other" bucket.
+
+If a *future* model still shows as "Other", the family list needs updating. Family bucketing is centralized in `model_family()` in `src/claude_monitor/core/models.py` — please [file an issue](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues/new) so the model list can be updated.
 
 ## 🆘 Getting Help
 

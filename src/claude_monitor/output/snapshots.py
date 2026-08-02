@@ -16,6 +16,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from claude_monitor._version import __version__
+from claude_monitor.core.models import model_family
 from claude_monitor.core.plans import Plans
 
 SNAPSHOT_SCHEMA_VERSION = "1.0"
@@ -71,14 +72,7 @@ def _api_block(window: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _family_of(model: str) -> str:
-    name = model.lower()
-    if "sonnet" in name:
-        return "sonnet"
-    if "opus" in name:
-        return "opus"
-    if "haiku" in name:
-        return "haiku"
-    return "other"
+    return model_family(model)
 
 
 def _block_total_tokens(block: dict) -> int:

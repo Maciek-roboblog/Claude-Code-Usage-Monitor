@@ -101,6 +101,17 @@ class TestDisplayController:
 
         assert result == (200000, 200000)
 
+    def test_limit_is_p90_estimate_only_for_auto_custom(self, controller, sample_args):
+        """Only the auto (P90) custom limit is flagged as an estimate."""
+        assert controller._limit_is_p90_estimate(sample_args) is False
+
+        sample_args.plan = "custom"
+        sample_args.custom_limit_tokens = None
+        assert controller._limit_is_p90_estimate(sample_args) is True
+
+        sample_args.custom_limit_tokens = 500000
+        assert controller._limit_is_p90_estimate(sample_args) is False
+
     @patch("claude_monitor.ui.display_controller.calculate_hourly_burn_rate")
     def test_calculate_time_data(self, mock_burn_rate, controller):
         """Test time data calculation."""

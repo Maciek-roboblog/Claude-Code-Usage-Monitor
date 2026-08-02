@@ -106,6 +106,14 @@ class TestPricingCalculator:
             ("claude-haiku-4-5-20251001", 1.0, 5.0),
             ("claude-fable-5", 10.0, 50.0),
             ("claude-sonnet-4-20250514", 3.0, 15.0),
+            # Claude 5 family — must not inherit 3-era legacy rates
+            ("claude-opus-5", 5.0, 25.0),
+            ("claude-sonnet-5", 3.0, 15.0),
+            ("claude-mythos-5", 10.0, 50.0),
+            # Bedrock envelope must strip to the legacy pricing key, not fall
+            # through to the current family rate (coderabbit PR #239)
+            ("anthropic.claude-opus-4-20250514-v1:0", 15.0, 75.0),
+            ("us.anthropic.claude-opus-4-1-v1:0", 15.0, 75.0),
             # Legacy versions priced differently from the current family rate
             ("claude-opus-4-20250514", 15.0, 75.0),  # Opus 4.0
             ("claude-opus-4-1", 15.0, 75.0),  # Opus 4.1 alias (codex P1)
@@ -123,10 +131,31 @@ class TestPricingCalculator:
         assert pricing["input"] == inp
         assert pricing["output"] == out
 
+    def test_foreign_model_with_family_word_not_billed_as_claude(
+        self, calculator: PricingCalculator
+    ) -> None:
+        """A non-Anthropic model containing a Claude family word gets $0, not Opus."""
+        pricing = calculator._get_pricing_for_model("gpt-4-opus")
+        assert pricing == PricingCalculator.UNKNOWN_PRICING
+        cost = calculator.calculate_cost(
+            model="gpt-4-opus", input_tokens=1_000_000, output_tokens=1_000_000
+        )
+        assert cost == 0.0
+
     def test_calculate_cost_opus_4_8(self, calculator: PricingCalculator) -> None:
         """End-to-end cost for current Opus uses $5/$25, not the legacy $15/$75."""
         cost = calculator.calculate_cost(
             model="claude-opus-4-8", input_tokens=1_000_000, output_tokens=1_000_000
+        )
+        assert cost == 30.0  # 5.0 + 25.0
+
+    def test_calculate_cost_opus_5_not_legacy(
+        self, calculator: PricingCalculator
+    ) -> None:
+        """Regression: claude-opus-5 once normalized to claude-3-opus and was
+        billed at legacy $15/$75 (a 3x overcount) instead of $5/$25."""
+        cost = calculator.calculate_cost(
+            model="claude-opus-5", input_tokens=1_000_000, output_tokens=1_000_000
         )
         assert cost == 30.0  # 5.0 + 25.0
 

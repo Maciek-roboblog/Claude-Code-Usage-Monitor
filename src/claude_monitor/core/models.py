@@ -2,6 +2,7 @@
 Core data structures for usage tracking, session management, and token calculations.
 """
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -120,11 +121,46 @@ class SessionBlock:
         return max(duration, 1.0)
 
 
+def model_family(model: str) -> str:
+    """Coarse Claude family for a model name.
+
+    Single source of truth for family bucketing (pricing fallback, model usage
+    bar, snapshot model distribution) so a new model launch is a one-place
+    change. ``"fable"`` also covers Claude Mythos, which shares Fable's tier
+    and pricing.
+
+    Non-Anthropic models are always ``"other"``, even when their name contains
+    a Claude family word (e.g. ``gpt-4-opus`` routed through Claude Code
+    Router), so they never pick up a Claude family rate in the pricing
+    fallback (#217, #199).
+
+    Returns:
+        One of ``"opus"``, ``"sonnet"``, ``"haiku"``, ``"fable"``, ``"other"``.
+    """
+    if not model:
+        return "other"
+    name = model.lower()
+    if not is_anthropic_model(name):
+        return "other"
+    if "fable" in name or "mythos" in name:
+        return "fable"
+    if "opus" in name:
+        return "opus"
+    if "sonnet" in name:
+        return "sonnet"
+    if "haiku" in name:
+        return "haiku"
+    return "other"
+
+
 def normalize_model_name(model: str) -> str:
     """Normalize model name for consistent usage across the application.
 
-    Handles various model name formats and maps them to standard keys.
-    (Moved from utils/model_utils.py)
+    Claude 3-era names collapse to canonical legacy keys (``claude-3-opus``,
+    ``claude-3-5-sonnet``, ...) so dated variants share one pricing entry.
+    Anything newer (4.x, 5, Fable) passes through lowercased: collapsing
+    unversioned names to the 3-era keys made ``claude-opus-5`` inherit legacy
+    Opus 3 pricing ($15/$75 instead of $5/$25).
 
     Args:
         model: Raw model name from usage data
@@ -137,36 +173,37 @@ def normalize_model_name(model: str) -> str:
         'claude-3-opus'
         >>> normalize_model_name("Claude 3.5 Sonnet")
         'claude-3-5-sonnet'
+        >>> normalize_model_name("claude-opus-5")
+        'claude-opus-5'
+        >>> normalize_model_name("anthropic.claude-opus-4-20250514-v1:0")
+        'claude-opus-4-20250514'
     """
     if not model:
         return ""
 
     model_lower = model.lower()
 
-    if (
-        "claude-opus-4-" in model_lower
-        or "claude-sonnet-4-" in model_lower
-        or "claude-haiku-4-" in model_lower
-        or "sonnet-4-" in model_lower
-        or "opus-4-" in model_lower
-        or "haiku-4-" in model_lower
-    ):
-        return model_lower
+    # Bedrock wraps ids in an envelope: an optional geo/profile route ("us.",
+    # "eu.", "global.", "us-gov."), the provider prefix ("anthropic."), and a
+    # trailing model-version suffix ("-v1:0", "-v2"). Strip it so dated ids
+    # match their legacy pricing keys and render like their bare forms.
+    bedrock = re.match(r"(?:[a-z0-9-]{1,16}\.)?anthropic\.(.+)$", model_lower)
+    if bedrock:
+        model_lower = re.sub(r"-v\d+(?::\d+)?$", "", bedrock.group(1))
 
-    if "opus" in model_lower:
-        if "4-" in model_lower:
-            return model_lower
-        return "claude-3-opus"
-    if "sonnet" in model_lower:
-        if "4-" in model_lower:
-            return model_lower
-        if "3.5" in model_lower or "3-5" in model_lower:
-            return "claude-3-5-sonnet"
-        return "claude-3-sonnet"
-    if "haiku" in model_lower:
-        if "3.5" in model_lower or "3-5" in model_lower:
-            return "claude-3-5-haiku"
-        return "claude-3-haiku"
+    is_3_5 = "3.5" in model_lower or "3-5" in model_lower
+    is_3_era = is_3_5 or bool(re.search(r"claude[ -]3", model_lower))
+
+    if is_3_era:
+        if "opus" in model_lower:
+            return "claude-3-opus"
+        if "sonnet" in model_lower:
+            return "claude-3-5-sonnet" if is_3_5 else "claude-3-sonnet"
+        if "haiku" in model_lower:
+            return "claude-3-5-haiku" if is_3_5 else "claude-3-haiku"
+
+    if model_family(model_lower) != "other":
+        return model_lower
 
     return model
 

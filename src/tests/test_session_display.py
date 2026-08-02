@@ -62,6 +62,82 @@ def test_team_plan_shows_unverified_estimate_label() -> None:
     assert "--plan custom" in joined
 
 
+def test_custom_plan_limit_is_marked_as_auto_estimate() -> None:
+    """The P90-derived custom limit is labelled so it reads as an estimate."""
+    lines = SessionDisplayComponent().format_active_session_screen(
+        **_screen_kwargs(plan="custom", no_header=True)
+    )
+    joined = "\n".join(lines)
+
+    token_line = next(line for line in lines if "Token Usage" in line)
+    assert "(auto P90)" in token_line
+    assert "Auto-estimated from your own usage history (P90)" in joined
+
+    # Cost and message limits are P90 estimates on the custom plan too
+    cost_line = next(line for line in lines if "Cost Usage" in line)
+    assert "(auto P90)" in cost_line
+    messages_line = next(line for line in lines if "Messages Usage" in line)
+    assert "(auto P90)" in messages_line
+
+
+def test_fixed_plans_are_not_marked_as_auto_estimate() -> None:
+    for plan in ("pro", "max5", "max20"):
+        lines = SessionDisplayComponent().format_active_session_screen(
+            **_screen_kwargs(plan=plan, no_header=True)
+        )
+        assert "auto P90" not in "\n".join(lines)
+
+
+def test_explicit_custom_limit_is_not_marked_as_auto_estimate() -> None:
+    """--custom-limit-tokens bypasses P90 for tokens only; cost stays a P90."""
+    lines = SessionDisplayComponent().format_active_session_screen(
+        **_screen_kwargs(plan="custom", no_header=True), limit_is_p90=False
+    )
+    token_line = next(line for line in lines if "Token Usage" in line)
+    assert "auto P90" not in token_line
+    cost_line = next(line for line in lines if "Cost Usage" in line)
+    assert "(auto P90)" in cost_line
+
+
+def test_official_limit_is_not_marked_as_auto_estimate() -> None:
+    """Official token confidence drops the token qualifier; cost stays a P90."""
+    lines = SessionDisplayComponent().format_active_session_screen(
+        **_screen_kwargs(plan="custom", no_header=True), limit_confidence="official"
+    )
+    token_line = next(line for line in lines if "Token Usage" in line)
+    assert "auto P90" not in token_line
+    cost_line = next(line for line in lines if "Cost Usage" in line)
+    assert "(auto P90)" in cost_line
+
+
+def test_time_to_reset_prefix_uses_wide_hourglass(monkeypatch) -> None:
+    """U+23F1 (stopwatch) is narrow per wcwidth but 2 cells in some terminals,
+    which skewed the bar alignment; the hourglass (U+23F3) is wide everywhere."""
+    monkeypatch.delenv("CLAUDE_MONITOR_ASCII", raising=False)
+    lines = SessionDisplayComponent().format_active_session_screen(
+        **_screen_kwargs(plan="custom", no_header=True)
+    )
+    time_line = next(line for line in lines if "Time to Reset" in line)
+    assert "⏳" in time_line
+    assert "⏱" not in time_line
+
+
+def test_no_active_screen_marks_custom_limit_as_auto_estimate() -> None:
+    import argparse
+
+    comp = SessionDisplayComponent()
+    args = argparse.Namespace(timezone="UTC", no_header=True, custom_limit_tokens=None)
+    custom = comp.format_no_active_session_screen(
+        plan="custom", timezone="UTC", token_limit=1000, args=args
+    )
+    pro = comp.format_no_active_session_screen(
+        plan="pro", timezone="UTC", token_limit=1000, args=args
+    )
+
+    assert "(auto P90)" in next(line for line in custom if "Tokens:" in line)
+    assert "auto P90" not in "\n".join(pro)
+
+
 def test_no_emoji_strips_emoji_from_output() -> None:
     lines = SessionDisplayComponent().format_active_session_screen(
         **_screen_kwargs(), no_emoji=True

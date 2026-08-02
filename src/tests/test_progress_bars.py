@@ -34,6 +34,20 @@ def test_render_lists_every_present_family() -> None:
         assert family in out
 
 
+def test_render_fable_family_recognized_not_other() -> None:
+    """Fable 5 usage renders as its own family instead of dim 'Other' (#Claude 5)."""
+    bar = ModelUsageBar(width=50)
+    out = bar.render(
+        {
+            "claude-fable-5": _tokens(70),
+            "claude-sonnet-5": _tokens(30),
+        }
+    )
+    assert "Fable" in out and "70.0%" in out
+    assert "Sonnet" in out and "30.0%" in out
+    assert "Other" not in out
+
+
 def test_render_unknown_family_shown_as_other_not_dropped() -> None:
     """An unmapped family still appears (as 'Other'); its share is not silently lost."""
     bar = ModelUsageBar(width=50)
