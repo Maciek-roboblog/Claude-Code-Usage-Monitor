@@ -1284,7 +1284,7 @@ A special thanks to our supporters who help keep this project going:
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Maciek-roboblog/Claude-Code-Usage-Monitor&type=Date)](https://www.star-history.com/#Maciek-roboblog/Claude-Code-Usage-Monitor&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=Maciek-roboblog/Claude-Code-Usage-Monitor&type=Date)](https://star-history.dera.page/#Maciek-roboblog/Claude-Code-Usage-Monitor&Date)
 
 ---
 
