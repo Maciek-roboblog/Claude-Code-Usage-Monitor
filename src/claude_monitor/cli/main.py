@@ -278,6 +278,13 @@ def _run_once(args: argparse.Namespace) -> int:
             )
         )
 
+    warehouse_error = data.get("metadata", {}).get("warehouse_error")
+    if warehouse_error:
+        print(
+            f"Warning: usage warehouse was not updated: {warehouse_error}",
+            file=sys.stderr,
+        )
+
     if not _maybe_write_state(args, snapshot):
         print("Failed to write state file (see logs)", file=sys.stderr)
         return 30
@@ -372,6 +379,19 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 30 if once_mode else 1
 
 
+def _warehouse_from_args(args: argparse.Namespace) -> UsageWarehouse:
+    """Build the warehouse named by --warehouse-file (or the default path)."""
+    warehouse_path = (
+        Path(args.warehouse_file)
+        if getattr(args, "warehouse_file", None)
+        else default_warehouse_path()
+    )
+    return UsageWarehouse(
+        warehouse_path,
+        retention_days=getattr(args, "warehouse_retention_days", 365),
+    )
+
+
 def _run_warehouse_report(args: argparse.Namespace) -> int:
     """Run a warehouse-backed report/export view."""
     output = getattr(args, "output", "json")
@@ -382,14 +402,9 @@ def _run_warehouse_report(args: argparse.Namespace) -> int:
         )
         return 30
 
-    warehouse_path = (
-        Path(args.warehouse_file)
-        if getattr(args, "warehouse_file", None)
-        else default_warehouse_path()
-    )
     try:
         report = build_warehouse_report(
-            UsageWarehouse(warehouse_path),
+            _warehouse_from_args(args),
             getattr(args, "view", "entries"),
             plan=getattr(args, "plan", "custom"),
         )
@@ -703,6 +718,13 @@ def _run_table_view(
     logger = logging.getLogger(__name__)
 
     try:
+        if getattr(args, "write_state", False):
+            print_themed(
+                "--write-state applies to realtime and --once only; "
+                "the table view does not write a state file",
+                style="warning",
+            )
+
         # Create aggregator with appropriate mode
         aggregator = UsageAggregator(
             data_path=data_path,
@@ -710,6 +732,11 @@ def _run_table_view(
             timezone=args.timezone,
             reset_hour=getattr(args, "reset_hour", None),
             filter_models=getattr(args, "filter_models", "all"),
+            warehouse=(
+                _warehouse_from_args(args)
+                if getattr(args, "warehouse", False)
+                else None
+            ),
         )
 
         # Create table controller
@@ -718,6 +745,13 @@ def _run_table_view(
         # Get aggregated data
         logger.info(f"Loading {view_mode} usage data...")
         aggregated_data = aggregator.aggregate()
+
+        if aggregator.warehouse_error:
+            print_themed(
+                "Warning: usage warehouse was not updated: "
+                f"{aggregator.warehouse_error}",
+                style="warning",
+            )
 
         if not aggregated_data:
             print_themed(f"No usage data found for {view_mode} view", style="warning")

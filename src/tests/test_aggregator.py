@@ -1,7 +1,9 @@
 """Tests for data aggregator module."""
 
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import List
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -11,6 +13,7 @@ from claude_monitor.data.aggregator import (
     AggregatedStats,
     UsageAggregator,
 )
+from claude_monitor.data.warehouse import UsageWarehouse
 
 
 class TestAggregatedStats:
@@ -667,3 +670,104 @@ class TestResetHourBucketing:
         ]
         result = aggregator.aggregate_daily(entries)
         assert [row["date"] for row in result] == ["2024-01-02"]
+
+
+class TestAggregatorWarehouse:
+    """aggregate() persists loaded entries when a warehouse is configured."""
+
+    def _entry(self, ts: datetime, message_id: str) -> UsageEntry:
+        return UsageEntry(
+            timestamp=ts,
+            input_tokens=100,
+            output_tokens=50,
+            cache_creation_tokens=10,
+            cache_read_tokens=5,
+            cost_usd=0.001,
+            model="claude-3-haiku",
+            message_id=message_id,
+            request_id="req-1",
+        )
+
+    @patch("claude_monitor.data.reader.load_usage_entries")
+    def test_aggregate_writes_entries_to_warehouse(
+        self, mock_load: Mock, tmp_path: Path
+    ) -> None:
+        """Entries loaded by aggregate() are upserted into the warehouse."""
+        entry = self._entry(datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc), "msg-1")
+        mock_load.return_value = ([entry], None)
+        warehouse = UsageWarehouse(tmp_path / "usage.json")
+        aggregator = UsageAggregator(
+            data_path=str(tmp_path), aggregation_mode="daily", warehouse=warehouse
+        )
+
+        result = aggregator.aggregate()
+
+        assert [row["date"] for row in result] == ["2026-08-27"]
+        assert aggregator.warehouse_error is None
+        records = warehouse.load()["records"]
+        assert [record["message_id"] for record in records] == ["msg-1"]
+
+    @patch("claude_monitor.data.analyzer.SessionAnalyzer")
+    @patch("claude_monitor.data.reader.load_usage_entries")
+    def test_aggregate_persists_detected_limit_events(
+        self, mock_load: Mock, mock_analyzer: Mock, tmp_path: Path
+    ) -> None:
+        """Raw entries are scanned for limit events and stored alongside usage."""
+        entry = self._entry(datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc), "msg-1")
+        raw_entries = [{"type": "system", "subtype": "limit reached"}]
+        mock_load.return_value = ([entry], raw_entries)
+        limit_event = {
+            "type": "system_limit",
+            "timestamp": datetime(2026, 8, 27, 13, 0, tzinfo=timezone.utc),
+            "reset_time": None,
+            "content": "limit reached",
+            "source": {"kind": "claude_code_jsonl", "account": None},
+        }
+        mock_analyzer.return_value.detect_limits.return_value = [limit_event]
+        warehouse = UsageWarehouse(tmp_path / "usage.json")
+        aggregator = UsageAggregator(
+            data_path=str(tmp_path), aggregation_mode="monthly", warehouse=warehouse
+        )
+
+        aggregator.aggregate()
+
+        mock_analyzer.assert_called_once_with(session_duration_hours=5)
+        mock_analyzer.return_value.detect_limits.assert_called_once_with(raw_entries)
+        events = warehouse.load()["limit_events"]
+        assert [event["content"] for event in events] == ["limit reached"]
+
+    @patch("claude_monitor.data.reader.load_usage_entries")
+    def test_aggregate_without_warehouse_skips_raw_and_writes_nothing(
+        self, mock_load: Mock, tmp_path: Path
+    ) -> None:
+        """Without a warehouse, raw data is not loaded and nothing is written."""
+        entry = self._entry(datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc), "msg-1")
+        mock_load.return_value = ([entry], None)
+        aggregator = UsageAggregator(data_path=str(tmp_path))
+
+        result = aggregator.aggregate()
+
+        assert mock_load.call_args.kwargs["include_raw"] is False
+        assert [row["date"] for row in result] == ["2026-08-27"]
+        assert aggregator.warehouse_error is None
+        assert not (tmp_path / "usage.json").exists()
+
+    @patch("claude_monitor.data.reader.load_usage_entries")
+    def test_aggregate_survives_warehouse_oserror(
+        self, mock_load: Mock, tmp_path: Path
+    ) -> None:
+        """A failing warehouse write surfaces an error but never aborts aggregation."""
+        entry = self._entry(datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc), "msg-1")
+        mock_load.return_value = ([entry], None)
+        warehouse = UsageWarehouse(tmp_path / "usage.json")
+        aggregator = UsageAggregator(
+            data_path=str(tmp_path), aggregation_mode="daily", warehouse=warehouse
+        )
+
+        with patch.object(
+            warehouse, "upsert_entries", side_effect=OSError("disk full")
+        ):
+            result = aggregator.aggregate()
+
+        assert [row["entries_count"] for row in result] == [1]
+        assert aggregator.warehouse_error == "disk full"

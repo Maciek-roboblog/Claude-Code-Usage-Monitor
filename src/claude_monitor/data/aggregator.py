@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 from claude_monitor.core.models import SessionBlock, UsageEntry, normalize_model_name
+from claude_monitor.data.warehouse import UsageWarehouse, persist_usage_to_warehouse
 from claude_monitor.utils.time_utils import TimezoneHandler
 
 logger = logging.getLogger(__name__)
@@ -100,6 +101,7 @@ class UsageAggregator:
         timezone: str = "UTC",
         reset_hour: Optional[int] = None,
         filter_models: str = "all",
+        warehouse: Optional[UsageWarehouse] = None,
     ):
         """Initialize the aggregator.
 
@@ -111,12 +113,16 @@ class UsageAggregator:
                 a day runs ``reset_hour`` -> ``reset_hour`` instead of midnight to
                 midnight, so e.g. 02:00 with ``reset_hour=4`` counts toward the
                 previous day. Only affects daily aggregation, not the 5h window.
+            warehouse: Optional warehouse that receives the loaded entries
+                (and detected limit events) on aggregate(), best-effort.
         """
         self.data_path = data_path
         self.aggregation_mode = aggregation_mode
         self.timezone = timezone
         self.reset_hour = reset_hour
         self.filter_models = filter_models
+        self.warehouse = warehouse
+        self.warehouse_error: Optional[str] = None
         self.timezone_handler = TimezoneHandler()
 
     def _aggregate_by_period(
@@ -295,6 +301,27 @@ class UsageAggregator:
             "entries_count": total_stats.count,
         }
 
+    def _persist_to_warehouse(
+        self,
+        entries: List[UsageEntry],
+        raw_entries: Optional[List[Dict[str, Any]]],
+    ) -> None:
+        """Persist loaded entries and detected limit events, best-effort.
+
+        Failures are captured in ``warehouse_error`` instead of aborting the
+        aggregation.
+        """
+        from claude_monitor.data.analyzer import SessionAnalyzer
+
+        limit_events = None
+        if raw_entries:
+            limit_events = SessionAnalyzer(session_duration_hours=5).detect_limits(
+                raw_entries
+            )
+        self.warehouse_error = persist_usage_to_warehouse(
+            self.warehouse, entries, limit_events=limit_events
+        )
+
     def aggregate(self) -> List[Dict[str, Any]]:
         """Main aggregation method that reads data and returns aggregated results.
 
@@ -306,13 +333,18 @@ class UsageAggregator:
         logger.info(f"Starting aggregation in {self.aggregation_mode} mode")
 
         # Load usage entries
-        entries, _ = load_usage_entries(
-            data_path=self.data_path, filter_models=self.filter_models
+        entries, raw_entries = load_usage_entries(
+            data_path=self.data_path,
+            filter_models=self.filter_models,
+            include_raw=self.warehouse is not None,
         )
 
         if not entries:
             logger.warning("No usage entries found")
             return []
+
+        if self.warehouse is not None:
+            self._persist_to_warehouse(entries, raw_entries)
 
         # Apply timezone to entries
         for entry in entries:

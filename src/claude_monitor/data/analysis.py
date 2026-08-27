@@ -12,7 +12,11 @@ from claude_monitor.core.calculations import BurnRateCalculator
 from claude_monitor.core.models import CostMode, SessionBlock, UsageEntry
 from claude_monitor.data.analyzer import SessionAnalyzer
 from claude_monitor.data.reader import load_usage_entries
-from claude_monitor.data.warehouse import UsageWarehouse, default_warehouse_path
+from claude_monitor.data.warehouse import (
+    UsageWarehouse,
+    default_warehouse_path,
+    persist_usage_to_warehouse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +101,7 @@ def analyze_usage(
                     newest = max(with_reset, key=lambda li: li["timestamp"])
                     block.usage_limit_reset_time = newest["reset_time"]
 
+    warehouse_error: Optional[str] = None
     if write_warehouse:
         warehouse_path = (
             Path(warehouse_file) if warehouse_file else default_warehouse_path()
@@ -104,9 +109,11 @@ def analyze_usage(
         warehouse = UsageWarehouse(
             warehouse_path, retention_days=warehouse_retention_days
         )
-        warehouse.upsert_entries(entries)
-        if raw_entries and limit_detections:
-            warehouse.upsert_limit_events(limit_detections)
+        warehouse_error = persist_usage_to_warehouse(
+            warehouse,
+            entries,
+            limit_events=(limit_detections if raw_entries else None),
+        )
 
     metadata: Dict[str, Any] = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -119,6 +126,8 @@ def analyze_usage(
         "cache_used": use_cache,
         "quick_start": quick_start,
     }
+    if warehouse_error is not None:
+        metadata["warehouse_error"] = warehouse_error
 
     result = _create_result(blocks, entries, metadata)
     logger.info(f"analyze_usage returning {len(result['blocks'])} blocks")

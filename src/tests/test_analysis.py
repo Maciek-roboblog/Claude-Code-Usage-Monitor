@@ -1,8 +1,11 @@
 """Tests for data/analysis.py module."""
 
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import Mock, patch
+
+import pytest
 
 from claude_monitor.core.models import (
     BurnRate,
@@ -204,6 +207,129 @@ class TestAnalyzeUsage:
         analyze_usage(hours_back=24, use_cache=False)
 
         mock_warehouse_class.assert_not_called()
+
+    @patch("claude_monitor.data.analysis.UsageWarehouse")
+    @patch("claude_monitor.data.analysis.load_usage_entries")
+    @patch("claude_monitor.data.analysis.SessionAnalyzer")
+    @patch("claude_monitor.data.analysis.BurnRateCalculator")
+    def test_analyze_usage_survives_warehouse_write_failure(
+        self,
+        mock_calc_class: Mock,
+        mock_analyzer_class: Mock,
+        mock_load: Mock,
+        mock_warehouse_class: Mock,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """A warehouse write failure becomes a warning, not a dead data load."""
+        sample_entry = UsageEntry(
+            timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
+            input_tokens=100,
+            output_tokens=50,
+            cost_usd=0.001,
+            model="claude-3-haiku",
+            project="/workspace/app",
+        )
+        sample_block = SessionBlock(
+            id="block_1",
+            start_time=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
+            end_time=datetime(2024, 1, 1, 17, 0, tzinfo=timezone.utc),
+            token_counts=TokenCounts(input_tokens=100, output_tokens=50),
+            cost_usd=0.001,
+            entries=[sample_entry],
+        )
+
+        mock_load.return_value = ([sample_entry], [])
+        mock_analyzer = Mock()
+        mock_analyzer.transform_to_blocks.return_value = [sample_block]
+        mock_analyzer.detect_limits.return_value = []
+        mock_analyzer_class.return_value = mock_analyzer
+        mock_calc_class.return_value = Mock()
+        mock_warehouse_class.return_value.upsert_entries.side_effect = OSError(
+            "disk full"
+        )
+
+        with caplog.at_level(logging.WARNING):
+            result = analyze_usage(
+                hours_back=24,
+                use_cache=False,
+                write_warehouse=True,
+                warehouse_file=tmp_path / "usage.json",
+                warehouse_retention_days=30,
+            )
+
+        assert result["blocks"]
+        assert result["entries_count"] == 1
+        assert result["metadata"]["warehouse_error"] == "disk full"
+        assert any(
+            record.levelname == "WARNING" and "disk full" in record.message
+            for record in caplog.records
+        )
+
+    @patch("claude_monitor.data.analysis.UsageWarehouse")
+    @patch("claude_monitor.data.analysis.load_usage_entries")
+    @patch("claude_monitor.data.analysis.SessionAnalyzer")
+    @patch("claude_monitor.data.analysis.BurnRateCalculator")
+    def test_analyze_usage_warehouse_success_omits_error_key(
+        self,
+        mock_calc_class: Mock,
+        mock_analyzer_class: Mock,
+        mock_load: Mock,
+        mock_warehouse_class: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """A healthy warehouse write leaves no warehouse_error metadata."""
+        sample_entry = UsageEntry(
+            timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
+            input_tokens=100,
+            output_tokens=50,
+            cost_usd=0.001,
+            model="claude-3-haiku",
+            project="/workspace/app",
+        )
+        sample_block = SessionBlock(
+            id="block_1",
+            start_time=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
+            end_time=datetime(2024, 1, 1, 17, 0, tzinfo=timezone.utc),
+            token_counts=TokenCounts(input_tokens=100, output_tokens=50),
+            cost_usd=0.001,
+            entries=[sample_entry],
+        )
+
+        mock_load.return_value = ([sample_entry], [])
+        mock_analyzer = Mock()
+        mock_analyzer.transform_to_blocks.return_value = [sample_block]
+        mock_analyzer.detect_limits.return_value = []
+        mock_analyzer_class.return_value = mock_analyzer
+        mock_calc_class.return_value = Mock()
+
+        result = analyze_usage(
+            hours_back=24,
+            use_cache=False,
+            write_warehouse=True,
+            warehouse_file=tmp_path / "usage.json",
+            warehouse_retention_days=30,
+        )
+
+        assert "warehouse_error" not in result["metadata"]
+
+    @patch("claude_monitor.data.analysis.load_usage_entries")
+    @patch("claude_monitor.data.analysis.SessionAnalyzer")
+    @patch("claude_monitor.data.analysis.BurnRateCalculator")
+    def test_analyze_usage_omits_warehouse_error_when_write_off(
+        self, mock_calc_class: Mock, mock_analyzer_class: Mock, mock_load: Mock
+    ) -> None:
+        """No warehouse_error metadata when the warehouse is not written."""
+        mock_load.return_value = ([], [])
+        mock_analyzer = Mock()
+        mock_analyzer.transform_to_blocks.return_value = []
+        mock_analyzer.detect_limits.return_value = []
+        mock_analyzer_class.return_value = mock_analyzer
+        mock_calc_class.return_value = Mock()
+
+        result = analyze_usage(hours_back=24, use_cache=False)
+
+        assert "warehouse_error" not in result["metadata"]
 
     @patch("claude_monitor.data.analysis.load_usage_entries")
     @patch("claude_monitor.data.analysis.SessionAnalyzer")

@@ -2,12 +2,16 @@
 
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import patch
+
+import pytest
 
 from claude_monitor.core.models import UsageEntry
 from claude_monitor.data.warehouse import (
     WAREHOUSE_SCHEMA_VERSION,
     UsageWarehouse,
     default_warehouse_path,
+    persist_usage_to_warehouse,
 )
 
 
@@ -97,6 +101,37 @@ def test_warehouse_retention_prunes_old_records(tmp_path: Path) -> None:
     assert [record["message_id"] for record in store.load()["records"]] == ["new"]
 
 
+@pytest.mark.parametrize("retention_days", [99_999_999, 10**10])
+def test_warehouse_retention_huge_value_keeps_all_records(
+    tmp_path: Path, retention_days: int
+) -> None:
+    """Retention beyond the representable calendar keeps all records."""
+    path = tmp_path / "usage.json"
+    store = UsageWarehouse(path, retention_days=retention_days)
+    now = datetime(2024, 1, 8, 12, 0, tzinfo=timezone.utc)
+
+    store.upsert_entries(
+        [
+            _entry(
+                datetime(2023, 12, 31, 12, 0, tzinfo=timezone.utc),
+                message_id="old",
+                request_id="old",
+            ),
+            _entry(
+                datetime(2024, 1, 8, 12, 0, tzinfo=timezone.utc),
+                message_id="new",
+                request_id="new",
+            ),
+        ],
+        now=now,
+    )
+
+    assert [record["message_id"] for record in store.load()["records"]] == [
+        "old",
+        "new",
+    ]
+
+
 def test_warehouse_query_daily_groups_by_project_model_day(tmp_path: Path) -> None:
     path = tmp_path / "usage.json"
     store = UsageWarehouse(path)
@@ -167,3 +202,42 @@ def test_default_warehouse_path_is_under_claude_monitor_config() -> None:
     assert path.name == "usage.json"
     assert path.parent.name == "warehouse"
     assert path.parent.parent.name == ".claude-monitor"
+
+
+def test_persist_usage_to_warehouse_writes_entries_and_limit_events(
+    tmp_path: Path,
+) -> None:
+    store = UsageWarehouse(tmp_path / "usage.json")
+    entry = _entry(datetime.now(timezone.utc), message_id="msg-1", request_id="req-1")
+    limit_events = [
+        {
+            "type": "system_limit",
+            "timestamp": datetime(2024, 1, 2, 5, 0, tzinfo=timezone.utc),
+            "reset_time": datetime(2024, 1, 2, 9, 0, tzinfo=timezone.utc),
+            "content": "limit reached",
+            "source": {"kind": "claude_code_jsonl", "account": "profile-a"},
+        }
+    ]
+
+    error = persist_usage_to_warehouse(store, [entry], limit_events=limit_events)
+
+    assert error is None
+    doc = store.load()
+    assert [record["message_id"] for record in doc["records"]] == ["msg-1"]
+    assert [event["content"] for event in doc["limit_events"]] == ["limit reached"]
+
+
+def test_persist_usage_to_warehouse_returns_error_instead_of_raising(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    store = UsageWarehouse(tmp_path / "usage.json")
+    entry = _entry(datetime.now(timezone.utc), message_id="msg-1", request_id="req-1")
+
+    with patch.object(store, "upsert_entries", side_effect=OSError("disk full")):
+        error = persist_usage_to_warehouse(store, [entry])
+
+    assert error == "disk full"
+    assert any(
+        record.levelname == "WARNING" and "disk full" in record.message
+        for record in caplog.records
+    )
