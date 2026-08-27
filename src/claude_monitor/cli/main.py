@@ -278,6 +278,13 @@ def _run_once(args: argparse.Namespace) -> int:
             )
         )
 
+    warehouse_error = data.get("metadata", {}).get("warehouse_error")
+    if warehouse_error:
+        print(
+            f"Warning: usage warehouse was not updated: {warehouse_error}",
+            file=sys.stderr,
+        )
+
     if not _maybe_write_state(args, snapshot):
         print("Failed to write state file (see logs)", file=sys.stderr)
         return 30

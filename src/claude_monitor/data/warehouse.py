@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -17,6 +18,8 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 from claude_monitor.core.models import UsageEntry
 from claude_monitor.output.formatters import format_json
+
+logger = logging.getLogger(__name__)
 
 WAREHOUSE_SCHEMA_VERSION = "1.0"
 WAREHOUSE_RECORD_VERSION = 1
@@ -325,3 +328,24 @@ class UsageWarehouse:
             "records": [],
             "limit_events": [],
         }
+
+
+def persist_usage_to_warehouse(
+    warehouse: UsageWarehouse,
+    entries: Iterable[UsageEntry],
+    limit_events: Optional[Iterable[Dict[str, Any]]] = None,
+) -> Optional[str]:
+    """Best-effort persistence of usage entries and limit events.
+
+    A warehouse write must never abort usage analysis, so failures are
+    logged as warnings and returned as a string (None on success) for the
+    caller to surface.
+    """
+    try:
+        warehouse.upsert_entries(entries)
+        if limit_events:
+            warehouse.upsert_limit_events(limit_events)
+    except Exception as e:
+        logger.warning(f"Failed to update usage warehouse: {e}")
+        return str(e)
+    return None

@@ -271,3 +271,17 @@ def test_once_compact_prints_single_line(capsys: pytest.CaptureFixture) -> None:
     out = capsys.readouterr().out.strip()
     assert "\n" not in out
     assert out.startswith("claude") and "%" in out and "reset" in out
+
+
+def test_once_warns_on_warehouse_error_but_keeps_exit_code(
+    capsys: pytest.CaptureFixture,
+) -> None:
+    """A warehouse write failure warns on stderr without hijacking the exit code."""
+    payload = _payload()
+    payload["data"]["metadata"] = {"warehouse_error": "disk full"}
+
+    rc = _run(_args("json"), payload)
+
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert "Warning: usage warehouse was not updated: disk full" in captured.err
