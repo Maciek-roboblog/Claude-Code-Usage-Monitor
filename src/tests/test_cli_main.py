@@ -1,8 +1,10 @@
 """Simplified tests for CLI main module."""
 
+import argparse
 import os
 import tempfile
 from pathlib import Path
+from typing import Any, Dict, List
 from unittest.mock import Mock, patch
 
 from claude_monitor.cli.main import main
@@ -329,3 +331,111 @@ class TestFunctions:
             )
             == 7000
         )
+
+
+class TestTableViewWarehouse:
+    """--view daily/monthly table views persist to the warehouse."""
+
+    def _make_args(self, **overrides: Any) -> argparse.Namespace:
+        values: Dict[str, Any] = {
+            "timezone": "UTC",
+            "plan": "pro",
+            "reset_hour": None,
+            "filter_models": "all",
+            "warehouse": False,
+            "warehouse_file": None,
+            "warehouse_retention_days": 365,
+            "write_state": False,
+            "date_format": None,
+            "abbreviate_tokens": False,
+            "sparklines": False,
+        }
+        values.update(overrides)
+        return argparse.Namespace(**values)
+
+    def _run_table_view(self, cli_main: Any, args: Any) -> Any:
+        """Run _run_table_view with the CLI collaborators patched out.
+
+        aggregate() returns [] so the view exits before signal.pause().
+        """
+        aggregator = Mock()
+        aggregator.return_value.aggregate.return_value = []
+        aggregator.return_value.warehouse_error = None
+
+        with (
+            patch.object(cli_main, "UsageAggregator", aggregator),
+            patch.object(cli_main, "TableViewsController"),
+            patch.object(cli_main, "print_themed") as mock_print,
+        ):
+            cli_main._run_table_view(args, ["/data"], "daily", Mock())
+
+        return aggregator, mock_print
+
+    @staticmethod
+    def _warning_texts(mock_print: Any) -> List[str]:
+        return [
+            str(call.args[0])
+            for call in mock_print.call_args_list
+            if call.kwargs.get("style") == "warning"
+        ]
+
+    def test_table_view_passes_warehouse_with_path_and_retention(
+        self, tmp_path: Path
+    ) -> None:
+        """--warehouse --warehouse-file --warehouse-retention-days reach the aggregator."""
+        import importlib
+
+        cli_main = importlib.import_module("claude_monitor.cli.main")
+        warehouse_file = tmp_path / "wh" / "usage.json"
+        args = self._make_args(
+            warehouse=True,
+            warehouse_file=str(warehouse_file),
+            warehouse_retention_days=7,
+        )
+
+        aggregator, _ = self._run_table_view(cli_main, args)
+
+        warehouse = aggregator.call_args.kwargs["warehouse"]
+        assert isinstance(warehouse, cli_main.UsageWarehouse)
+        assert warehouse.path == warehouse_file
+        assert warehouse.retention_days == 7
+
+    def test_table_view_omits_warehouse_when_flag_off(self) -> None:
+        """Without --warehouse the aggregator gets warehouse=None."""
+        import importlib
+
+        cli_main = importlib.import_module("claude_monitor.cli.main")
+
+        aggregator, _ = self._run_table_view(cli_main, self._make_args())
+
+        assert aggregator.call_args.kwargs["warehouse"] is None
+
+    def test_table_view_notices_write_state_is_realtime_only(self) -> None:
+        """--write-state in a table view prints a warning instead of writing state."""
+        import importlib
+
+        cli_main = importlib.import_module("claude_monitor.cli.main")
+
+        _, mock_print = self._run_table_view(
+            cli_main, self._make_args(write_state=True)
+        )
+
+        assert any("--write-state" in text for text in self._warning_texts(mock_print))
+
+    def test_table_view_surfaces_warehouse_error(self) -> None:
+        """A warehouse write failure is shown as a warning line."""
+        import importlib
+
+        cli_main = importlib.import_module("claude_monitor.cli.main")
+        aggregator = Mock()
+        aggregator.return_value.aggregate.return_value = []
+        aggregator.return_value.warehouse_error = "disk full"
+
+        with (
+            patch.object(cli_main, "UsageAggregator", aggregator),
+            patch.object(cli_main, "TableViewsController"),
+            patch.object(cli_main, "print_themed") as mock_print,
+        ):
+            cli_main._run_table_view(self._make_args(), ["/data"], "daily", Mock())
+
+        assert any("disk full" in text for text in self._warning_texts(mock_print))
