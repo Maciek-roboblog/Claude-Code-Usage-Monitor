@@ -221,9 +221,14 @@ class UsageWarehouse:
         now = now or datetime.now(timezone.utc)
         if now.tzinfo is None:
             now = now.replace(tzinfo=timezone.utc)
-        cutoff = now.astimezone(timezone.utc).date() - timedelta(
-            days=self.retention_days
-        )
+        try:
+            cutoff = now.astimezone(timezone.utc).date() - timedelta(
+                days=self.retention_days
+            )
+        except OverflowError:
+            # Retention longer than the representable calendar means nothing
+            # can be old enough to prune; keep every record.
+            return list(records)
         return [
             record
             for record in records

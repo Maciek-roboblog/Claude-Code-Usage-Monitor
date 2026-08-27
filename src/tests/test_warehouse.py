@@ -3,6 +3,8 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
+
 from claude_monitor.core.models import UsageEntry
 from claude_monitor.data.warehouse import (
     WAREHOUSE_SCHEMA_VERSION,
@@ -95,6 +97,37 @@ def test_warehouse_retention_prunes_old_records(tmp_path: Path) -> None:
     )
 
     assert [record["message_id"] for record in store.load()["records"]] == ["new"]
+
+
+@pytest.mark.parametrize("retention_days", [99_999_999, 10**10])
+def test_warehouse_retention_huge_value_keeps_all_records(
+    tmp_path: Path, retention_days: int
+) -> None:
+    """Retention beyond the representable calendar keeps all records."""
+    path = tmp_path / "usage.json"
+    store = UsageWarehouse(path, retention_days=retention_days)
+    now = datetime(2024, 1, 8, 12, 0, tzinfo=timezone.utc)
+
+    store.upsert_entries(
+        [
+            _entry(
+                datetime(2023, 12, 31, 12, 0, tzinfo=timezone.utc),
+                message_id="old",
+                request_id="old",
+            ),
+            _entry(
+                datetime(2024, 1, 8, 12, 0, tzinfo=timezone.utc),
+                message_id="new",
+                request_id="new",
+            ),
+        ],
+        now=now,
+    )
+
+    assert [record["message_id"] for record in store.load()["records"]] == [
+        "old",
+        "new",
+    ]
 
 
 def test_warehouse_query_daily_groups_by_project_model_day(tmp_path: Path) -> None:
