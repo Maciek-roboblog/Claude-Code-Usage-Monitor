@@ -323,6 +323,9 @@ The warehouse is opt-in and local-only. It stores versioned records by source, a
 # Start persisting usage locally
 claude-monitor --warehouse
 
+# Backfill full local history from the table views
+claude-monitor --view monthly --warehouse  # backfill full local history
+
 # Export warehouse-backed entries as JSON
 claude-monitor --warehouse --view entries --output json
 
