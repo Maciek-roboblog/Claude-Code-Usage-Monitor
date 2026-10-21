@@ -1226,6 +1226,9 @@ claude-monitor --once --output json
   physical dashboard for local usage telemetry.
 - [Claude Code Usage Tracker](https://github.com/LyndonWangWork/Claude-Code-Usage-Tracker):
   desktop usage tracker inspired by this project.
+- [ccx](https://github.com/aaronwong1999/ccx): macOS menu bar app that reads the
+  state file and, when the 5-hour window is nearly or fully used, offers to
+  continue the same Claude Code task in Codex with its full context.
 - Native menu bar and system tray apps are welcome as separate companion
   projects that consume the state file; they are not bundled into this Python
   package.
