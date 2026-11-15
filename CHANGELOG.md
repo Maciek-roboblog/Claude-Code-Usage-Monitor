@@ -3,6 +3,7 @@
 ## [4.0.0] - Unreleased
 
 ### Bug Fixes
+- **Version-specific Mythos and Fable pricing**: canonical Mythos 5, 5.1, and 5.2 IDs now have explicit standard rates instead of falling back to Sonnet. Fable 5.1 and 5.2 also use their version-specific rates, including the reduced cache-read prices. Original Fable 5 pricing is preserved. Rates cover standard input/output, 5-minute cache writes, and cache reads.
 - **Model distribution shows all families**: `ModelUsageBar` now renders every model family — Sonnet, Opus, Haiku, and an "Other" bucket for anything else — instead of only Sonnet/Opus. Haiku and other models no longer vanish from the usage bar or skew the displayed percentages. (#124, #164)
 - **Plan is now saved and restored**: the selected `--plan` is persisted in `last_used.json` and reloaded on the next run; an explicit `--plan` on the command line still takes priority. (#162)
 - **Saved theme no longer overwritten**: an explicitly chosen `light`/`dark`/`classic` theme is preserved across runs instead of being silently replaced by background auto-detection. (#102, #200)

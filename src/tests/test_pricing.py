@@ -130,6 +130,75 @@ class TestPricingCalculator:
         )
         assert cost == 30.0  # 5.0 + 25.0
 
+    @pytest.mark.parametrize("family", ["fable", "mythos"])
+    @pytest.mark.parametrize(
+        "version,rates",
+        [
+            ("5", (10.0, 50.0, 12.5, 1.0)),
+            ("5-1", (10.0, 50.0, 12.5, 0.25)),
+            ("5-2", (8.0, 40.0, 10.0, 0.2)),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "token_field,rate_index",
+        [
+            ("input_tokens", 0),
+            ("output_tokens", 1),
+            ("cache_creation_tokens", 2),
+            ("cache_read_tokens", 3),
+        ],
+    )
+    def test_fable_mythos_versioned_token_costs(
+        self, calculator, family, version, rates, token_field, rate_index
+    ) -> None:
+        """Standard rates include each version's explicit cache-read discount."""
+        cost = calculator.calculate_cost(
+            model=f"claude-{family}-{version}",
+            strict=True,
+            **{token_field: 1_000_000},
+        )
+        assert cost == rates[rate_index]
+
+    @pytest.mark.parametrize("family", ["fable", "mythos"])
+    @pytest.mark.parametrize("mode", list(CostMode))
+    def test_fable_mythos_5_2_entry_without_cached_cost(
+        self, calculator, family, mode
+    ) -> None:
+        """Transcript entries without a stored cost use the new standard rates."""
+        entry = {
+            "model": f"claude-{family}-5-2",
+            "input_tokens": 1_000_000,
+            "output_tokens": 2_000_000,
+            "cache_creation_tokens": 3_000_000,
+            "cache_read_tokens": 4_000_000,
+        }
+        assert calculator.calculate_cost_for_entry(entry, mode) == 118.8
+
+    @pytest.mark.parametrize("family", ["fable", "mythos"])
+    def test_fable_mythos_5_2_custom_rates_take_precedence(self, family) -> None:
+        model = f"claude-{family}-5-2"
+        calculator = PricingCalculator(
+            {model: {"input": 2, "output": 4, "cache_creation": 3, "cache_read": 0.1}}
+        )
+        assert (
+            calculator.calculate_cost(
+                model=model,
+                input_tokens=1_000_000,
+                output_tokens=1_000_000,
+                cache_creation_tokens=1_000_000,
+                cache_read_tokens=1_000_000,
+                strict=True,
+            )
+            == 9.1
+        )
+
+    @pytest.mark.parametrize(
+        "model", ["claude-mythos-preview", "claude-mythos-5-10", "claude-fable-5-20"]
+    )
+    def test_new_rates_do_not_register_other_versions(self, calculator, model) -> None:
+        with pytest.raises(KeyError):
+            calculator.calculate_cost(model=model, input_tokens=1_000_000, strict=True)
+
     def test_calculate_cost_claude_3_haiku_basic(
         self, calculator: PricingCalculator
     ) -> None:
