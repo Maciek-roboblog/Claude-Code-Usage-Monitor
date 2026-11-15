@@ -133,6 +133,35 @@ class PricingCalculator:
             "claude-opus-4-8": self.FALLBACK_PRICING["opus"],
             "claude-haiku-4-5": self.FALLBACK_PRICING["haiku"],
             "claude-fable-5": self.FALLBACK_PRICING["fable"],
+            # Standard USD/MTok rates, with 5-minute cache writes:
+            # https://platform.claude.com/docs/en/about-claude/pricing
+            # Keep versions separate: 5.1 reduced cache reads, and 5.2 also
+            # reduced input/output prices. Do not apply these to Mythos Preview.
+            "claude-mythos-5": self.FALLBACK_PRICING["fable"],
+            "claude-fable-5-1": {
+                "input": 10.0,
+                "output": 50.0,
+                "cache_creation": 12.5,
+                "cache_read": 0.25,
+            },
+            "claude-mythos-5-1": {
+                "input": 10.0,
+                "output": 50.0,
+                "cache_creation": 12.5,
+                "cache_read": 0.25,
+            },
+            "claude-fable-5-2": {
+                "input": 8.0,
+                "output": 40.0,
+                "cache_creation": 10.0,
+                "cache_read": 0.2,
+            },
+            "claude-mythos-5-2": {
+                "input": 8.0,
+                "output": 40.0,
+                "cache_creation": 10.0,
+                "cache_read": 0.2,
+            },
         }
         self._cost_cache: Dict[str, float] = {}
 
